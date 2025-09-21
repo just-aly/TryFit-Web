@@ -1,0 +1,19 @@
+.page-content {
+  padding-top: 120px; /* equal to header height */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.page-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page-content {
+  padding: 120px 800px 60px; /* same spacing as LandingPage */
+  box-sizing: border-box;
+}

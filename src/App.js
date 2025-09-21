@@ -5,6 +5,9 @@ import LoginPage from "./Components/LoginPage";
 import SignUpPage from "./Components/SignUpPage";
 import Footer from "./Components/Footer";
 import Header from "./Components/Header";
+import Profile from "./Components/Profile";
+import './App.css';
+
 
 function AppContent() {
   const location = useLocation();
@@ -20,6 +23,7 @@ function AppContent() {
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
 
       <Footer />

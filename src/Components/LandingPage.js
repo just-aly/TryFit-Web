@@ -1,7 +1,4 @@
 import React, { useState } from "react";
-import { FaShoppingCart, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
-import { FaFacebook, FaInstagram } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
 
 export default function LandingPage() {
   const [openDropdown, setOpenDropdown] = useState(null);
