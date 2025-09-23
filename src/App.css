@@ -1,19 +1,18 @@
-.page-content {
-  padding-top: 120px; /* equal to header height */
-}
-
-body {
+html, body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden; /* prevent sideways shift */
 }
 
-.page-layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+.header {
+  width: 100%;
+  left: 0;   /* anchor it to left */
+  right: 0;  /* anchor it to right */
 }
 
-.page-content {
-  padding: 120px 800px 60px; /* same spacing as LandingPage */
-  box-sizing: border-box;
+.main-content, 
+.profile-page, 
+.landing-page {
+  width: 100%;          /* take full width */
+  box-sizing: border-box; 
 }

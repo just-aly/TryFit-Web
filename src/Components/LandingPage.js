@@ -22,11 +22,6 @@ export default function LandingPage() {
       </section>
 
       <style>{`
-        body {
-          margin: 0;
-          padding: 0;
-        }
-
         .landing-page {
           display: flex;
           flex-direction: column;

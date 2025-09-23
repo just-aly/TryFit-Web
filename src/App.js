@@ -6,20 +6,21 @@ import SignUpPage from "./Components/SignUpPage";
 import Footer from "./Components/Footer";
 import Header from "./Components/Header";
 import Profile from "./Components/Profile";
+import ChatSupport from "./ChatSupport";
 import './App.css';
-
 
 function AppContent() {
   const location = useLocation();
 
-  const hideHeader = location.pathname === "/login" || location.pathname === "/signup";
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/signup";
 
   return (
     <>
-      {!hideHeader && <Header />}
+      {!isAuthPage && <Header />}
 
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} /> {/* makes login as default page. can be changed */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
@@ -27,6 +28,8 @@ function AppContent() {
       </Routes>
 
       <Footer />
+
+      {!isAuthPage && <ChatSupport />}
     </>
   );
 }
