@@ -5,6 +5,7 @@ import LoginPage from "./Components/LoginPage";
 import SignUpPage from "./Components/SignUpPage";
 import Footer from "./Components/Footer";
 import Header from "./Components/Header";
+import MyOrders from "./Components/MyOrdes";
 import Profile from "./Components/Profile";
 import ChatSupport from "./ChatSupport";
 import './App.css';
@@ -25,6 +26,7 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/myorders" element={<MyOrders />} />
       </Routes>
 
       <Footer />

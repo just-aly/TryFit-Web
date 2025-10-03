@@ -8,11 +8,11 @@ import {
   FaSignOutAlt,
   FaSearch,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
+import { useNavigate } from "react-router-dom";
 
 export default function Header() {
   const [openDropdown, setOpenDropdown] = useState(null);
-  const navigate = useNavigate(); // ✅ React Router hook
+  const navigate = useNavigate(); 
 
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
@@ -20,12 +20,10 @@ export default function Header() {
 
   return (
     <header className="header">
-      {/* Left: Logo */}
       <div className="logo" onClick={() => navigate("/landing")}>
         TRYFIT
       </div>
 
-      {/* Center: Search + Right group */}
       <div className="center-area">
         {/* Search bar */}
         <div className="search-wrapper">
@@ -58,9 +56,12 @@ export default function Header() {
           </div>
 
           {/* My Orders (bag icon + tooltip) */}
-          <div className="nav-icon-wrapper">
-            <FaShoppingBag className="icon" />
-            <span className="tooltip">My Orders</span>
+         <div 
+          className="nav-icon-wrapper" 
+          onClick={() => navigate("/myorders")}
+         >
+          <FaShoppingBag className="icon" />
+          <span className="tooltip">My Orders</span>
           </div>
 
           {/* Cart icon + tooltip */}
@@ -72,16 +73,15 @@ export default function Header() {
           {/* Profile icon + dropdown + tooltip */}
           <div
             className="dropdown nav-icon-wrapper"
-            onClick={() => toggleDropdown("profile")}
-          >
+            onClick={() => toggleDropdown("profile")}>
+              
             <FaUser className="icon" />
             <span className="tooltip">Profile</span>
             {openDropdown === "profile" && (
               <ul className="dropdown-menu profile-menu">
-      <li onClick={() => navigate("/profile")}>
-      <FaUser className="dropdown-icon" /> My Profile
-    </li>
-
+                <li onClick={() => navigate("/profile")}>
+                <FaUser className="dropdown-icon" /> My Profile
+                </li>
                 <li>
                   <FaBell className="dropdown-icon" /> Notification
                 </li>
@@ -96,7 +96,7 @@ export default function Header() {
 
       <style>{`
         .main-content {
-          padding-top: 80px; /* adjust to match your header’s height */
+          padding-top: 80px;
         }
 
         .header {
@@ -135,7 +135,6 @@ export default function Header() {
           gap: 100px;
         }
 
-        /* Search wrapper with icon */
         .search-wrapper {
           display: flex;
           align-items: center;
@@ -185,7 +184,6 @@ export default function Header() {
           transition: border-bottom 0.2s ease-in-out;
         }
 
-        /* ✅ Purple underline on hover */
         .dropdown:hover,
         .nav-icon-wrapper:hover {
           border-bottom: 2px solid #6A5ACD;
