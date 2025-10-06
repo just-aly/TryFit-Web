@@ -3,12 +3,21 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "./Components/LandingPage";
 import LoginPage from "./Components/LoginPage";
 import SignUpPage from "./Components/SignUpPage";
-import Footer from "./Components/Footer";
+import './App.css';
+
+//Header
 import Header from "./Components/Header";
 import MyOrders from "./Components/MyOrdes";
 import Profile from "./Components/Profile";
+import Notification from "./Components/Notification";
+import Cart from "./Components/Cart";
+import Categories from "./Components/Categories";
+
+// Footer 
+import Footer from "./Components/Footer";
+import ContactUs from "./Components/ContactUs";
 import ChatSupport from "./ChatSupport";
-import './App.css';
+
 
 function AppContent() {
   const location = useLocation();
@@ -27,6 +36,10 @@ function AppContent() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/myorders" element={<MyOrders />} />
+        <Route path="/notification" element={<Notification />} />
+        <Route path="/categories" element={<Categories />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/contactus" element={<ContactUs />} />
       </Routes>
 
       <Footer />

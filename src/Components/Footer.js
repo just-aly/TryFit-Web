@@ -1,9 +1,12 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
 import { FaFacebook, FaInstagram } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 
 export default function Footer() {
+  const navigate = useNavigate(); 
+
   return (
     <footer className="footer">
       <div className="footer-content">
@@ -32,7 +35,9 @@ export default function Footer() {
           <h3>Quick Links</h3>
           <ul>
             <li><a href="/about">About Us</a></li>
-            <li><a href="/contact">Contact Us</a></li>
+            <li onClick={() => navigate("/contactus")} style={{ cursor: "pointer", color: "#ddd" }}>
+              Contact Us
+            </li>
             <li><a href="/terms">Terms of Service</a></li>
             <li><a href="/privacy">Privacy Policy</a></li>
           </ul>
@@ -47,8 +52,8 @@ export default function Footer() {
           <button className="download-btn">Download App</button>
         </div>
       </div>
-      <p className="footer-bottom">© 2025 TryFit. All rights reserved.</p>
 
+      <p className="footer-bottom">© 2025 TryFit. All rights reserved.</p>
 
       <style>{`
         .footer {

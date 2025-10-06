@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaShoppingCart,
   FaShoppingBag,
@@ -12,10 +11,36 @@ import { useNavigate } from "react-router-dom";
 
 export default function Header() {
   const [openDropdown, setOpenDropdown] = useState(null);
-  const navigate = useNavigate(); 
+  const [placeholder, setPlaceholder] = useState("T-Shirt");
+  const [animate, setAnimate] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const navigate = useNavigate();
 
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
+  };
+
+  useEffect(() => {
+    const items = ["T-Shirt", "Longsleeve", "Shorts", "Pants"];
+    let index = 0;
+
+    const interval = setInterval(() => {
+      if (inputValue.trim() === "") {
+        setAnimate(true);
+        setTimeout(() => {
+          index = (index + 1) % items.length;
+          setPlaceholder(items[index]);
+          setAnimate(false);
+        }, 400);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [inputValue]);
+
+  const goToCategory = (category) => {
+    navigate(`/categories?category=${encodeURIComponent(category)}`);
+    setOpenDropdown(null); 
   };
 
   return (
@@ -27,19 +52,31 @@ export default function Header() {
       <div className="center-area">
         {/* Search bar */}
         <div className="search-wrapper">
-          <input type="text" placeholder="Search..." className="search-box" />
+          <div className="placeholder-wrapper">
+            <input
+              type="text"
+              className="search-box"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+            />
+            {inputValue.trim() === "" && (
+              <span className={`placeholder-text ${animate ? "slide" : ""}`}>
+                {placeholder}
+              </span>
+            )}
+          </div>
           <FaSearch className="search-icon" />
         </div>
 
-        {/* Dropdowns + Bag (orders) + Cart + Profile */}
+        {/* Navigation items */}
         <div className="nav-items">
           {/* Tops dropdown */}
           <div className="dropdown" onClick={() => toggleDropdown("tops")}>
             Tops {openDropdown === "tops" ? "▴" : "▾"}
             {openDropdown === "tops" && (
               <ul className="dropdown-menu small-menu">
-                <li>T-Shirt</li>
-                <li>Longsleeves</li>
+                <li onClick={() => goToCategory("T-Shirts")}>T-Shirt</li>
+                <li onClick={() => goToCategory("Long Sleeves")}>Longsleeves</li>
               </ul>
             )}
           </div>
@@ -49,40 +86,40 @@ export default function Header() {
             Bottoms {openDropdown === "bottoms" ? "▴" : "▾"}
             {openDropdown === "bottoms" && (
               <ul className="dropdown-menu small-menu">
-                <li>Pants</li>
-                <li>Shorts</li>
+                <li onClick={() => goToCategory("Pants")}>Pants</li>
+                <li onClick={() => goToCategory("Shorts")}>Shorts</li>
               </ul>
             )}
           </div>
 
-          {/* My Orders (bag icon + tooltip) */}
-         <div 
-          className="nav-icon-wrapper" 
-          onClick={() => navigate("/myorders")}
-         >
-          <FaShoppingBag className="icon" />
-          <span className="tooltip">My Orders</span>
+          {/* My Orders */}
+          <div
+            className="nav-icon-wrapper"
+            onClick={() => navigate("/myorders")}
+          >
+            <FaShoppingBag className="icon" />
+            <span className="tooltip">My Orders</span>
           </div>
 
-          {/* Cart icon + tooltip */}
-          <div className="nav-icon-wrapper">
+          {/* Cart */}
+          <div className="nav-icon-wrapper" onClick={() => navigate("/cart")}>
             <FaShoppingCart className="icon" />
             <span className="tooltip">Cart</span>
           </div>
 
-          {/* Profile icon + dropdown + tooltip */}
+          {/* Profile */}
           <div
             className="dropdown nav-icon-wrapper"
-            onClick={() => toggleDropdown("profile")}>
-              
+            onClick={() => toggleDropdown("profile")}
+          >
             <FaUser className="icon" />
             <span className="tooltip">Profile</span>
             {openDropdown === "profile" && (
               <ul className="dropdown-menu profile-menu">
                 <li onClick={() => navigate("/profile")}>
-                <FaUser className="dropdown-icon" /> My Profile
+                  <FaUser className="dropdown-icon" /> My Profile
                 </li>
-                <li>
+                <li onClick={() => navigate("/notification")}>
                   <FaBell className="dropdown-icon" /> Notification
                 </li>
                 <li>
@@ -95,10 +132,6 @@ export default function Header() {
       </div>
 
       <style>{`
-        .main-content {
-          padding-top: 80px;
-        }
-
         .header {
           display: flex;
           align-items: center;
@@ -114,7 +147,6 @@ export default function Header() {
           z-index: 1000;
           height: 80px;
           font-family: Arial, sans-serif;
-
         }
 
         .logo {
@@ -142,6 +174,7 @@ export default function Header() {
           border-radius: 6px;
           padding: 0 10px;
           transition: border 0.2s ease-in-out;
+          position: relative;
         }
 
         .search-wrapper:hover,
@@ -149,13 +182,38 @@ export default function Header() {
           border: 1px solid #6A5ACD;
         }
 
-        .search-box {
+        .placeholder-wrapper {
+          position: relative;
           width: 700px;
+        }
+
+        .search-box {
+          width: 100%;
           padding: 10px 8px;
           border: none;
           outline: none;
           font-size: 1rem;
           flex: 1;
+          background: transparent;
+          color: #000;
+          position: relative;
+          z-index: 2;
+        }
+
+        .placeholder-text {
+          position: absolute;
+          left: 8px;
+          top: 10px;
+          font-size: 1rem;
+          color: rgba(0, 0, 0, 0.5);
+          font-style: italic;
+          pointer-events: none;
+          transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        .placeholder-text.slide {
+          transform: translateX(-15px);
+          opacity: 0;
         }
 
         .search-icon {
