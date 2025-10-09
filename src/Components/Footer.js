@@ -34,12 +34,14 @@ export default function Footer() {
         <div className="footer-section">
           <h3>Quick Links</h3>
           <ul>
-            <li><a href="/about">About Us</a></li>
+            <li onClick={() => navigate("/aboutus")} style={{ cursor: "pointer", color: "#ddd" }}>About Us</li>
             <li onClick={() => navigate("/contactus")} style={{ cursor: "pointer", color: "#ddd" }}>
               Contact Us
             </li>
-            <li><a href="/terms">Terms of Service</a></li>
-            <li><a href="/privacy">Privacy Policy</a></li>
+             <li onClick={() => navigate("/termsofservice")} style={{ cursor: "pointer", color: "#ddd" }}>
+              Terms of Service
+             </li>
+            <li onClick={() => navigate("/privacyandpolicy")} style={{ cursor: "pointer", color: "#ddd" }}>Privacy Policy</li>
           </ul>
         </div>
 
