@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "./Components/LandingPage";
 import LoginPage from "./Components/LoginPage";
 import SignUpPage from "./Components/SignUpPage";
+import ChatSupport from "./ChatSupport";
 import './App.css';
 
 //Header
@@ -16,7 +17,9 @@ import Categories from "./Components/Categories";
 // Footer 
 import Footer from "./Components/Footer";
 import ContactUs from "./Components/ContactUs";
-import ChatSupport from "./ChatSupport";
+import TermsOfService from "./Components/TermsOfService";
+import PrivacyAndPolicy from "./Components/PrivacyPolicy";
+import AboutUs from "./Components/AboutUs";
 
 
 function AppContent() {
@@ -40,6 +43,10 @@ function AppContent() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/contactus" element={<ContactUs />} />
+        <Route path="/termsofservice" element={<TermsOfService />} />
+        <Route path="/privacyandpolicy" element={<PrivacyAndPolicy />} />
+        <Route path="/aboutus" element={<AboutUs />} />
+
       </Routes>
 
       <Footer />
