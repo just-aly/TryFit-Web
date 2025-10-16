@@ -4,7 +4,6 @@ export default function PrivacyAndPolicy() {
   return (
     <div className="privacy-page">
       <div className="privacy-container">
-        {/* Title with centered lines */}
         <div className="title-wrapper">
           <span className="line"></span>
           <h1 className="privacy-title">Privacy Policy</h1>

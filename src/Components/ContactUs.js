@@ -60,7 +60,7 @@ export default function ContactUs() {
           align-items: flex-start;
           gap: 60px;
           padding: 200px 0;
-          min-height: 100vh;
+          min-height: 55vh;
           background: linear-gradient(to bottom, #e5d9f2, #d8c7ef);
           font-family: Arial, sans-serif;
           color: #333;

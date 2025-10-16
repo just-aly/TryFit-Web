@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 export default function SignUpPage() {
   return (
     <div className="signup-page">
-      {/* Centered Sign Up Form */}
       <div className="signup-section">
         <div className="signup-box">
           <h2>Create an Account</h2>
@@ -33,7 +32,6 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Inline CSS */}
       <style>{`
         body {
           margin: 0;

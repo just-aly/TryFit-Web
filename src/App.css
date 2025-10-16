@@ -1,18 +1,18 @@
 html, body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* prevent sideways shift */
+  overflow-x: hidden; 
 }
 
 .header {
   width: 100%;
-  left: 0;   /* anchor it to left */
-  right: 0;  /* anchor it to right */
+  left: 0;
+  right: 0;
 }
 
 .main-content, 
 .profile-page, 
 .landing-page {
-  width: 100%;          /* take full width */
+  width: 100%;   
   box-sizing: border-box; 
 }

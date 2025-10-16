@@ -2,15 +2,24 @@ import React from "react";
 
 export default function Notification() {
   return (
-    <div className="notif-container">
-      <h1 className="notif-title">Notification</h1>
+    <div className="notif-page">
+      {/* ===== Header Section ===== */}
+      <div className="notif-header">
+        <div className="notif-header-inner">
+          <div className="notif-title-row">
+            <h1>Notification</h1>
+            <div className="header-line"></div>
+          </div>
+        </div>
+      </div>
 
+      {/* ===== Notification Content ===== */}
       <div className="notif-box">
         <div className="notif-section">
           <h2 className="notif-date">Today</h2>
 
           <div className="notif-item">
-            <h3 className="notif-header">Order Confirmed</h3>
+            <h3 className="notif-header-text">Order Confirmed</h3>
             <p className="notif-text">
               [10:15 AM] Your order #[ORDER_ID] has been confirmed! We’re
               preparing it for shipment.
@@ -18,7 +27,7 @@ export default function Notification() {
           </div>
 
           <div className="notif-item">
-            <h3 className="notif-header">Order Shipped</h3>
+            <h3 className="notif-header-text">Order Shipped</h3>
             <p className="notif-text">
               [2:30 PM] Your order #[ORDER_ID] is now on its way! <br />
               Current Location: Pampanga
@@ -30,7 +39,7 @@ export default function Notification() {
           <h2 className="notif-date">Yesterday</h2>
 
           <div className="notif-item">
-            <h3 className="notif-header">Out for Delivery</h3>
+            <h3 className="notif-header-text">Out for Delivery</h3>
             <p className="notif-text">
               [8:00 AM] Your order #[ORDER_ID] is out for delivery! Expect it to
               arrive today.
@@ -38,7 +47,7 @@ export default function Notification() {
           </div>
 
           <div className="notif-item">
-            <h3 className="notif-header">Delivery Driver Status</h3>
+            <h3 className="notif-header-text">Delivery Driver Status</h3>
             <p className="notif-text">
               [8:30 AM] Driver Name: Haechan Santos Batumbakal <br />
               Phone Number: 09********
@@ -50,7 +59,7 @@ export default function Notification() {
           <h2 className="notif-date">Mar 3, 2025</h2>
 
           <div className="notif-item">
-            <h3 className="notif-header">Delivered</h3>
+            <h3 className="notif-header-text">Delivered</h3>
             <p className="notif-text">
               [3:45 PM] Your order #[ORDER_ID] has been delivered! We hope you
               love it. Let us know your feedback!
@@ -58,7 +67,7 @@ export default function Notification() {
           </div>
 
           <div className="notif-item">
-            <h3 className="notif-header">Delivered</h3>
+            <h3 className="notif-header-text">Delivered</h3>
             <p className="notif-text">
               [3:45 PM] Your order #[ORDER_ID] has been delivered! We hope you
               love it. Let us know your feedback!
@@ -68,33 +77,62 @@ export default function Notification() {
       </div>
 
       <style>{`
-        .notif-container {
-          background: linear-gradient(to bottom, #e5d9f2, #d8c7ef);
+        .notif-page {
+          background: linear-gradient(to bottom, #f8f2ffff, #e7d6fcff);
           min-height: 100vh;
-          padding: 160px 100px;
-          font-family: Arial, sans-serif;
+          padding: 150px 0 80px;
+          font-family: 'Poppins', sans-serif;
           color: #333;
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
+          align-items: center;
         }
 
-        .notif-title {
-          font-size: 2rem;
+        /* ===== Header ===== */
+        .notif-header {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        .notif-header-inner {
+          width: 100%;
+          max-width: 1000px;
+          padding: 0 40px;
+          margin-bottom: 30px;
+        }
+
+        .notif-title-row {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+
+        .notif-title-row h1 {
+          font-size: 2.5rem;
+          color: #1c143a;
           font-weight: 700;
-          margin-bottom: 40px;
-          text-align: left;
-          color: #000000ff;
+          margin: 0;
+          white-space: nowrap;
         }
 
+        .header-line {
+          flex: none;
+          height: 20px;
+          width: 83%;
+          background: #6c56ef;
+          box-shadow: 0 2px 6px rgba(108, 86, 239, 0.3);
+        }
+
+        /* ===== Notification Box ===== */
         .notif-box {
           background: #fff;
           border-radius: 16px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           width: 100%;
-          max-width: 900px;
+          max-width: 1000px;
           padding: 40px;
-          margin-left: 80px;
+          border: 1px solid #e4e2ffff;
         }
 
         .notif-section {
@@ -120,7 +158,7 @@ export default function Notification() {
           background: #ebe4f9;
         }
 
-        .notif-header {
+        .notif-header-text {
           color: #5a3dbd;
           font-weight: bold;
           font-size: 0.95rem;
@@ -133,21 +171,22 @@ export default function Notification() {
           line-height: 1.4;
         }
 
-        /* Responsive */
-        @media (max-width: 900px) {
-          .notif-container {
-            padding: 140px 20px;
-            align-items: center;
+          .notif-header-inner {
+            padding: 0 25px;
           }
 
           .notif-box {
-            margin-left: 0;
             width: 100%;
             padding: 25px;
           }
 
-          .notif-title {
-            text-align: center;
+          .notif-title-row h1 {
+            font-size: 2rem;
+          }
+
+          .header-line {
+            width: 83%;
+            height: 16px;
           }
         }
       `}</style>

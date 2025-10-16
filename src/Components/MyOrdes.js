@@ -31,7 +31,6 @@ export default function MyOrders() {
             <h2>{activeTab}</h2>
           </div>
 
-          {/* Content Wrapper */}
           <div className="content-wrapper single-column">
             {/* TO SHIP */}
             {activeTab === "To Ship" && (
@@ -145,7 +144,7 @@ export default function MyOrders() {
               </div>
             )}
 
-            {/* ✅ COMPLETED */}
+            {/* COMPLETED */}
             {activeTab === "Completed" && (
               <div className="orders-list">
                 <div className="order-card">
@@ -213,7 +212,7 @@ export default function MyOrders() {
               </div>
             )}
 
-            {/* ✅ CANCELLED (Added Section) */}
+            {/* CANCELLED */}
             {activeTab === "Cancelled" && (
               <div className="orders-list">
                 <div className="order-card">
@@ -267,7 +266,6 @@ export default function MyOrders() {
         </main>
       </div>
 
-      {/* Keep your CSS intact */}
       <style>{`
         .orders-page {
           display: flex;

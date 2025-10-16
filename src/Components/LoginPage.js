@@ -8,8 +8,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
-    e.preventDefault(); // prevent form refresh
-    // add authentication check here
+    e.preventDefault(); 
     navigate("/landing");
   };
 
@@ -34,11 +33,11 @@ export default function LoginPage() {
             <form onSubmit={handleLogin}>
               <div className="form-group">
                 <label>Email Address</label>
-                <input type="email" placeholder="Enter your email" /> {/*removed required which will be added after database's connected*/}
+                <input type="email" placeholder="Enter your email" /> {/*removed required which will be added after database is connected*/}
               </div>
               <div className="form-group">
                 <label>Password</label>
-                <input type="password" placeholder="Enter your password" /> {/*removed required which will be added after database's connected*/}
+                <input type="password" placeholder="Enter your password" /> {/*removed required which will be added after database is connected*/}
               </div>
               <button type="submit" className="login-btn">Login</button>
             </form>

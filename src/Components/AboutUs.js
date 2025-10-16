@@ -1,27 +1,30 @@
-import React, { useEffect } from "react";
-import { motion, useAnimation } from "framer-motion";
+import React, { useEffect, useState, useRef } from "react";
 
 export default function AboutUs() {
-  const controls = useAnimation();
+  const [imageSet, setImageSet] = useState(0);
+  const aboutRef = useRef(null);
 
+  // Phone placeholder
   useEffect(() => {
-    controls.start({
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.9, ease: "easeOut" },
-    });
-  }, [controls]);
+    const interval = setInterval(() => {
+      setImageSet((prev) => (prev + 1) % 4);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Scroll down to About section
+  const scrollToAbout = () => {
+    aboutRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <div className="about-page">
-      {/* ===== Section 1: Welcome ===== */}
-      <motion.section
-        className="welcome-section"
-        initial={{ opacity: 0, y: 30 }}
-        animate={controls}
-      >
-        <div className="welcome-text">
-          <h1>Welcome to <span>TryFit</span></h1>
+    <div className="page">
+      {/* ===== WELCOME ===== */}
+      <section className="welcome">
+        <div className="text">
+          <h1>
+            Welcome to <span>TryFit</span>
+          </h1>
           <p>
             Discover outfit inspirations that match your style. Explore trends
             and bring your fashion ideas to life. Download the app to try
@@ -29,252 +32,233 @@ export default function AboutUs() {
           </p>
         </div>
 
-        <div className="welcome-images">
-          <img src="https://via.placeholder.com/140x300" alt="App preview 1" />
-          <img src="https://via.placeholder.com/140x300" alt="App preview 2" />
-          <img src="https://via.placeholder.com/140x300" alt="App preview 3" />
+        <div className="phones">
+          <div
+            className="track"
+            style={{
+              transform: `translateX(-${imageSet * 25}%)`,
+              transition: "transform 1.5s ease-in-out",
+            }}
+          >
+            {[
+              "https://via.placeholder.com/300x640?text=Phone+1",
+              "https://via.placeholder.com/300x640?text=Phone+2",
+              "https://via.placeholder.com/300x640?text=Phone+3",
+              "https://via.placeholder.com/300x640?text=Phone+4",
+            ].map((src, i) => (
+              <div className="item" key={i}>
+                <img src={src} alt={`Phone ${i + 1}`} />
+              </div>
+            ))}
+          </div>
         </div>
-      </motion.section>
 
-      {/* ===== Section 2: About Us ===== */}
-      <motion.section
-        className="about-section"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
-      >
-        <div className="about-content">
-          <h2>ABOUT<br />US</h2>
-          <p>
-            Our platform is designed to help you discover outfit inspirations
-            that match your unique aesthetic. Whether you love Y2K, coquette, or
-            minimalist fashion, we bring together the best styles to spark your
-            creativity.
-          </p>
-          <h4>
-            We believe fashion is more than just clothing—
-            <br />it’s a way to express yourself.
-          </h4>
+        {/* Explore + Arrow side by side */}
+        <div className="scroll-down" onClick={scrollToAbout}>
+          <span className="explore-text">Explore</span>
+          <span className="arrow-down">▼</span>
         </div>
-      </motion.section>
+      </section>
 
-      {/* ===== Section 3: Vision ===== */}
-      <motion.section
-        className="vision-section"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9 }}
-      >
-        <h2>OUR VISION</h2>
+      {/* ===== ABOUT US ===== */}
+      <section className="about" ref={aboutRef}>
+        <div className="cols">
+          <div className="left">
+            <h2>About&nbsp;Us</h2>
+          </div>
+          <div className="right">
+            <p>
+              TryFit is built to help people express their creativity through
+              outfits. We curate fashion looks inspired by diverse aesthetics —
+              from minimalist to streetwear — giving users a place to explore
+              and define their style identity.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== OUR MISSION ===== */}
+      <section className="mission">
+        <div className="cols">
+          <div className="left">
+            <h2>Our&nbsp;Mission</h2>
+          </div>
+          <div className="right">
+            <p>
+              Our mission is to make style discovery seamless and fun. Through
+              technology and community, we connect people who love fashion,
+              helping them try, share, and grow together in one inspiring
+              platform.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== JOIN US ===== */}
+      <section className="join">
+        <h2>Join&nbsp;Us</h2>
         <p>
-          We’re shaping the future of fashion by blending creativity with
-          technology. Our goal is to make style discovery more interactive,
-          accessible, and fun for everyone.
+          Become part of our growing creative family. Follow us on social media
+          for trends, looks, and fashion inspiration.
         </p>
-      </motion.section>
-
-      {/* ===== Section 4: Join Us ===== */}
-      <motion.section
-        className="join-section"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9 }}
-      >
-        <div className="join-text">
-          <p>
-            Be part of our growing fashion community! Follow us on social media
-            for the latest outfit trends, styling tips, and exclusive updates.
-            Ready to bring your dream outfits to life?
-          </p>
-          <p className="highlight">
-            Download the app today and start exploring!
-          </p>
-        </div>
-        <div className="join-image">
-          <img
-            src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d"
-            alt="Team collaboration"
-          />
-        </div>
-      </motion.section>
-
-      {/* ===== Final CTA ===== */}
-      <motion.div
-        className="cta-banner"
-        initial={{ opacity: 0, scale: 0.9 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        <h2>JOIN US!</h2>
-      </motion.div>
+        <p className="highlight">Download TryFit and start styling today!</p>
+      </section>
 
       <style>{`
-        .about-page {
-          font-family: 'Poppins', sans-serif;
+        .page {
+          font-family: "Poppins", sans-serif;
+          color: #1c143a;
           overflow-x: hidden;
         }
 
-        /* ===== Welcome Section ===== */
-        .welcome-section {
+        /* ===== WELCOME ===== */
+        .welcome {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 150px 10%;
+          padding: 430px 10% 160px;
           background: linear-gradient(to bottom, #e8e1ff, #f3f0ff);
+          gap: 40px;
           flex-wrap: wrap;
+          position: relative;
         }
 
-        .welcome-text {
+        .text {
           flex: 1;
-          min-width: 320px;
+          min-width: 260px;
+          max-width: 480px;
+          margin-top: 80px;
         }
 
-        .welcome-text h1 {
-          font-size: 2.8rem;
+        .text h1 {
+          font-size: 3rem;
           color: #1c143a;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
         }
 
-        .welcome-text span {
+        .text span {
           color: #6a5acd;
         }
 
-        .welcome-text p {
-          font-size: 1.1rem;
-          color: #1e1e1e;
-          line-height: 1.6;
-        }
-
-        .welcome-images {
+        .phones {
           flex: 1;
           display: flex;
           justify-content: center;
+          overflow: hidden;
+          max-width: 360px;
+          position: relative;
+        }
+
+        .track {
+          display: flex;
+          width: 400%;
           gap: 20px;
         }
 
-        .welcome-images img {
-          border-radius: 15px;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-          transition: transform 0.3s ease;
-        }
-
-        .welcome-images img:hover {
-          transform: translateY(-10px);
-        }
-
-        /* ===== About Section ===== */
-        .about-section {
-          background: #6a5acd;
-          color: white;
-          padding: 120px 10%;
-          text-align: left;
-        }
-
-        .about-content h2 {
-          font-size: 3rem;
-          font-weight: 700;
-          letter-spacing: 2px;
-          line-height: 1;
-        }
-
-        .about-content p {
-          margin-top: 30px;
-          font-size: 1.1rem;
-          max-width: 600px;
-          line-height: 1.7;
-        }
-
-        .about-content h4 {
-          margin-top: 40px;
-          font-weight: 500;
-          font-size: 1.2rem;
-        }
-
-        /* ===== Vision Section ===== */
-        .vision-section {
-          background: #7c7691;
-          text-align: center;
-          color: white;
-          padding: 100px 15%;
-        }
-
-        .vision-section h2 {
-          font-size: 2.4rem;
-          font-weight: 700;
-          margin-bottom: 20px;
-        }
-
-        .vision-section p {
-          font-size: 1.1rem;
-          color: #f0f0f0;
-          max-width: 700px;
-          margin: 0 auto;
-          line-height: 1.6;
-        }
-
-        /* ===== Join Section ===== */
-        .join-section {
+        .item {
+          flex: 0 0 25%;
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
-          padding: 100px 10%;
-          background: #f2f0f5;
-          flex-wrap: wrap;
         }
 
-        .join-text {
-          flex: 1;
-          min-width: 300px;
+        .item img {
+          width: 220px;
+          max-height: 420px;
+          border-radius: 18px;
+          box-shadow: 0 18px 40px rgba(28, 20, 58, 0.18);
         }
 
-        .join-text p {
-          font-size: 1rem;
-          color: #222;
+        arrow-down {
+          font-size: 2em;
+        }
+      
+        .scroll-down {
+          position: absolute;
+          bottom: 40px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: #6a5acd;
+          cursor: pointer;
+          animation: bounce 1.5s infinite;
+        }
+
+        @keyframes bounce {
+          0%, 100% { transform: translate(-50%, 0); }
+          50% { transform: translate(-50%, 10px); }
+        }
+
+        .explore-text {
+          font-size: 1.6em;
+          font-weight: 500;
+          color: #6a5acd;
+        }
+
+        /* ===== ABOUT / MISSION ===== */
+        .about, .mission {
+          background: linear-gradient(135deg, #6a5acd 0%, #8e80ff 100%);
+          color: #fff;
+          padding: 160px 10%;
+        }
+
+        .cols {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 80px;
+          align-items: start;
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+
+        .left h2 {
+          font-size: 4rem;
+          font-weight: 700;
+          margin: 0;
+        }
+
+        .right p {
+          font-size: 1.1rem;
           line-height: 1.8;
+        }
+
+        /* ===== JOIN US ===== */
+        .join {
+          background: #ffffff;
+          color: #222;
+          padding: 160px 10%;
+          text-align: center;
+        }
+
+        .join h2 {
+          font-size: 2.6rem;
+          color: #6a5acd;
           margin-bottom: 20px;
         }
 
-        .join-text .highlight {
+        .highlight {
           color: #d220ff;
           font-weight: 600;
         }
 
-        .join-image {
-          flex: 1;
-          display: flex;
-          justify-content: center;
-        }
-
-        .join-image img {
-          border-radius: 10px;
-          width: 400px;
-          height: auto;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        }
-
-        /* ===== CTA Banner ===== */
-        .cta-banner {
-          background: #6a5acd;
-          text-align: center;
-          color: white;
-          padding: 60px 0;
-        }
-
-        .cta-banner h2 {
-          font-size: 2rem;
-          font-weight: 700;
-          letter-spacing: 2px;
-        }
-
         @media (max-width: 900px) {
-          .welcome-section,
-          .join-section {
-            flex-direction: column;
-            text-align: center;
+          .cols {
+            grid-template-columns: 1fr;
+            gap: 40px;
           }
-          .welcome-images,
-          .join-image {
-            margin-top: 30px;
+
+          .left h2 {
+            font-size: 3rem;
+          }
+
+          .item img {
+            width: 180px;
+          }
+
+          .scroll-down {
+            bottom: 20px;
           }
         }
       `}</style>

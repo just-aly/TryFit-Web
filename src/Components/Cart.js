@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function ShoppingCart() {
+  const navigate = useNavigate();
+
   const initialProducts = [
     { id: 1, name: "Men's Formal Longsleeves", price: 489, img: "mens_formal.jpg" },
     { id: 2, name: "Kween Yasmin Trending Orange Lorax Pants", price: 559, img: "lorax_pants.jpg" },
@@ -49,16 +52,14 @@ export default function ShoppingCart() {
   const selectedItems = products.filter((p) => p.selected);
   const total = selectedItems.reduce((sum, p) => sum + p.price * p.quantity, 0);
 
-  // Observe universal footer
+  // Hides checkout when footer is visible
   useEffect(() => {
     const footer = document.querySelector("footer");
     if (!footer) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          setHideCheckout(entry.isIntersecting);
-        });
+        entries.forEach((entry) => setHideCheckout(entry.isIntersecting));
       },
       { threshold: 0.2 }
     );
@@ -116,7 +117,9 @@ export default function ShoppingCart() {
             <p>Selected Item: {selectedItems.length}</p>
             <p>Total: ₱{total}</p>
           </div>
-          <button className="checkout-btn">CHECK OUT</button>
+          <button className="checkout-btn" onClick={() => navigate("/checkout")}>
+            CHECK OUT
+          </button>
         </div>
       </div>
 
@@ -137,7 +140,7 @@ export default function ShoppingCart() {
           display: flex;
           flex-direction: column;
           gap: 16px;
-          width: 92%;    
+          width: 92%;
           max-width: 880px;
         }
 
@@ -223,7 +226,7 @@ export default function ShoppingCart() {
           right: 0;
           display: flex;
           justify-content: center;
-          background: transparent; 
+          background: transparent;
           z-index: 999;
           transition: transform 0.3s ease-in-out;
         }
