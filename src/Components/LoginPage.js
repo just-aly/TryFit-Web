@@ -1,15 +1,93 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
-import { FaFacebook, FaInstagram } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { auth, db } from "../firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault(); 
-    navigate("/landing");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [hidePassword, setHidePassword] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const showErrorPopup = (message) => {
+    // simple alert to match existing behavior; you can replace with a modal later
+    alert(message);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!email.trim() || !password.trim()) {
+      showErrorPopup("Please enter both email and password.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password.trim());
+      const user = userCredential.user;
+
+      if (user) {
+        // fetch user document from Firestore, similar to Flutter logic
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          console.log("User Firestore data:", userDocSnap.data());
+        } else {
+          console.log("No Firestore data found for this user.");
+          showErrorPopup("Logged in, but user profile data not found.");
+          setIsLoading(false);
+          return;
+        }
+
+        // Success: redirect to landing (replace route as needed)
+        navigate("/landing");
+      }
+    } catch (err) {
+      console.error("FirebaseAuthException:", err?.code, err?.message);
+      let message = "Login Failed. Please try again.";
+
+      // map common Firebase Auth error codes to friendly messages (matches Flutter logic)
+      switch (err?.code) {
+        case "auth/user-not-found":
+        case "user-not-found":
+          message = "No user found with that Email.";
+          break;
+        case "auth/wrong-password":
+        case "wrong-password":
+          message = "Incorrect Password.";
+          break;
+        case "auth/invalid-email":
+        case "invalid-email":
+          message = "Please enter a valid email address.";
+          break;
+        case "auth/invalid-credential":
+        case "invalid-credential":
+          message = "Invalid email or password.";
+          break;
+        case "auth/too-many-requests":
+        case "too-many-requests":
+          message = "Too many attempts. Try again later.";
+          break;
+        case "auth/network-request-failed":
+        case "network-request-failed":
+          message = "Network error. Check your connection.";
+          break;
+        default:
+          // include raw message for debugging but keep user-friendly text
+          message = err?.message ? `${err.message}` : message;
+          break;
+      }
+
+      showErrorPopup(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -26,21 +104,46 @@ export default function LoginPage() {
           <button className="download-bttn">Download</button>
         </div>
 
-        {/*Login Form */}
+        {/* Login Form */}
         <div className="login-section">
           <div className="login-box">
             <h2>Login</h2>
             <form onSubmit={handleLogin}>
               <div className="form-group">
                 <label>Email Address</label>
-                <input type="email" placeholder="Enter your email" /> {/*removed required which will be added after database is connected*/}
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-              <div className="form-group">
+
+              <div className="form-group password-group">
                 <label>Password</label>
-                <input type="password" placeholder="Enter your password" /> {/*removed required which will be added after database is connected*/}
+                <div className="password-wrapper">
+                  <input
+                    type={hidePassword ? "password" : "text"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <span
+                    className="password-toggle"
+                    onClick={() => setHidePassword(!hidePassword)}
+                    role="button"
+                    aria-label={hidePassword ? "Show password" : "Hide password"}
+                  >
+                    {hidePassword ? <FaEye /> : <FaEyeSlash />}
+                  </span>
+                </div>
               </div>
-              <button type="submit" className="login-btn">Login</button>
+
+              <button type="submit" className="login-btn" disabled={isLoading}>
+                {isLoading ? "Signing In..." : "Login"}
+              </button>
             </form>
+
             <p className="signup-text">
               Don’t have an account? <Link to="/signup">Sign Up</Link>
             </p>
@@ -48,11 +151,15 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="spinner" />
+        </div>
+      )}
+
       <style>{`
-        body {
-          margin: 0;
-          padding: 0;
-        }
+        body { margin: 0; padding: 0; }
 
         .login-page {
           display: flex;
@@ -98,20 +205,6 @@ export default function LoginPage() {
           font-size: 1.2rem;
           color: #444;
           margin-bottom: 20px;
-        }
-
-        .welcome-section .download-btn {
-          background: #6A5ACD;
-          color: #fff;
-          border: none;
-          padding: 14px 28px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 1rem;
-        }
-
-        .welcome-section .download-btn:hover {
-          background: #5746c6;
         }
 
         .download-bttn {
@@ -167,10 +260,50 @@ export default function LoginPage() {
         }
 
         .form-group input {
-          width: 90%;
+          width: 100%;
           padding: 12px;
           border: 1px solid #ddd;
           border-radius: 6px;
+          box-sizing: border-box;
+          font-size: 1rem;
+          height: 42px;
+        }
+
+        /* Password field styles (match other inputs) */
+        .password-group {
+          position: relative;
+        }
+
+        .password-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .password-wrapper input {
+          width: 100%;
+          padding-right: 40px; /* space for icon */
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          height: 42px;
+          box-sizing: border-box;
+          padding: 12px;
+        }
+
+        .password-toggle {
+          position: absolute;
+          right: 12px;
+          cursor: pointer;
+          color: #6A5ACD;
+          font-size: 1.1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+        }
+
+        .password-toggle:hover {
+          color: #5746c6;
         }
 
         .login-btn {
@@ -205,6 +338,30 @@ export default function LoginPage() {
 
         .signup-text a:hover {
           text-decoration: underline;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.35);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+
+        .spinner {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          border: 6px solid rgba(255,255,255,0.2);
+          border-top-color: #9747FF;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
