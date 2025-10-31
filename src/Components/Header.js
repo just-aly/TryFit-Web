@@ -40,7 +40,17 @@ export default function Header() {
 
   const goToCategory = (category) => {
     navigate(`/categories?category=${encodeURIComponent(category)}`);
-    setOpenDropdown(null); 
+    setOpenDropdown(null);
+  };
+
+  // 🔹 Sign Out Confirmation
+  const handleSignOut = () => {
+    const confirmLogout = window.confirm("Are you sure you want to sign out?");
+    if (confirmLogout) {
+      navigate("/login");
+    } else {
+      setOpenDropdown(null); // just close dropdown, stay on page
+    }
   };
 
   return (
@@ -122,7 +132,7 @@ export default function Header() {
                 <li onClick={() => navigate("/notification")}>
                   <FaBell className="dropdown-icon" /> Notification
                 </li>
-                <li>
+                <li onClick={handleSignOut}>
                   <FaSignOutAlt className="dropdown-icon" /> Logout
                 </li>
               </ul>

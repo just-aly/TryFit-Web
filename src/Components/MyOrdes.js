@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-
+///////////////////////
+// REMOVE THE COLORS //
+///////////////////////
 export default function MyOrders() {
   const [activeTab, setActiveTab] = useState("To Ship");
 

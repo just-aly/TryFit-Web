@@ -24,7 +24,7 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Background color changes upon scroll down
+  // Background color change on scroll
   useEffect(() => {
     const handleScroll = () => {
       const newArrivalsTop = newArrivalsRef.current?.offsetTop || 0;
@@ -41,7 +41,6 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Popular section
   const popularItems = Array(10).fill(0);
 
   const nextSlide = () => {
@@ -53,20 +52,14 @@ export default function LandingPage() {
     if (popularIndex > 0) setPopularIndex(popularIndex - 1);
   };
 
+  // Drag handlers
   const handleMouseDown = (e) => {
     isDragging.current = true;
     startX.current = e.pageX - dragRef.current.offsetLeft;
     scrollStart.current = dragRef.current.scrollLeft;
   };
-
-  const handleMouseUp = () => {
-    isDragging.current = false;
-  };
-
-  const handleMouseLeave = () => {
-    isDragging.current = false;
-  };
-
+  const handleMouseUp = () => (isDragging.current = false);
+  const handleMouseLeave = () => (isDragging.current = false);
   const handleMouseMove = (e) => {
     if (!isDragging.current) return;
     e.preventDefault();
@@ -74,17 +67,12 @@ export default function LandingPage() {
     const walk = (x - startX.current) * 1.2;
     dragRef.current.scrollLeft = scrollStart.current - walk;
   };
-
   const handleTouchStart = (e) => {
     isDragging.current = true;
     startX.current = e.touches[0].pageX - dragRef.current.offsetLeft;
     scrollStart.current = dragRef.current.scrollLeft;
   };
-
-  const handleTouchEnd = () => {
-    isDragging.current = false;
-  };
-
+  const handleTouchEnd = () => (isDragging.current = false);
   const handleTouchMove = (e) => {
     if (!isDragging.current) return;
     const x = e.touches[0].pageX - dragRef.current.offsetLeft;
@@ -127,7 +115,7 @@ export default function LandingPage() {
 
       {/* ===== POPULAR ===== */}
       <section ref={popularRef} className="section popular">
-        <h2 className="section-title align-left">Popular</h2>
+        <h2 className="section-title">Popular</h2>
         <div className="slider">
           <button className="arrow" onClick={prevSlide}>
             &#8249;
@@ -145,7 +133,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ===== OUR PICKS FOR YOU ===== */}
+      {/* ===== OUR PICKS ===== */}
       <section ref={picksRef} className="section picks">
         <h2 className="section-title">Our Picks for You</h2>
         <div className="card-container">
@@ -163,17 +151,15 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ===== STYLES ===== */}
       <style>{`
         * { box-sizing: border-box; }
-
-        body, html { margin: 0; padding: 0; overflow-x: hidden; }
+        html, body { margin: 0; padding: 0; overflow-x: hidden; }
 
         .landing-page {
-          position: relative;
           font-family: 'Poppins', sans-serif;
           min-height: 100vh;
-          color: #111;
-          padding: 60px 8%;
+          padding: 100px 8% 60px;
           transition: background 1.5s ease-in-out;
         }
 
@@ -189,30 +175,21 @@ export default function LandingPage() {
 
         .bg-overlay {
           position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          inset: 0;
           pointer-events: none;
           background: radial-gradient(circle at center, rgba(255,255,255,0.1), rgba(0,0,0,0.05));
           mix-blend-mode: soft-light;
           opacity: 0.6;
-          transition: opacity 1.5s ease-in-out;
           z-index: 0;
         }
 
-        .section {
-          margin-bottom: 220px;
-          position: relative;
-          z-index: 1;
-        }
-
+        .section { margin-bottom: 220px; position: relative; z-index: 1; }
         .section-title {
           font-size: 2rem;
-          margin-top: 100px;
+          font-weight: 600;
+          text-align: left;
+          margin: 60px 0 40px;
         }
-
-        .align-left { text-align: left; }
 
         .placeholder {
           background: #bcbcbc;
@@ -222,7 +199,7 @@ export default function LandingPage() {
           color: white;
         }
 
-        /* ===== NEW ARRIVALS ===== */
+        /* NEW ARRIVALS */
         .arrivals-scroll {
           overflow: hidden;
           width: 100%;
@@ -232,58 +209,56 @@ export default function LandingPage() {
 
         .arrivals-track {
           display: flex;
-          gap: 5px;
+          gap: 12px;
           width: max-content;
           transition: transform 1s ease-in-out;
         }
 
         .arrival-item {
-          flex: 0 0 48%;
-          height: 570px;
-          min-width: 60%;
+          flex: 0 0 45%;
+          height: 620px;
           font-size: 1.8rem;
           font-weight: 500;
         }
 
-        /* ===== POPULAR ===== */
+        /* POPULAR */
         .popular { text-align: left; }
-
         .slider {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 25px;
+          flex-wrap: nowrap; /* ✅ stays one line */
+          overflow-x: auto;
         }
 
         .circle-container {
           display: flex;
-          gap: 60px;
-          transition: all 0.4s ease;
+          gap: 40px;
+          justify-content: center;
+          flex-wrap: nowrap; /* ✅ prevent wrapping */
         }
 
         .circle {
-          width: 240px;
-          height: 240px;
+          width: 180px;
+          height: 180px;
           border-radius: 50%;
           transition: transform 0.3s ease;
+          flex-shrink: 0;
         }
 
-        .circle:hover { transform: scale(1.15); }
+        .circle:hover { transform: scale(1.1); }
 
         .arrow {
           background: transparent;
           border: none;
-          font-size: 3rem;
+          font-size: 2.5rem;
           cursor: pointer;
           color: #444;
-          transition: 0.3s ease;
         }
 
-        .arrow:hover { color: #000; }
-
-        /* ===== OUR PICKS ===== */
+        /* OUR PICKS */
         .picks { text-align: left; }
-
         .card-container {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -291,15 +266,10 @@ export default function LandingPage() {
         }
 
         .card {
-          background: rgba(255, 255, 255, 0.65);
+          background: rgba(255,255,255,0.65);
           border-radius: 15px;
           overflow: hidden;
           box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-          transition: transform 0.2s ease;
-        }
-
-        .card:hover { 
-          transform: translateY(-5px);
         }
 
         .card-img { 
@@ -309,22 +279,58 @@ export default function LandingPage() {
 
         .card-info { 
           padding: 18px; 
-          }
-
-        .card-info h4 { 
-          margin: 0 0 10px; 
         }
 
-        .price {
-          color: #5a3ec8;
-          font-weight: bold;
-          margin-bottom: 8px;
+        .price { 
+          color: #5a3ec8; 
+          font-weight: bold; 
         }
 
-        .details, .days { 
-          font-size: 0.9rem; 
-          color: #555; 
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 768px) {
+          .landing-page { padding: 80px 6%; }
+          .section { margin-bottom: 140px; }
+
+          .section-title {
+            font-size: 1.4rem;
+            margin: 30px 0 25px;
           }
+
+          .arrival-item {
+            flex: 0 0 48%;
+            width: 50px;
+            height: 350px;
+            font-size: 1.2rem;
+          }
+
+          .circle {
+            width: 110px;
+            height: 110px;
+          }
+
+          .circle-container {
+            gap: 20px;
+          }
+
+          .card-container {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .landing-page { padding: 60px 5%; }
+          .section-title {
+            font-size: 1.1rem;
+          }
+          .arrival-item {
+            height: 340px;
+          }
+          .circle {
+            width: 110px;
+            height: 110px;
+          }
+        }
       `}</style>
     </div>
   );

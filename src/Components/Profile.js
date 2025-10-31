@@ -1,13 +1,8 @@
-// src/Components/Profile.js
-///////////////////////////////
-// STILL NOT FINAL VERSION   //
-// WILL STILL TEST           //
-///////////////////////////////
 import React, { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-import { auth, db } from "../firebase"; // adjust if your firebase file is in different path
+import { auth, db } from "../firebase";
 import {
   doc,
   getDoc,
@@ -309,7 +304,7 @@ export default function Profile() {
         }
       }
 
-      // save to users/{uid}
+      // save to users
       await setDoc(
         doc(db, "users", user.uid),
         {
@@ -333,7 +328,7 @@ export default function Profile() {
     }
   }
 
-  // --- Shipping logic: municipality -> barangay -> final (matches mobile) ---
+  // --- Shipping logic: municipality -> barangay -> final ---
   function handleMunicipalitySelect(mun) {
     if (!mun) {
       setMunicipality("");
@@ -459,7 +454,7 @@ export default function Profile() {
     }
   }
 
-  // --- Delete Account (original UI: confirm password only + Cancel/Delete) ---
+  // --- Delete Account  ---
   async function handleDeleteAccount() {
     const user = auth.currentUser;
     if (!user) {
@@ -481,7 +476,7 @@ export default function Profile() {
       const cred = EmailAuthProvider.credential(user.email || "", deletePasswordInput);
       await reauthenticateWithCredential(user, cred);
 
-      // delete shipping doc (ignore errors)
+      // delete shipping doc 
       try {
         await deleteDoc(doc(db, "users", user.uid, "shipping_locations", "default"));
       } catch (e) {
@@ -561,7 +556,7 @@ export default function Profile() {
             }`}
           >
             <div className="form-left">
-              {/* EDIT PROFILE */}
+              {/* EDIT PROFILE*/}
               {activeOption === "Edit Profile" && (
                 <>
                   <label>
@@ -617,7 +612,7 @@ export default function Profile() {
                   </label>
 
                   <label>
-                    Address (pick municipality → barangay)
+                    Address 
                     <div style={{ marginTop: 6 }}>
                       {/* Picker */}
                       {pickerStage === "municipality" && (
@@ -687,7 +682,7 @@ export default function Profile() {
                 </>
               )}
 
-              {/* DELETE ACCOUNT - original UI with only confirm password and buttons */}
+              {/* DELETE ACCOUNT - WORKING BUT NEED TO MODIFY*/}
               {activeOption === "Delete Account" && (
                 <>
                   <p style={{ color: "#B22222", fontWeight: 600 }}>
@@ -707,14 +702,15 @@ export default function Profile() {
                       Cancel
                     </button>
                     <button className="save-btn" onClick={handleDeleteAccount} disabled={deleting} style={{ background: "#d9534f" }}>
-                      {deleting ? "Deleting..." : "Delete Account"}
+                      {deleting ? "Deleting..." : "Delete Account"} 
+                      {/*ADDD NAVIGATION ON LOGIN UPON DELETION*/}
                     </button>
                   </div>
                 </>
               )}
             </div>
 
-            {/* RIGHT side (profile picture) */}
+            {/* Profile Picture) */}
             {activeOption === "Edit Profile" && (
               <div className="form-right">
                 <div className="profile-pic-wrapper">

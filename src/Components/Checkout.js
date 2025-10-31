@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
-
+////////////////////
+// REMOVE COLORS  //
+////////////////////
 export default function Checkout() {
   const controls = useAnimation();
 
@@ -104,7 +106,7 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* New separate card for Total + Button */}
+          {/*eparate card for Total + Button */}
           <div className="order-card">
             <div className="order-total">
               <p>
