@@ -1,58 +1,94 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc,  getDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
+const db = getFirestore();
+const auth = getAuth();
 
 export default function ShoppingCart() {
   const navigate = useNavigate();
-
-  const initialProducts = [
-    { id: 1, name: "Men's Formal Longsleeves", price: 489, img: "mens_formal.jpg" },
-    { id: 2, name: "Kween Yasmin Trending Orange Lorax Pants", price: 559, img: "lorax_pants.jpg" },
-    { id: 3, name: "Men's Blue T-Shirt Short Sleeves", price: 199, img: "blue_tshirt.jpg" },
-    { id: 4, name: "Black Off-Shoulder Top", price: 359, img: "off_shoulder.jpg" },
-    { id: 5, name: "Fitted Dress Off Shoulder Brown", price: 699, img: "fitted_dress.jpg" },
-    { id: 6, name: "Uwu Blouse Long Sleeves with Ribbon", price: 399, img: "uwu_blouse.jpg" },
-  ];
-
-  const [products, setProducts] = useState(
-    initialProducts.map((p) => ({ ...p, selected: false, quantity: 1, color: "Black" }))
-  );
-
+  const user = auth.currentUser;
+  const [products, setProducts] = useState([]);
   const [hideCheckout, setHideCheckout] = useState(false);
 
-  const toggleSelect = (id) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, selected: !p.selected } : p
-      )
-    );
+  useEffect(() => {
+  if (!user) return;
+
+  // Fetch your Firestore user profile to get the custom userId (like U0055)
+  const fetchCart = async () => {
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        console.warn("User data not found in Firestore.");
+        return;
+      }
+
+      const userData = userDocSnap.data();
+      const customUserId = userData.userId; // <-- This is your “U0055”
+
+      if (!customUserId) {
+        console.warn("Custom userId missing in user data.");
+        return;
+      }
+
+      // Now query cartItems using custom userId
+      const q = query(collection(db, "cartItems"), where("userId", "==", customUserId));
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const items = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            selected: doc.data().selected || false,
+            quantity: doc.data().quantity || 1,
+          }));
+          setProducts(items);
+        },
+        (error) => console.error("Error fetching cart items:", error)
+      );
+
+      return unsubscribe;
+    } catch (err) {
+      console.error("Error fetching custom userId:", err);
+    }
   };
 
-  const changeQuantity = (id, delta) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, quantity: Math.max(1, p.quantity + delta) }
-          : p
-      )
-    );
+  const unsubscribePromise = fetchCart();
+
+  return () => {
+    unsubscribePromise && unsubscribePromise instanceof Function && unsubscribePromise();
+  };
+}, [user]);
+
+
+  const toggleSelect = async (id) => {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+    const docRef = doc(db, "cartItems", id);
+    await updateDoc(docRef, { selected: !product.selected });
   };
 
-  const changeColor = (id, color) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, color } : p
-      )
-    );
+  const changeQuantity = async (id, delta) => {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+    const newQty = Math.max(1, product.quantity + delta);
+    const docRef = doc(db, "cartItems", id);
+    await updateDoc(docRef, { quantity: newQty });
   };
 
-  const deleteProduct = (id) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const deleteProduct = async (id) => {
+    const docRef = doc(db, "cartItems", id);
+    await deleteDoc(docRef);
   };
 
   const selectedItems = products.filter((p) => p.selected);
   const total = selectedItems.reduce((sum, p) => sum + p.price * p.quantity, 0);
 
-  // Hides checkout when footer is visible
+  // Hide checkout when footer is visible
   useEffect(() => {
     const footer = document.querySelector("footer");
     if (!footer) return;
@@ -70,7 +106,6 @@ export default function ShoppingCart() {
 
   return (
     <div className="cart-container">
-      {/* Product list */}
       <div className="cart-items">
         {products.map((product) => (
           <div key={product.id} className="cart-card">
@@ -79,19 +114,11 @@ export default function ShoppingCart() {
               checked={product.selected}
               onChange={() => toggleSelect(product.id)}
             />
-            <img src={product.img} alt={product.name} className="cart-img" />
+            <img src={product.productImage || "https://via.placeholder.com/80"} alt={product.productName} className="cart-img" />
             <div className="cart-details">
-              <h3>{product.name}</h3>
-              <select
-                value={product.color}
-                onChange={(e) => changeColor(product.id, e.target.value)}
-                className="color-dropdown"
-              >
-                <option>Black</option>
-                <option>White</option>
-                <option>Brown</option>
-              </select>
-              <p className="price">₱{product.price}</p>
+              <h3>{product.productName}</h3>
+              <p className="price">₱{Number(product.price).toLocaleString()}</p>
+              <p>Size: {product.size}</p>
             </div>
             <div className="quantity-actions">
               <div className="quantity">
@@ -99,29 +126,33 @@ export default function ShoppingCart() {
                 <span>{product.quantity}</span>
                 <button onClick={() => changeQuantity(product.id, 1)}>+</button>
               </div>
-              <span
-                className="delete-btn"
-                onClick={() => deleteProduct(product.id)}
-              >
-                Delete
-              </span>
+              <span className="delete-btn" onClick={() => deleteProduct(product.id)}>Delete</span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Sticky checkout */}
       <div className={`checkout ${hideCheckout ? "hidden" : ""}`}>
         <div className="checkout-content">
           <div className="checkout-info">
             <p>Selected Item: {selectedItems.length}</p>
-            <p>Total: ₱{total}</p>
+            <p>Total: ₱{total.toLocaleString()}</p>
           </div>
-          <button className="checkout-btn" onClick={() => navigate("/checkout")}>
+          <button
+            className="checkout-btn"
+            onClick={() => {
+              if (selectedItems.length === 0) {
+                alert("Please select at least one item to checkout.");
+                return;
+              }
+              navigate("/checkout", { state: { cartItems: selectedItems } });
+            }} >
             CHECK OUT
           </button>
+
         </div>
       </div>
+
 
       <style>{`
         .cart-container {

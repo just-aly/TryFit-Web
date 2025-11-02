@@ -1,9 +1,32 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, useAnimation } from "framer-motion";
+import { useLocation, useNavigate } from "react-router-dom";
+import { db, auth } from "../firebase";
+import { collection, addDoc, getDoc, doc, getDocs, query, where, setDoc, serverTimestamp, deleteDoc  } from "firebase/firestore";
 
 export default function Checkout() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const user = location.state?.user || null; 
+  const userId = user?.userId || null; // ✅ your custom userId (e.g., "U0056")
+
+  const [notification, setNotification] = useState("");
+  const [shippingLocation, setShippingLocation] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false); 
+  const completedDocId = location.state?.completedDocId || null;
+  const [cartItems, setCartItems] = useState([]);
+  const [orderInfo, setOrderInfo] = useState(null);
+
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
   const controls = useAnimation();
 
+  // ✅ Animation on mount
   useEffect(() => {
     controls.start({
       opacity: 1,
@@ -12,8 +35,266 @@ export default function Checkout() {
     });
   }, [controls]);
 
+  // ✅ Fetch shipping location from Firestore
+   useEffect(() => {
+    const fetchShippingLocation = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          console.warn("User not logged in");
+          setLoading(false);
+          return;
+        }
+
+        // 🔹 Get the custom userId from users collection
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (!userSnap.exists()) {
+          console.warn("No user document found for UID:", currentUser.uid);
+          setLoading(false);
+          return;
+        }
+
+        const customUserId = userSnap.data().userId;
+
+        // 🔹 Now query shippingLocations using the custom userId
+        const q = query(
+          collection(db, "shippingLocations"),
+          where("userId", "==", customUserId)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // ✅ Get the most recent shipping address (if you have multiple)
+          const shippingData = querySnapshot.docs
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
+            .sort(
+              (a, b) =>
+                (b.createdAt?.toDate?.().getTime?.() || 0) -
+                (a.createdAt?.toDate?.().getTime?.() || 0)
+            )[0];
+
+          setShippingLocation(shippingData);
+        } else {
+          setShippingLocation(null);
+        }
+      } catch (err) {
+        console.error("Error fetching shipping location:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchShippingLocation();
+  }, []);
+
+  useEffect(() => {
+    const fetchCompletedOrder = async () => {
+      if (!completedDocId) return;
+
+      try {
+        const orderRef = doc(db, "completed", completedDocId);
+        const orderSnap = await getDoc(orderRef);
+
+        if (orderSnap.exists()) {
+          const data = orderSnap.data();
+          console.log("✅ Completed order data:", data);
+
+          // 🔹 Fetch imageUrl for each item from 'products' collection
+          const itemsWithImages = await Promise.all(
+            (data.items || []).map(async (item) => {
+              if (!item.imageUrl && item.productId) {
+                try {
+                  const productRef = doc(db, "products", item.productId);
+                  const productSnap = await getDoc(productRef);
+
+                  if (productSnap.exists()) {
+                    const productData = productSnap.data();
+                    return { ...item, imageUrl: productData.imageUrl || "" };
+                  }
+                } catch (err) {
+                  console.error(`⚠️ Error fetching product ${item.productId}:`, err);
+                }
+              }
+              return item;
+            })
+          );
+
+          // 🔹 Update state with the fetched data
+          setOrderInfo(data);
+          setCartItems(itemsWithImages);
+        } else {
+          console.error("❌ Completed order not found in Firestore.");
+        }
+      } catch (err) {
+        console.error("🔥 Error fetching completed order:", err);
+      }
+    };
+
+    fetchCompletedOrder();
+  }, [completedDocId]);
+
+
+  useEffect(() => {
+    if (!completedDocId && location.state?.cartItems) {
+      setCartItems(location.state.cartItems);
+    }
+  }, [completedDocId, location.state]);
+
+
+  const handlePlaceOrder = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("You must be logged in to place an order.");
+      return;
+    }
+
+    setIsPlacingOrder(true);
+
+    // 🔹 Get custom userId
+    const userDocRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userDocRef);
+    if (!userSnap.exists()) {
+      alert("User not found in the database.");
+      setIsPlacingOrder(false);
+      return;
+    }
+    const customUserId = userSnap.data().userId;
+
+    if (!shippingLocation) {
+      alert("Please add a shipping address before placing an order.");
+      setIsPlacingOrder(false);
+      return;
+    }
+
+    const deliveryFee = 58;
+
+    // 🔹 Group cart items by productId + size
+    const groupedItemsMap = new Map();
+    cartItems.forEach((item) => {
+      const key = `${item.productId}_${item.size}`;
+      if (groupedItemsMap.has(key)) {
+        const existing = groupedItemsMap.get(key);
+        existing.quantity += item.quantity;
+      } else {
+        groupedItemsMap.set(key, { ...item }); // clone
+      }
+    });
+
+    // 🔹 Create separate orders for each group
+    for (const groupedItem of groupedItemsMap.values()) {
+      const subtotal = groupedItem.price * groupedItem.quantity;
+      const total = subtotal + deliveryFee;
+      const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const orderData = {
+        orderId,
+        userId: customUserId,
+        name: shippingLocation.name,
+        address: `${shippingLocation.house}, ${shippingLocation.fullAddress}`,
+        productID: groupedItem.productID || groupedItem.productId || null,
+        deliveryFee,
+        total,
+        createdAt: serverTimestamp(),
+        status: "Pending",
+        items: [
+          {
+            productId: groupedItem.productId,
+            productName: groupedItem.productName,
+            quantity: groupedItem.quantity,
+            price: groupedItem.price,
+            size: groupedItem.size || "-",
+          },
+        ],
+      };
+
+      if (!orderData.productID) {
+        console.warn("⚠️ Skipping item with undefined productID:", groupedItem);
+        continue; // skip this loop iteration
+      }
+
+      // 🔹 Save order to Firestore
+      await addDoc(collection(db, "orders"), orderData);
+
+      // 🔹 Send notification
+      await addDoc(collection(db, "notifications"), {
+        notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        userId: customUserId,
+        title: "Order Placed",
+        message: `Your order ${orderId} with total ₱${total.toLocaleString()} has been placed.`,
+        orderId,
+        timestamp: serverTimestamp(),
+        read: false,
+      });
+
+      // 🔹 Update product stock
+      const productRef = doc(db, "products", groupedItem.productId);
+      const productSnap = await getDoc(productRef);
+      if (productSnap.exists()) {
+        const productData = productSnap.data();
+        const currentStock = productData.stock || {};
+        const currentQty = currentStock[groupedItem.size] || 0;
+        const newQty = Math.max(currentQty - groupedItem.quantity, 0);
+
+        await setDoc(
+          productRef,
+          {
+            stock: {
+              ...currentStock,
+              [groupedItem.size]: newQty,
+            },
+          },
+          { merge: true }
+        );
+      }
+    }
+
+    // 🔹 Remove placed items from cart
+    const cartRef = collection(db, "cartItems");
+    const q = query(cartRef, where("userId", "==", customUserId));
+    const cartSnap = await getDocs(q);
+
+    const deletePromises = cartSnap.docs.map(async (docSnap) => {
+      const cartData = docSnap.data();
+      const isOrdered = cartItems.some(
+        (item) => item.productId === cartData.productId && item.size === cartData.size
+      );
+      if (isOrdered) await deleteDoc(docSnap.ref);
+    });
+
+    await Promise.all(deletePromises);
+
+    alert("✅ Order placed successfully!");
+    navigate("/myorders", { state: { fromCheckout: true }, replace: true });
+
+  } catch (err) {
+    console.error("Error placing order:", err);
+    alert("❌ Failed to place order. Please try again.");
+  } finally {
+    setIsPlacingOrder(false);
+  }
+};
+
+
+
+
+    // ✅ Navigate to add/edit address
+    const handleAddAddress = () => {
+      navigate("/profile", {
+        state: {
+          openShippingLocations: true,
+          fromCheckout: true,
+        },
+      });
+    };
+
   return (
     <div className="checkout-page">
+      {notification && <div className="notification">{notification}</div>}
+
       {/* ===== Header Section ===== */}
       <motion.div
         className="checkout-header"
@@ -34,31 +315,63 @@ export default function Checkout() {
         initial={{ opacity: 0, y: 30 }}
         animate={controls}
       >
-        {/* ===== Left Column ===== */}
         <div className="checkout-left">
-          <div className="address-box">
-            <div>
-              <h3>Ariana Innocencio</h3>
-              <p>(+63) 963 678 1122</p>
-              <p>Cornella St. Grandline East Blue, Fishman District, 3D2Y</p>
-            </div>
-            <span className="arrow">{">"}</span>
-          </div>
+          <h1>Checkout</h1>
 
-          {/* Product Card */}
-          <div className="product-card">
-            <img
-              src="https://via.placeholder.com/80"
-              alt="Product"
-              className="product-image"
-            />
-            <div className="product-details">
-              <h4>Men’s Formal Longsleeves</h4>
-              <p>Black, L</p>
-              <p className="price">₱489</p>
+          {/* ✅ Shipping Address Section */}
+          {loading ? (
+            <p>Loading shipping info...</p>
+          ) : shippingLocation ? (
+            <div className="address-box">
+              <div>
+                <p><strong>Name: {shippingLocation.name}</strong></p>
+                <p><strong>House No:</strong> {shippingLocation.house}</p>
+                <p><strong>Full Address:</strong> {shippingLocation.fullAddress}</p>
+                <p><strong>Phone number:</strong> {shippingLocation.phone}</p>
+                <p><strong>Postal:</strong> {shippingLocation.postal}</p>
+              </div>
+              <button onClick={handleAddAddress} className="edit-btn">
+                Edit
+              </button>
             </div>
-            <span className="qty">x1</span>
-          </div>
+          ) : (
+            <p
+              style={{
+                color: "red",
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+              onClick={handleAddAddress}
+            >
+              No shipping address. Click here to add one.
+            </p>
+          )}
+
+          <p>Total items: {cartItems.length}</p>
+
+
+          {/* Product List */}
+          {cartItems.length === 0 ? (
+            <p>No items selected.</p>
+          ) : (
+            cartItems.map((item) => (
+              <div key={item.cartItemCode} className="product-card">
+               <img
+                  src={item.productImage || item.imageUrl || "https://via.placeholder.com/80"}
+                  alt={item.productName}
+                  className="product-image"
+                />
+
+
+                <div className="product-details">
+                  <h4>{item.productName}</h4>
+                  <p>Size: {item.size}</p>
+                  <p className="price">₱{item.price.toLocaleString()}</p>
+                </div>
+                <span className="qty">x{item.quantity}</span>
+              </div>
+            ))
+          )}
 
           {/* Shipping Option */}
           <div className="shipping-box">
@@ -72,20 +385,18 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Total Items */}
+          {/* Totals */}
           <div className="total-items">
-            <p>Total 1 item(s)</p>
-            <p className="total">₱547</p>
+            <p>Total {totalItems} item(s)</p>
+            <p className="total">₱{totalPrice.toLocaleString()}</p>
           </div>
-        </div>
 
-        {/* ===== Right Column ===== */}
-        <div className="checkout-right">
+          {/* Payment Card */}
           <div className="payment-card">
             <h3>Payment Details</h3>
             <div className="payment-row">
               <p>Merchandise Subtotal</p>
-              <span>₱489</span>
+              <span>₱{totalPrice.toLocaleString()}</span>
             </div>
             <div className="payment-row">
               <p>Shipping Subtotal</p>
@@ -100,17 +411,32 @@ export default function Checkout() {
 
             <div className="payment-row total-row">
               <p>Total Payment</p>
-              <span>₱547</span>
+              <span>₱{(totalPrice + 58).toLocaleString()}</span>
             </div>
           </div>
 
-          {/* New separate card for Total + Button */}
+          {/* Place Order Button */}
           <div className="order-card">
             <div className="order-total">
               <p>
-                Total: <span>₱547</span>
+                Total: <span>₱{(totalPrice + 58).toLocaleString()}</span>
               </p>
-              <button>Place Order</button>
+              <button
+                onClick={handlePlaceOrder}
+                disabled={!shippingLocation || isPlacingOrder}
+                style={{
+                  backgroundColor: !shippingLocation ? "#ccc" : "#6c56ef",
+                  cursor: !shippingLocation ? "not-allowed" : "pointer",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "12px 20px",
+                  fontSize: "16px",
+                }}
+              >
+                {isPlacingOrder ? "Placing Order..." : "Place Order"}
+              </button>
+
             </div>
           </div>
         </div>

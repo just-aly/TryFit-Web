@@ -5,7 +5,7 @@
 ///////////////////////////////
 import React, { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import { auth, db } from "../firebase"; // adjust if your firebase file is in different path
 import {
@@ -14,6 +14,8 @@ import {
   setDoc,
   updateDoc,
   serverTimestamp,
+  collection, 
+  addDoc, 
   deleteDoc,
 } from "firebase/firestore";
 import {
@@ -23,6 +25,7 @@ import {
   updateEmail,
   deleteUser,
 } from "firebase/auth";
+import { v4 as uuidv4 } from "uuid";
 
 const MUNICIPALITIES = {
   Bamban: [
@@ -136,6 +139,8 @@ const MUNICIPALITIES = {
 
 export default function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [notification, setNotification] = useState("");
   const [activeOption, setActiveOption] = useState("Edit Profile");
 
   // password visibility states
@@ -165,7 +170,10 @@ export default function Profile() {
   const [barangay, setBarangay] = useState("");
   const [finalAddress, setFinalAddress] = useState("");
   const [shipPostal, setShipPostal] = useState("");
-  const [pickerStage, setPickerStage] = useState("municipality"); // 'municipality' | 'barangay' | 'final'
+  const [pickerStage, setPickerStage] = useState("municipality"); 
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasShipping, setHasShipping] = useState(false);
+
 
   // Password fields used for Change Password
   const [currentPassword, setCurrentPassword] = useState("");
@@ -189,31 +197,41 @@ export default function Profile() {
     "Delete Account": "Delete Account",
   };
 
-  // load user profile + shipping on mount
+   useEffect(() => {
+      if (location.state?.openShippingLocations) {
+        setActiveOption("Shipping Location");
+      }
+    }, [location.state]);
+
+    
   useEffect(() => {
     let mounted = true;
+
     async function loadUserData() {
       setLoading(true);
       try {
-        const user = auth.currentUser;
+        const user = auth.currentUser; // ✅ Current logged-in user
         if (!user) {
           navigate("/login");
           return;
         }
 
-        setEmail(user.email || "");
-        const uRef = doc(db, "users", user.uid);
+        setEmail(user.email || ""); // set email from auth
+        const uRef = doc(db, "users", user.uid); // doc path: users/{uid}
         const uSnap = await getDoc(uRef);
+
         if (uSnap.exists() && mounted) {
           const data = uSnap.data();
           setName(data.name ?? data.fullName ?? "");
           setUsername(data.username ?? "");
           setPhone(data.phone ?? "");
           setGender(data.gender ?? "");
-          setUserId(data.userId ?? "");
-          // shipping_locations/default
-          const shipRef = doc(db, "users", user.uid, "shipping_locations", "default");
+          setUserId(data.userId ?? user.uid); // important for saving shipping later
+
+          // Load shipping location
+          const shipRef = doc(db, "users", user.uid, "shippingLocations", "default");
           const shipSnap = await getDoc(shipRef);
+
           if (shipSnap.exists()) {
             const s = shipSnap.data();
             setShipName(s.name ?? "");
@@ -223,19 +241,19 @@ export default function Profile() {
             setBarangay(s.barangay ?? "");
             setFinalAddress(s.fullAddress ?? "");
             setShipPostal(s.postalCode ?? "");
-            // set picker stage depending on content
+            setHasShipping(true);
             if (s.fullAddress) setPickerStage("final");
             else if (s.barangay) setPickerStage("final");
             else if (s.municipality) setPickerStage("barangay");
           } else {
-            // fallback to root doc fields (if any)
+            // fallback
             setShipHouse(uSnap.data().street ?? "");
             setFinalAddress(uSnap.data().address ?? "");
             setShipPostal(uSnap.data().postalId ?? "");
             if (uSnap.data().address) setPickerStage("final");
           }
         } else {
-          // no user doc - still fill from auth
+          // no user doc exists
           setName(user.displayName ?? "");
         }
       } catch (e) {
@@ -245,93 +263,95 @@ export default function Profile() {
         if (mounted) setLoading(false);
       }
     }
+
     loadUserData();
     return () => (mounted = false);
   }, [navigate]);
 
-  // --- Edit Profile handlers ---
-  async function handleSaveProfile() {
-    const user = auth.currentUser;
-    if (!user) {
-      alert("Not logged in.");
-      return;
-    }
-    if (!username.trim() || !email.trim()) {
-      alert("Please fill username and email.");
-      return;
-    }
-    if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
-      alert("Please enter a valid email address.");
-      return;
-    }
 
-    setSaving(true);
-    try {
-      // update auth displayName if changed
-      if (username !== (user.displayName ?? "")) {
-        try {
-          await user.updateProfile({ displayName: username });
-        } catch (err) {
-          console.warn("updateProfile error", err);
-        }
+  // --- Edit Profile handlers ---
+    async function handleSaveProfile() {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("Not logged in.");
+        return;
       }
 
-      // update email if changed (reauth flow if needed)
-      if (email !== (user.email ?? "")) {
-        try {
-          await updateEmail(user, email);
-        } catch (err) {
-          // requires recent login -> prompt for password
-          const msg = err?.code || err?.message || "";
-          if (msg.toString().includes("requires-recent-login")) {
-            const pw = window.prompt("To change email, please enter your current password:");
-            if (!pw) {
-              alert("Password required to change email.");
-              setSaving(false);
-              return;
-            }
-            try {
-              const cred = EmailAuthProvider.credential(user.email || "", pw);
-              await reauthenticateWithCredential(user, cred);
-              await updateEmail(user, email);
-            } catch (reauthErr) {
-              console.error("Reauth error", reauthErr);
-              alert(reauthErr?.message ?? "Failed to reauthenticate.");
-              setSaving(false);
-              return;
-            }
-          } else {
-            console.error("updateEmail error", err);
-            alert(err?.message ?? "Failed to update email.");
-            setSaving(false);
-            return;
+      // validation
+      if (!username.trim() || !email.trim()) {
+        alert("Please fill username and email.");
+        return;
+      }
+      if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+        alert("Please enter a valid email address.");
+        return;
+      }
+
+      setSaving(true);
+
+      try {
+        // Update displayName in Auth
+        if (username !== (user.displayName ?? "")) {
+          try {
+            await user.updateProfile({ displayName: username });
+          } catch (err) {
+            console.warn("updateProfile error", err);
           }
         }
+
+        // Update email in Auth
+        if (email !== (user.email ?? "")) {
+          try {
+            await updateEmail(user, email);
+          } catch (err) {
+            if ((err?.code || "").includes("requires-recent-login")) {
+              const pw = window.prompt("Enter your current password to change email:");
+              if (!pw) {
+                alert("Password required to change email.");
+                setSaving(false);
+                return;
+              }
+              try {
+                const cred = EmailAuthProvider.credential(user.email || "", pw);
+                await reauthenticateWithCredential(user, cred);
+                await updateEmail(user, email);
+              } catch (reauthErr) {
+                alert(reauthErr?.message ?? "Failed to reauthenticate.");
+                setSaving(false);
+                return;
+              }
+            } else {
+              alert(err?.message ?? "Failed to update email.");
+              setSaving(false);
+              return;
+            }
+          }
+        }
+
+        // Save to Firestore
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            name: name.trim(),
+            username: username.trim(),
+            phone: phone.trim(),
+            gender: gender || null,
+            email: email.trim(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        await user.reload();
+        alert("Profile updated successfully.");
+      } catch (e) {
+        console.error("Save profile error", e);
+        alert("Failed to save profile: " + (e?.message || e));
+      } finally {
+        setSaving(false);
       }
-
-      // save to users/{uid}
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
-          name: name.trim(),
-          username: username.trim(),
-          phone: phone.trim(),
-          gender: gender || null,
-          email: email.trim(),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-      await user.reload();
-      alert("Profile updated successfully.");
-    } catch (e) {
-      console.error("Save profile error", e);
-      alert("Failed to save profile: " + (e?.message || e));
-    } finally {
-      setSaving(false);
     }
-  }
+
 
   // --- Shipping logic: municipality -> barangay -> final (matches mobile) ---
   function handleMunicipalitySelect(mun) {
@@ -361,60 +381,46 @@ export default function Profile() {
     setPickerStage("final");
   }
 
-  async function handleSaveShipping() {
+const handleSaveShipping = async () => {
+  try {
     const user = auth.currentUser;
     if (!user) {
-      alert("Not logged in.");
-      return;
-    }
-    if (!shipName.trim()) {
-      alert("Please enter receiver name.");
-      return;
-    }
-    if (!shipPhone.trim()) {
-      alert("Please enter phone number.");
-      return;
-    }
-    if (!shipHouse.trim()) {
-      alert("Please enter house/street info.");
-      return;
-    }
-    if (!finalAddress.trim()) {
-      alert("Please select municipality & barangay.");
-      return;
-    }
-    if (!shipPostal.trim()) {
-      alert("Please enter postal code.");
+      alert("User not logged in.");
       return;
     }
 
     setSaving(true);
-    try {
-      const saveData = {
-        name: shipName.trim(),
-        phone: shipPhone.trim(),
-        house: shipHouse.trim(),
-        municipality,
-        barangay,
-        postalCode: shipPostal.trim(),
-        fullAddress: finalAddress.trim(),
-        createdAt: serverTimestamp(),
-      };
 
-      await setDoc(
-        doc(db, "users", user.uid, "shipping_locations", "default"),
-        saveData,
-        { merge: true }
-      );
+    const saveData = {
+      userId: userId, // ✅ still store your unique app-level userId in the document
+      name: shipName,
+      phone: shipPhone,
+      house: shipHouse,
+      municipality,
+      barangay,
+      fullAddress: finalAddress,
+      postal: shipPostal,
+      updatedAt: serverTimestamp(),
+    };
 
-      alert("Shipping location saved successfully!");
-    } catch (e) {
-      console.error("Save shipping error", e);
-      alert("Failed to save shipping: " + (e?.message || e));
-    } finally {
-      setSaving(false);
-    }
+    // ✅ Add to the top-level "shippingLocations" collection
+    // Firebase will auto-generate a unique document ID
+    await addDoc(collection(db, "shippingLocations"), saveData);
+
+    setHasShipping(true);
+    setIsEditing(false);
+    setNotification("Shipping location saved successfully!");
+    setTimeout(() => setNotification(""), 2000);
+
+  } catch (err) {
+    console.error("Error saving shipping location:", err);
+    alert("Failed to save shipping location.");
+  } finally {
+    setSaving(false);
   }
+};
+
+
 
   // --- Change Password (reauth required) ---
   async function handleChangePassword() {
@@ -483,10 +489,11 @@ export default function Profile() {
 
       // delete shipping doc (ignore errors)
       try {
-        await deleteDoc(doc(db, "users", user.uid, "shipping_locations", "default"));
+        await deleteDoc(doc(db, "users", user.uid, "shippingLocations", "default"));
       } catch (e) {
         console.warn("delete shipping doc", e);
       }
+
       // delete user doc
       try {
         await deleteDoc(doc(db, "users", user.uid));
@@ -531,6 +538,7 @@ export default function Profile() {
       </div>
     );
   }
+  
 
   return (
     <div className="profile-page">
@@ -603,17 +611,35 @@ export default function Profile() {
                 <>
                   <label>
                     Name (Receiver)
-                    <input type="text" value={shipName} onChange={(e) => setShipName(e.target.value)} placeholder="Enter name" />
+                    <input
+                      type="text"
+                      value={shipName}
+                      onChange={(e) => setShipName(e.target.value)}
+                      placeholder="Enter name"
+                      disabled={!isEditing && hasShipping}
+                    />
                   </label>
 
                   <label>
                     Phone Number
-                    <input type="text" value={shipPhone} onChange={(e) => setShipPhone(e.target.value)} placeholder="e.g. 09123456789" />
+                    <input
+                      type="text"
+                      value={shipPhone}
+                      onChange={(e) => setShipPhone(e.target.value)}
+                      placeholder="e.g. 09123456789"
+                      disabled={!isEditing && hasShipping}
+                    />
                   </label>
 
                   <label>
                     House No., Street / Building
-                    <input type="text" value={shipHouse} onChange={(e) => setShipHouse(e.target.value)} placeholder="e.g., 225, Purok Alpha" />
+                    <input
+                      type="text"
+                      value={shipHouse}
+                      onChange={(e) => setShipHouse(e.target.value)}
+                      placeholder="e.g., 225, Purok Alpha"
+                      disabled={!isEditing && hasShipping}
+                    />
                   </label>
 
                   <label>
@@ -621,23 +647,56 @@ export default function Profile() {
                     <div style={{ marginTop: 6 }}>
                       {/* Picker */}
                       {pickerStage === "municipality" && (
-                        <select value={municipality} onChange={(e) => handleMunicipalitySelect(e.target.value)} style={{ padding: 10, width: "100%", borderRadius: 6 }}>
+                        <select
+                          value={municipality}
+                          onChange={(e) => handleMunicipalitySelect(e.target.value)}
+                          style={{ padding: 10, width: "100%", borderRadius: 6 }}
+                          disabled={!isEditing && hasShipping}
+                        >
                           <option value="">Select Municipality</option>
-                          {Object.keys(MUNICIPALITIES).map((m) => <option key={m} value={m}>{m}</option>)}
+                          {Object.keys(MUNICIPALITIES).map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
                         </select>
                       )}
 
                       {pickerStage === "barangay" && (
-                        <select value={barangay} onChange={(e) => handleBarangaySelect(e.target.value)} style={{ padding: 10, width: "100%", borderRadius: 6 }}>
+                        <select
+                          value={barangay}
+                          onChange={(e) => handleBarangaySelect(e.target.value)}
+                          style={{ padding: 10, width: "100%", borderRadius: 6 }}
+                          disabled={!isEditing && hasShipping}
+                        >
                           <option value="">Select Barangay in {municipality}</option>
-                          {(MUNICIPALITIES[municipality] || []).map((b) => <option key={b} value={b}>{b}</option>)}
+                          {(MUNICIPALITIES[municipality] || []).map((b) => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
                         </select>
                       )}
 
                       {pickerStage === "final" && (
                         <div style={{ display: "flex", gap: 8 }}>
-                          <input type="text" value={finalAddress} readOnly style={{ padding: 10, flex: 1, borderRadius: 6 }} />
-                          <button type="button" onClick={() => { setPickerStage("municipality"); setMunicipality(""); setBarangay(""); setFinalAddress(""); }} style={{ padding: "10px 12px", borderRadius: 6 }}>Change</button>
+                          <input
+                            type="text"
+                            value={finalAddress}
+                            readOnly
+                            style={{ padding: 10, flex: 1, borderRadius: 6 }}
+                            disabled={!isEditing && hasShipping}
+                          />
+                          {isEditing && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPickerStage("municipality");
+                                setMunicipality("");
+                                setBarangay("");
+                                setFinalAddress("");
+                              }}
+                              style={{ padding: "10px 12px", borderRadius: 6 }}
+                            >
+                              Change
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -645,12 +704,33 @@ export default function Profile() {
 
                   <label>
                     Postal Code
-                    <input type="text" value={shipPostal} onChange={(e) => setShipPostal(e.target.value)} placeholder="Enter postal code" />
+                    <input
+                      type="text"
+                      value={shipPostal}
+                      onChange={(e) => setShipPostal(e.target.value)}
+                      placeholder="Enter postal code"
+                      disabled={!isEditing && hasShipping}
+                    />
                   </label>
 
-                  <button className="save-btn" onClick={handleSaveShipping} disabled={saving}>
-                    {saving ? "Saving..." : "Save"}
+                  <button
+                    className="save-btn"
+                    onClick={async () => {
+                      if (hasShipping && !isEditing) {
+                        setIsEditing(true);
+                      } else {
+                        await handleSaveShipping();
+                        setIsEditing(false);
+                        setHasShipping(true);
+                        setNotification("Shipping address saved!");
+                        setTimeout(() => setNotification(""), 1500);
+                      }
+                    }}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : hasShipping && !isEditing ? "Edit" : "Save"}
                   </button>
+
                 </>
               )}
 

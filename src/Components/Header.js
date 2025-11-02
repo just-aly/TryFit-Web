@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FaShoppingCart,
   FaShoppingBag,
@@ -8,18 +8,35 @@ import {
   FaSearch,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import Fuse from "fuse.js";
 
 export default function Header() {
+  const navigate = useNavigate();
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [placeholder, setPlaceholder] = useState("T-Shirt");
   const [animate, setAnimate] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const navigate = useNavigate();
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
 
+  const SEARCH_SUGGESTIONS = ["T-Shirts", "Longsleeves", "Pants", "Shorts"];
+
+  // ✅ Create Fuse instance
+  const fuse = useMemo(
+    () =>
+      new Fuse(SEARCH_SUGGESTIONS, {
+        includeScore: true,
+        threshold: 0.4, // controls fuzzy matching
+      }),
+    []
+  );
+
+  // ✅ Handle dropdown toggles
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
   };
 
+  // ✅ Animated placeholder rotation
   useEffect(() => {
     const items = ["T-Shirt", "Longsleeve", "Shorts", "Pants"];
     let index = 0;
@@ -38,9 +55,29 @@ export default function Header() {
     return () => clearInterval(interval);
   }, [inputValue]);
 
+  // ✅ Handle input change + Fuse.js search
+  const handleSearchChange = (e) => {
+    const text = e.target.value;
+    setInputValue(text);
+
+    if (text.trim() !== "") {
+      const results = fuse.search(text);
+      setFilteredSuggestions(results.map((r) => r.item));
+    } else {
+      setFilteredSuggestions([]);
+    }
+  };
+
+  // ✅ When user clicks a suggestion
+  const handleSuggestionClick = (item) => {
+    setInputValue(item);
+    setFilteredSuggestions([]);
+    navigate(`/categories?category=${encodeURIComponent(item)}`);
+  };
+
   const goToCategory = (category) => {
     navigate(`/categories?category=${encodeURIComponent(category)}`);
-    setOpenDropdown(null); 
+    setOpenDropdown(null);
   };
 
   return (
@@ -50,14 +87,16 @@ export default function Header() {
       </div>
 
       <div className="center-area">
-        {/* Search bar */}
+        {/* 🔍 Search bar with smart suggestions */}
         <div className="search-wrapper">
           <div className="placeholder-wrapper">
             <input
               type="text"
               className="search-box"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={handleSearchChange}
+              onFocus={() => setAnimate(true)}
+              onBlur={() => setAnimate(false)}
             />
             {inputValue.trim() === "" && (
               <span className={`placeholder-text ${animate ? "slide" : ""}`}>
@@ -66,6 +105,21 @@ export default function Header() {
             )}
           </div>
           <FaSearch className="search-icon" />
+
+          {/* 💡 Suggestions dropdown */}
+          {filteredSuggestions.length > 0 && (
+            <div className="suggestions-container">
+              {filteredSuggestions.map((item, index) => (
+                <div
+                  key={index}
+                  className="suggestion-item"
+                  onClick={() => handleSuggestionClick(item)}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Navigation items */}
@@ -76,7 +130,7 @@ export default function Header() {
             {openDropdown === "tops" && (
               <ul className="dropdown-menu small-menu">
                 <li onClick={() => goToCategory("T-Shirts")}>T-Shirt</li>
-                <li onClick={() => goToCategory("Long Sleeves")}>Longsleeves</li>
+                <li onClick={() => goToCategory("Longsleeves")}>Longsleeves</li>
               </ul>
             )}
           </div>
@@ -93,10 +147,7 @@ export default function Header() {
           </div>
 
           {/* My Orders */}
-          <div
-            className="nav-icon-wrapper"
-            onClick={() => navigate("/myorders")}
-          >
+          <div className="nav-icon-wrapper" onClick={() => navigate("/myorders")}>
             <FaShoppingBag className="icon" />
             <span className="tooltip">My Orders</span>
           </div>
@@ -155,9 +206,7 @@ export default function Header() {
           cursor: pointer;
         }
 
-        .logo:hover {
-          color: #6A5ACD;
-        }
+        .logo:hover { color: #6A5ACD; }
 
         .center-area {
           display: flex;
@@ -168,13 +217,13 @@ export default function Header() {
         }
 
         .search-wrapper {
+          position: relative;
           display: flex;
           align-items: center;
           border: 1px solid #ccc;
           border-radius: 6px;
           padding: 0 10px;
           transition: border 0.2s ease-in-out;
-          position: relative;
         }
 
         .search-wrapper:hover,
@@ -182,10 +231,7 @@ export default function Header() {
           border: 1px solid #6A5ACD;
         }
 
-        .placeholder-wrapper {
-          position: relative;
-          width: 700px;
-        }
+        .placeholder-wrapper { position: relative; width: 700px; }
 
         .search-box {
           width: 100%;
@@ -193,10 +239,8 @@ export default function Header() {
           border: none;
           outline: none;
           font-size: 1rem;
-          flex: 1;
           background: transparent;
           color: #000;
-          position: relative;
           z-index: 2;
         }
 
@@ -214,6 +258,28 @@ export default function Header() {
         .placeholder-text.slide {
           transform: translateX(-15px);
           opacity: 0;
+        }
+
+        .suggestions-container {
+          position: absolute;
+          top: 42px;
+          left: 0;
+          width: 100%;
+          background: #fff;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          z-index: 5;
+        }
+
+        .suggestion-item {
+          padding: 8px 10px;
+          cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+          background: #6A5ACD;
+          color: white;
         }
 
         .search-icon {
@@ -263,47 +329,23 @@ export default function Header() {
         }
 
         .dropdown-menu li {
-          display: flex;
-          align-items: center;
-          gap: 15px;
           padding: 10px 10px;
           cursor: pointer;
           font-size: 0.9rem;
           border-bottom: 1px solid #eee;
         }
 
-        .dropdown-menu li:last-child {
-          border-bottom: none;
-        }
+        .dropdown-menu li:last-child { border-bottom: none; }
 
         .dropdown-menu li:hover {
           background: #6A5ACD;
           color: #fff;
         }
 
-        .dropdown-icon {
-          font-size: 1rem;
-          color: #6A5ACD;
-        }
+        .profile-menu { right: 0; left: auto; }
 
-        .dropdown-menu li:hover .dropdown-icon {
-          color: #fff;
-        }
-
-        .profile-menu {
-          right: 0;
-          left: auto;
-        }
-
-        .icon {
-          font-size: 1.3rem;
-          cursor: pointer;
-          color: #333;
-        }
-
-        .icon:hover {
-          color: #6A5ACD;
-        }
+        .icon { font-size: 1.3rem; cursor: pointer; color: #333; }
+        .icon:hover { color: #6A5ACD; }
 
         .nav-icon-wrapper {
           position: relative;
@@ -315,8 +357,8 @@ export default function Header() {
         .tooltip {
           visibility: hidden;
           opacity: 0;
-          background: #e2e2e2ff;
-          color: #000000ff;
+          background: #e2e2e2;
+          color: #000;
           text-align: center;
           border-radius: 3px;
           padding: 4px 8px;

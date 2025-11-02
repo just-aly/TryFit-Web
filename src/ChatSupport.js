@@ -1,9 +1,11 @@
 import React from "react";
 import { IoMdChatboxes } from "react-icons/io";
 
-export default function ChatSupport() {
+export default function ChatSupport({ showChat, setShowChat }) {
+  const toggleChat = () => setShowChat(!showChat);
+
   return (
-    <div className="chat-support">
+    <div className="chat-support" onClick={toggleChat}>
       <IoMdChatboxes className="icon" />
       <span className="label">Chat</span>
 
@@ -22,18 +24,15 @@ export default function ChatSupport() {
           display: flex;
           align-items: center;
           cursor: pointer;
-          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 6px 12px rgba(0,0,0,0.25);
           z-index: 1000;
           gap: 5px;
           transition: background 0.3s ease;
         }
-
-        /* Bounce animation on hover */
         .chat-support:hover {
           background: linear-gradient(135deg, #5746c6, #6a5acd);
           animation: bounce 0.6s ease-in-out;
         }
-
         @keyframes bounce {
           0%   { transform: translateY(0); }
           30%  { transform: translateY(-6px); }
@@ -41,12 +40,10 @@ export default function ChatSupport() {
           70%  { transform: translateY(-3px); }
           100% { transform: translateY(0); }
         }
-
         .chat-support .icon {
           font-size: 26px;
           color: white;
         }
-
         .chat-support .label {
           font-weight: 600;
           letter-spacing: 1px;

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, collection } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, runTransaction } from "firebase/firestore";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function SignUpPage() {
@@ -24,25 +24,41 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
+      // ✅ Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (user) {
-        const userId = doc(collection(db, "tmp")).id;
+      const counterRef = doc(db, "counters", "userId");
+      let userId;
 
-        await setDoc(doc(db, "users", user.uid), {
-          username: username.trim(),
-          email: email.trim(),
-          userId: userId,
-          createdAt: serverTimestamp(),
-        });
+      // ✅ Firestore transaction for sequential userId
+      await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
 
-        console.log("User created successfully and recorded to Firestore");
-        alert("Account created successfully!");
+        if (!counterDoc.exists()) {
+          // First user
+          transaction.set(counterRef, { lastId: 1 });
+          userId = "U0001";
+        } else {
+          const newId = counterDoc.data().lastId + 1;
+          transaction.update(counterRef, { lastId: newId });
+          userId = `U${String(newId).padStart(4, "0")}`;
+        }
+      });
 
-        // ✅ Redirect to landing page after signup
-        navigate("/landing");
-      }
+      // ✅ Store user info in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        username: username.trim(),
+        email: email.trim(),
+        userId,
+        createdAt: serverTimestamp(),
+      });
+
+      console.log("✅ New user created:", userId);
+      alert("Account created successfully!");
+
+      // ✅ Redirect after successful signup
+      navigate("/landing");
     } catch (error) {
       console.error("Firebase Sign Up Error:", error.code, error.message);
 

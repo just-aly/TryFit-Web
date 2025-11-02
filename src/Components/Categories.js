@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
+import { useNavigate } from "react-router-dom";
+
 
 export default function Categories() {
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState("T-Shirts");
   const [activeTab, setActiveTab] = useState("Category");
+
+  const [allProducts, setAllProducts] = useState([]); // all products from Firestore
+  const [categoryProducts, setCategoryProducts] = useState([]);
+  const navigate = useNavigate();  
+  
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab); // e.g., "Latest"
+    }
+  }, [location.state]);
+
+
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -15,128 +31,72 @@ export default function Categories() {
     }
   }, [location.search]);
 
-  // Latest Products
-  const latestProducts = [
-    {
-      id: 101,
-      name: "Trendy Oversized Hoodie",
-      price: "₱399",
-      rating: 4.6,
-      sold: "5.1K Sold",
-      delivery: "3-5 Days",
-    },
-    {
-      id: 102,
-      name: "Casual Linen Polo Shirt",
-      price: "₱349",
-      rating: 4.4,
-      sold: "2.3K Sold",
-      delivery: "3-5 Days",
-    },
-  ];
-
-  // Popular Products
-  const popularProducts = [
-    {
-      id: 201,
-      name: "Slim Fit Denim Jacket",
-      price: "₱499",
-      rating: 4.9,
-      sold: "9.8K Sold",
-      delivery: "4-6 Days",
-    },
-    {
-      id: 202,
-      name: "Classic White Shorts",
-      price: "₱899",
-      rating: 4.8,
-      sold: "12.4K Sold",
-      delivery: "3-5 Days",
-    },
-  ];
-
-  // Regular Category Products
-  const allProducts = {
-    "T-Shirts": [
-      {
-        id: 1,
-        name: "Shrek Meme Classic T-Shirt",
-        price: "₱159",
-        rating: 3.8,
-        sold: "1.7K Sold",
-        delivery: "3-5 Days",
-      },
-      {
-        id: 2,
-        name: "Blue Short Sleeve T-Shirt",
-        price: "₱199",
-        rating: 2.5,
-        sold: "2.3K Sold",
-        delivery: "3-5 Days",
-      },
-    ],
-    "Long Sleeves": [
-      {
-        id: 3,
-        name: "White Cotton Long Sleeves",
-        price: "₱279",
-        rating: 4.2,
-        sold: "1.2K Sold",
-        delivery: "4-6 Days",
-      },
-      {
-        id: 4,
-        name: "Black Formal Long Sleeves",
-        price: "₱359",
-        rating: 4.7,
-        sold: "3.1K Sold",
-        delivery: "4-6 Days",
-      },
-    ],
-    Pants: [
-      {
-        id: 5,
-        name: "Classic Denim Jeans",
-        price: "₱499",
-        rating: 4.4,
-        sold: "2.9K Sold",
-        delivery: "5-7 Days",
-      },
-      {
-        id: 6,
-        name: "Stretch Fit Black Pants",
-        price: "₱459",
-        rating: 4.6,
-        sold: "1.8K Sold",
-        delivery: "5-7 Days",
-      },
-    ],
-    Shorts: [
-      {
-        id: 7,
-        name: "Summer Casual Shorts",
-        price: "₱299",
-        rating: 4.3,
-        sold: "2.4K Sold",
-        delivery: "3-5 Days",
-      },
-      {
-        id: 8,
-        name: "Men’s Cargo Shorts",
-        price: "₱329",
-        rating: 4.5,
-        sold: "2.1K Sold",
-        delivery: "3-5 Days",
-      },
-    ],
+  // Fetch all products once
+  const fetchProducts = async () => {
+    const snapshot = await getDocs(collection(db, "products"));
+    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setAllProducts(products);
   };
 
-  const products =
-    activeTab === "Latest"
-      ? latestProducts
-      : activeTab === "Popular"
-      ? popularProducts
-      : allProducts[activeCategory] || [];
+  useEffect(() => {
+    const fetchProductsByTab = async () => {
+      try {
+        if (activeTab === "Latest") {
+          // Get products from last month using recentActivityLogs
+          const oneMonthAgo = new Date();
+          oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+          const logsSnapshot = await getDocs(collection(db, "recentActivityLogs"));
+
+          const productIdsSet = new Set();
+          logsSnapshot.forEach(doc => {
+            const data = doc.data();
+            const timestamp = data.timestamp?.toDate?.();
+            if (data.productId && timestamp && timestamp >= oneMonthAgo) {
+              productIdsSet.add(data.productId);
+            }
+          });
+
+          const productIds = Array.from(productIdsSet);
+          const latestProducts = [];
+
+          for (const productId of productIds) {
+            const productDoc = await getDocs(collection(db, "products"));
+            const product = productDoc.docs.find(d => d.id === productId);
+            if (product) latestProducts.push({ id: product.id, ...product.data() });
+          }
+
+          setCategoryProducts(latestProducts);
+
+        } else if (activeTab === "Popular") {
+          // Popular products: sold >= 1000
+          const snapshot = await getDocs(collection(db, "products"));
+          const popularProducts = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(p => (p.sold ?? 0) >= 1000);
+          setCategoryProducts(popularProducts);
+
+        } else {
+          // Category tab
+          const filtered = allProducts.filter(p => p.categorySub === activeCategory);
+          setCategoryProducts(filtered);
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setCategoryProducts([]);
+      }
+    };
+
+    fetchProductsByTab();
+  }, [activeTab, activeCategory, allProducts]);
+
+
+  // Fetch on component mount
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const products = categoryProducts;
 
   return (
     <div className="categories-page">
@@ -148,7 +108,7 @@ export default function Categories() {
           <div className="category-group">
             <h4>Tops</h4>
             <ul>
-              {["T-Shirts", "Long Sleeves"].map((cat) => (
+              {["T-Shirts", "Longsleeves"].map((cat) => (
                 <li
                   key={cat}
                   className={activeCategory === cat ? "active" : ""}
@@ -209,28 +169,32 @@ export default function Categories() {
           </div>
 
           <div className="content-wrapper">
-            {products.length > 0 ? (
-              <div className="product-grid">
-                {products.map((item) => (
-                  <div key={item.id} className="product-card">
-                    <div className="image-placeholder"></div>
-                    <div className="product-info">
-                      <h3>{item.name}</h3>
-                      <p className="price">{item.price}</p>
-                      <div className="meta">
-                        <span>⭐ {item.rating}</span>
-                        <span>{item.sold}</span>
-                      </div>
-                      <p className="delivery">🚚 {item.delivery}</p>
-                    </div>
+            {products.map((item) => (
+              <div
+                key={item.id}
+                className="product-card"
+                onClick={() => navigate(`/product/${item.id}`, { state: { product: item } })}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="image-placeholder">
+                  <img
+                    src={item.imageUrl || "https://via.placeholder.com/220x220?text=No+Image"}
+                    alt={item.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                <div className="product-info">
+                  <h3>{item.name}</h3>
+                  <p className="price">₱{item.price}</p>
+                  <div className="meta">
+                    <span>⭐ {item.rating}</span>
+                    <span>{item.sold} sold</span>
                   </div>
-                ))}
+                  <p className="delivery">🚚 {item.delivery}</p>
+                </div>
               </div>
-            ) : (
-              <p className="placeholder">
-                No products yet in <b>{activeCategory}</b>.
-              </p>
-            )}
+            ))}
+
           </div>
         </main>
       </div>
