@@ -164,6 +164,7 @@ const handleCancelOrder = async (order) => {
   try {
     // ✅ Only the fields you listed + cancelledAt
     const cancelledOrder = {
+      cancelledID: `CN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       address: order.address,
       createdAt: order.createdAt,
       deliveryFee: order.deliveryFee,
@@ -173,7 +174,7 @@ const handleCancelOrder = async (order) => {
         quantity: item.quantity,
         size: item.size,
         price: item.price,
-        status: 'Cancelled', // mark each item cancelled
+        status: 'Cancelled', 
       })),
       name: order.name,
       orderId: order.orderId,
@@ -234,7 +235,7 @@ const handleOrderReceived = async (order) => {
   try {
     // ✅ Only the fields you listed + receivedAt
     const completedOrder = {
-      toshipID: order.toshipID,          // existing
+      toshipID: order.toshipID,         
       toreceiveID: order.toreceiveID,
       productID: order.productID,
       completedID: `CP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,

@@ -38,6 +38,7 @@ export default function ChatComponent({ onClose, userId, username }) {
         const data = doc.data();
         return {
           id: doc.id,
+          messageId: data.messageId || "N/A", // ✅ get from Firestore
           text: data.text,
           sender: data.sender,
           userId: data.userId,
@@ -60,51 +61,62 @@ export default function ChatComponent({ onClose, userId, username }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-    const sendMessage = async () => {
+  const sendMessage = async () => {
     if (message.trim() === "") return;
 
-    // Assume the Firebase Auth user is logged in
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) {
-        console.error("User not logged in");
-        return;
+      console.error("User not logged in");
+      return;
     }
 
     try {
-        // Fetch your custom userId from the 'users' collection
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
+      // Get user info from Firestore
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-        if (!userDocSnap.exists()) {
+      if (!userDocSnap.exists()) {
         console.error("No user found in users collection!");
         return;
-        }
+      }
 
-        const customUserId = userDocSnap.data().userId; // <-- your unique userId
-        const username = userDocSnap.data().username || "Anonymous"; // or email, whatever you store
-        const timestamp = Date.now();
+      const customUserId = userDocSnap.data().userId;
+      const username = userDocSnap.data().username || "Anonymous";
 
-        // Save message with your custom userId
-        const chatCollection = collection(db, "chatMessages");
-        const docRef = await addDoc(chatCollection, {
+      // ✅ Generate a unique message ID
+      const messageId = `MS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      // Save message to Firestore with messageId included
+      const chatCollection = collection(db, "chatMessages");
+      const docRef = await addDoc(chatCollection, {
+        messageId, // 👈 now saved in Firestore
         text: message,
         sender: "user",
         userId: customUserId,
         username,
         timestamp: serverTimestamp(),
-        });
+      });
 
-        // Update local state immediately
-        setMessages((prev) => [
+      // Update local UI immediately
+      setMessages((prev) => [
         ...prev,
-        { id: docRef.id, text: message, sender: "user", userId: customUserId, username, timestamp },
-        ]);
+        {
+          id: docRef.id,
+          messageId, // 👈 stored locally too
+          text: message,
+          sender: "user",
+          userId: customUserId,
+          username,
+          timestamp: new Date(),
+        },
+      ]);
 
-    setMessage("");
-  } catch (error) {
-    console.error("Error sending message:", error);
-  }
-};
+      setMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
 
 
   const handleKeyPress = (e) => {
