@@ -6,7 +6,7 @@ import SignUpPage from "./Components/SignUpPage";
 import Checkout from "./Components/Checkout";
 import ChatComponent from "./Components/ChatComponent";
 import ChatSupport from "./ChatSupport";
-import './App.css';
+import "./App.css";
 
 import Header from "./Components/Header";
 import MyOrders from "./Components/MyOrdes";
@@ -14,7 +14,6 @@ import Profile from "./Components/Profile";
 import Notification from "./Components/Notification";
 import Cart from "./Components/Cart";
 import Categories from "./Components/Categories";
-
 import Footer from "./Components/Footer";
 import ContactUs from "./Components/ContactUs";
 import TermsOfService from "./Components/TermsOfService";
@@ -24,19 +23,24 @@ import ProductDetails from "./Components/ProductDetails";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" }), [pathname]);
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [pathname]);
   return null;
 }
 
 function AppContent() {
   const location = useLocation();
   const [showChat, setShowChat] = useState(false);
-  const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
+
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/signup";
 
   return (
     <>
       <ScrollToTop />
       {!isAuthPage && <Header />}
+
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/landing" element={<LandingPage />} />
@@ -54,8 +58,11 @@ function AppContent() {
         <Route path="/aboutus" element={<AboutUs />} />
         <Route path="/product/:productId" element={<ProductDetails />} />
       </Routes>
-      <Footer />
 
+      {/* Footer only if not on login or signup */}
+      {!isAuthPage && <Footer />}
+
+      {/* Chat support also hidden on login/signup */}
       {!isAuthPage && (
         <>
           <ChatSupport showChat={showChat} setShowChat={setShowChat} />

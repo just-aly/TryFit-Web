@@ -210,7 +210,9 @@ export default function Categories() {
           padding-top: 160px;
           padding-bottom: 60px;
           overflow-x: hidden;
+          overflow-y: auto;
           margin: 0 auto;
+          align-items: center;
         }
 
         .categories-container {
@@ -224,6 +226,7 @@ export default function Categories() {
           max-width: 1000px;
           margin: 0 auto;
           box-sizing: border-box;
+          flex-shrink: 0;
         }
 
         /* Sidebar */
@@ -333,9 +336,9 @@ export default function Categories() {
 
         /* Product Area */
         .content-wrapper {
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr); /* 2 items per row */
+          gap: 20px;
           padding: 40px;
           box-sizing: border-box;
           min-height: 700px;

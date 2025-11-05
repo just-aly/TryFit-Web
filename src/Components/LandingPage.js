@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { collection, getDocs, getDoc, doc, query, where, Timestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +29,6 @@ export default function LandingPage() {
     });
   };
   
-
   const PopularHeader = () => {
     navigate("/categories", {
       state: {
@@ -38,7 +37,7 @@ export default function LandingPage() {
     });
   };
 
-  // 🔹 Fetch Firestore Data
+  // 🔹 Fetch Firestore Data (improved logic)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -47,13 +46,21 @@ export default function LandingPage() {
 
         querySnapshot.forEach((docSnap) => {
           const product = docSnap.data();
-          if (product.price) {
+          // normalize both name & productName so design can use product.productName
+          const normalized = {
+            id: docSnap.id,
+            ...product,
+            productName: product.productName || product.name || "",
+            name: product.name || product.productName || "",
+          };
+
+          if (normalized.price) {
             const numericPrice =
-              typeof product.price === "string"
-                ? parseInt(product.price.replace(/[^\d]/g, ""))
-                : product.price;
+              typeof normalized.price === "string"
+                ? parseInt(normalized.price.replace(/[^\d]/g, ""))
+                : normalized.price;
             if (numericPrice && numericPrice <= 250) {
-              fetched.push({ id: docSnap.id, ...product });
+              fetched.push(normalized);
             }
           }
         });
@@ -74,9 +81,9 @@ export default function LandingPage() {
         );
 
         const uniqueProductIds = new Set();
-        logsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.productId) uniqueProductIds.add(data.productId);
+        logsSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data?.productId) uniqueProductIds.add(data.productId);
         });
 
         const newProducts = [];
@@ -85,7 +92,13 @@ export default function LandingPage() {
           const prodSnap = await getDoc(prodRef);
           if (prodSnap.exists()) {
             const data = prodSnap.data();
-            newProducts.push({ id, ...data });
+            // normalize same as products
+            newProducts.push({
+              id,
+              ...data,
+              productName: data.productName || data.name || "",
+              name: data.name || data.productName || "",
+            });
           }
         }
 
@@ -99,17 +112,16 @@ export default function LandingPage() {
     fetchNewArrivals();
   }, []);
 
-
+  // Improved auto-scroll interval (smooth & loops)
   useEffect(() => {
     const interval = setInterval(() => {
       if (!isDragging.current && dragRef.current) {
-        dragRef.current.scrollLeft += 600;
-        // Loop back to start when reaching the end
-        if (
-          dragRef.current.scrollLeft + dragRef.current.clientWidth >=
-          dragRef.current.scrollWidth
-        ) {
-          dragRef.current.scrollLeft = 0;
+        const scrollBox = dragRef.current;
+        const scrollAmount = 600;
+        if (scrollBox.scrollLeft + scrollBox.clientWidth >= scrollBox.scrollWidth - 5) {
+          scrollBox.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          scrollBox.scrollBy({ left: scrollAmount, behavior: "smooth" });
         }
       }
     }, 5000);
@@ -133,36 +145,33 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Drag handlers (kept from your design code)
   const handleMouseDown = (e) => {
-      isDragging.current = true;
-      dragRef.current.classList.add("dragging");
-      startX.current = e.pageX - dragRef.current.offsetLeft;
-      scrollStart.current = dragRef.current.scrollLeft;
-    };
-
-    const handleMouseLeave = () => {
-      isDragging.current = false;
-      dragRef.current.classList.remove("dragging");
-    };
-
-    const handleMouseUp = () => {
-      isDragging.current = false;
-      dragRef.current.classList.remove("dragging");
-    };
-
-    const handleMouseMove = (e) => {
-      if (!isDragging.current) return;
-      e.preventDefault();
-      const x = e.pageX - dragRef.current.offsetLeft;
-      const walk = (x - startX.current) * 1.2; // scroll speed
-      dragRef.current.scrollLeft = scrollStart.current - walk;
-    };
+    isDragging.current = true;
+    if (dragRef.current) dragRef.current.classList.add("dragging");
+    startX.current = e.pageX - (dragRef.current?.offsetLeft || 0);
+    scrollStart.current = dragRef.current?.scrollLeft || 0;
+  };
+  const handleMouseLeave = () => {
+    isDragging.current = false;
+    if (dragRef.current) dragRef.current.classList.remove("dragging");
+  };
+  const handleMouseUp = () => {
+    isDragging.current = false;
+    if (dragRef.current) dragRef.current.classList.remove("dragging");
+  };
+  const handleMouseMove = (e) => {
+    if (!isDragging.current || !dragRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - dragRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.2; // scroll speed
+    dragRef.current.scrollLeft = scrollStart.current - walk;
+  };
 
   // Mobile touch
   const handleTouchStart = (e) => handleMouseDown(e.touches[0]);
   const handleTouchMove = (e) => handleMouseMove(e.touches[0]);
   const handleTouchEnd = () => handleMouseUp();
-
 
   const popularItems = [1, 2, 3, 4, 5, 6];
   const popularIndex = 0;
@@ -173,7 +182,7 @@ export default function LandingPage() {
     <div className={`landing-page ${bgColor}`}>
       <div className="bg-overlay"></div>
 
-    {/* ===== NEW ARRIVALS ===== */}
+      {/* ===== NEW ARRIVALS ===== */}
       <section ref={newArrivalsRef} className="section new-arrivals">
         <h2
           className="section-title"
@@ -205,11 +214,11 @@ export default function LandingPage() {
                   <div className="arrival-img-wrapper">
                     <img
                       src={product.imageUrl || PLACEHOLDER_IMAGE}
-                      alt={product.name || "New Arrival"}
+                      alt={product.productName || product.name || "New Arrival"}
                       className="arrival-img"
                     />
                     <div className="arrival-name-overlay">
-                      <span>{product.name || "Unnamed Product"}</span>
+                      <span>{product.productName || product.name || "Unnamed Product"}</span>
                     </div>
                   </div>
                 </div>
@@ -221,21 +230,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-
-
-     {/* ===== POPULAR ===== */}
+      {/* ===== POPULAR ===== */}
       <section ref={popularRef} className="section popular">
         <h2
-      className="section-title"
-      onClick={PopularHeader}
-      style={{ cursor: "pointer" }} >
-      Popular
-    </h2>
+          className="section-title"
+          onClick={PopularHeader}
+          style={{ cursor: "pointer" }}
+        >
+          Popular
+        </h2>
 
         <div className="popular-scroll">
           <div className="popular-track">
             {products
-              .filter((product) => product.sold >= 1000)
+              .filter((product) => Number(product.sold || 0) >= 1000)
               .map((product) => (
                 <div
                   key={product.id}
@@ -244,13 +252,14 @@ export default function LandingPage() {
                 >
                   <img
                     src={product.imageUrl || PLACEHOLDER_IMAGE}
-                    alt={product.name || "Popular Product"}
+                    alt={product.name || product.productName || "Popular Product"}
                     className="popular-image"
                   />
                   <p className="popular-name">
-                    {product.name?.length > 16
-                      ? product.name.slice(0, 14) + "…"
-                      : product.name}
+                    { (product.productName || product.name)?.length > 16
+                      ? (product.productName || product.name).slice(0, 14) + "…"
+                      : (product.productName || product.name)
+                    }
                   </p>
                 </div>
               ))}
@@ -258,51 +267,49 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ===== OUR PICKS FOR YOU ===== */}
+      <section ref={picksRef} className="section picks">
+        <h2 className="section-title">Our Picks for You</h2>
 
-     {/* ===== OUR PICKS FOR YOU ===== */}
-    <section ref={picksRef} className="section picks">
-      <h2 className="section-title">Our Picks for You</h2>
-
-      <div className="card-container">
-        {products.length > 0 ? (
-          products.map((product) => (
-            <div
-              key={product.id}
-              className="card"
-              onClick={() => navigate(`/product/${product.id}`)}
-            >
-              <img
-                src={product.imageUrl || PLACEHOLDER_IMAGE}
-                alt={product.name || "Product"}
-                className="card-img"
-              />
-              <div className="card-info">
-                <h4>
-                  {product.name?.length > 22
-                    ? product.name.slice(0, 20) + "…"
-                    : product.name}
-                </h4>
-                <p className="price">
-                  ₱
-                  {product.price
-                    ? Number(product.price).toLocaleString()
-                    : "N/A"}
-                </p>
-                <p className="details">
-                  ⭐ {product.rating || "N/A"} | {product.sold || 0} Sold
-                </p>
-                <p className="days">
-                  🚚 {product.delivery || "Delivery info not available"}
-                </p>
+        <div className="card-container">
+          {products.length > 0 ? (
+            products.map((product) => (
+              <div
+                key={product.id}
+                className="card"
+                onClick={() => navigate(`/product/${product.id}`)}
+              >
+                <img
+                  src={product.imageUrl || PLACEHOLDER_IMAGE}
+                  alt={product.productName || product.name || "Product"}
+                  className="card-img"
+                />
+                <div className="card-info">
+                  <h4>
+                    {(product.productName || product.name)?.length > 22
+                      ? (product.productName || product.name).slice(0, 20) + "…"
+                      : (product.productName || product.name)}
+                  </h4>
+                  <p className="price">
+                    ₱
+                    {product.price
+                      ? Number(product.price).toLocaleString()
+                      : "N/A"}
+                  </p>
+                  <p className="details">
+                    ⭐ {product.rating || "N/A"} | {product.sold || 0} Sold
+                  </p>
+                  <p className="days">
+                    🚚 {product.delivery || "Delivery info not available"}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <p>Loading products...</p>
-        )}
-      </div>
-    </section>
-
+            ))
+          ) : (
+            <p>Loading products...</p>
+          )}
+        </div>
+      </section>
 
       <style>{`
         * { box-sizing: border-box; }
@@ -366,9 +373,8 @@ export default function LandingPage() {
 
        .arrival-item {
           flex: 0 0 auto;
-          width: 300px;              /* 🔹 was 250px — bigger width */
-          height: 420px;             /* 🔹 was 350px — taller card */
-          border-radius: 18px;       /* smoother corners */
+          width: 300px;              
+          height: 420px;             
           overflow: hidden;
           background: #fff;
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
@@ -381,20 +387,19 @@ export default function LandingPage() {
           transform: translateY(-8px);
           box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
         }
-          .arrivals-scroll {
-          overflow-x: auto;           /* allow sideways scrolling */
-          overflow-y: hidden;         /* hide vertical overflow */
-          white-space: nowrap;        /* keep children in one line */
+        .arrivals-scroll {
+          overflow-x: auto;           
+          overflow-y: hidden;         
+          white-space: nowrap;        
           cursor: grab;
           scroll-behavior: smooth;
           padding: 10px 0;
         }
 
         .arrivals-track {
-          display: flex;              /* 🔥 this makes items line up horizontally */
-          gap: 20px;                  /* space between items */
+          display: flex;              
+          gap: 10px;                  
         }
-
 
         .arrival-img-wrapper {
           position: relative;
@@ -410,7 +415,7 @@ export default function LandingPage() {
         }
 
         .arrival-item:hover .arrival-img {
-          transform: scale(1.05); /* 🔹 subtle zoom on hover */
+          transform: scale(1.05); 
         }
 
         .arrival-name-overlay {
@@ -420,15 +425,13 @@ export default function LandingPage() {
           background: rgba(0, 0, 0, 0.55);
           color: #fff;
           padding: 8px 12px;
-          border-radius: 8px;
-          font-size: 1rem;
+          font-size: 0.7rem;
           font-weight: 500;
           max-width: 85%;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-
 
        /* ===== POPULAR ===== */
         .popular {
@@ -497,7 +500,6 @@ export default function LandingPage() {
           text-align: center;
         }
 
-
         .card-container {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -542,6 +544,123 @@ export default function LandingPage() {
           font-size: 0.9rem;
           color: #555;
         }
+        
+     /* ===== Responsive Layout + Smaller Gaps ===== */
+@media (max-width: 1280px) {
+  .section {
+    margin-bottom: 160px; 
+  }
+
+  .arrivals-track,
+  .popular-track {
+    gap: 30px; 
+  }
+
+  .card-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .landing-page {
+    padding: 50px 6%;
+  }
+
+  .section {
+    margin-bottom: 140px;
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+  }
+
+  .arrivals-track,
+  .popular-track {
+    gap: 25px;
+  }
+
+  .card-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-page {
+    padding: 40px 5%;
+  }
+
+  .section {
+    margin-bottom: 120px;
+  }
+
+  .section-title {
+    font-size: 1.6rem;
+  }
+
+  .arrivals-track,
+  .popular-track {
+    gap: 18px;
+  }
+
+  .arrival-item {
+    width: 200px;
+    height: 300px;
+  }
+
+  .popular-card {
+    width: 160px;
+    height: 160px;
+  }
+
+  .card-container {
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 20px;
+  }
+
+  .card-img {
+    height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-page {
+    padding: 30px 4%;
+  }
+
+  .section {
+    margin-bottom: 100px;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+  }
+
+  .arrivals-track,
+  .popular-track {
+    gap: 15px;
+  }
+
+  .arrival-item {
+    width: 160px;
+    height: 260px;
+  }
+
+  .popular-card {
+    width: 130px;
+    height: 130px;
+  }
+
+  .card-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+
+  .card-img {
+    height: 180px;
+  }
+}
 
       `}</style>
     </div>

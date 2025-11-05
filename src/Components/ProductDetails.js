@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { doc, getDoc, collection, setDoc, serverTimestamp, addDoc } from "firebase/firestore";
+import { useParams, useNavigate } from "react-router-dom";
+import { doc, getDoc, collection, setDoc, serverTimestamp, addDoc, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import { getAuth } from "firebase/auth"; 
-const auth = getAuth(); 
+import { getAuth } from "firebase/auth";
 
+const auth = getAuth();
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/300x400.png?text=No+Image";
 
 export default function ProductDetails() {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [popup, setPopup] = useState({ visible: false, message: "", type: "" });
+  const [directCheckoutModal, setDirectCheckoutModal] = useState(false);
+  const [cartSuccessModal, setCartSuccessModal] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [showReviews, setShowReviews] = useState(true);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -23,10 +29,11 @@ export default function ProductDetails() {
         if (prodSnap.exists()) {
           setProduct({ id: prodSnap.id, ...prodSnap.data() });
         } else {
-          console.warn("Product not found");
+          showPopup("Product not found.", "error");
         }
       } catch (err) {
         console.error("Error fetching product:", err);
+        showPopup("Error loading product.", "error");
       } finally {
         setLoading(false);
       }
@@ -34,8 +41,41 @@ export default function ProductDetails() {
     fetchProduct();
   }, [productId]);
 
-  if (loading) return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading product...</p>;
-  if (!product) return <p style={{ textAlign: "center", marginTop: "50px" }}>Product not found.</p>;
+   // ✅ Fetch reviews for this product
+ useEffect(() => {
+  const fetchReviews = async () => {
+    try {
+      const q = query(
+        collection(db, "productReviews"),
+        where("productID", "==", product?.productID)
+      );
+      const querySnapshot = await getDocs(q);
+      const fetched = querySnapshot.docs.map((doc) => doc.data());
+
+      // ✅ Add this line here:
+      console.log("Reviews fetched:", fetched);
+
+      setReviews(fetched);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
+  if (product?.productID) fetchReviews();
+}, [product]);
+
+
+
+  const showPopup = (message, type = "info") => {
+    setPopup({ visible: true, message, type });
+    setTimeout(() => setPopup({ visible: false, message: "", type: "" }), 2000);
+  };
+
+  if (loading)
+    return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading product...</p>;
+
+  if (!product)
+    return <p style={{ textAlign: "center", marginTop: "50px" }}>Product not found.</p>;
 
   const safeStock = product.stock || {};
   const getSizeStock = (size) => Number(safeStock[size]) || 0;
@@ -43,113 +83,192 @@ export default function ProductDetails() {
   const incrementQuantity = () => {
     if (selectedSize && quantity < getSizeStock(selectedSize)) setQuantity(quantity + 1);
   };
+
   const decrementQuantity = () => {
     if (quantity > 1) setQuantity(quantity - 1);
   };
-  
 
   const saveCartItem = async () => {
-    if (!selectedSize) {
-        alert("Please select a size.");
-        return;
-    }
-
+    if (!selectedSize) return showPopup("Please select a size.", "warning");
     const stockAvailable = getSizeStock(selectedSize);
-    if (quantity > stockAvailable) {
-        alert(`Only ${stockAvailable} item(s) available for this size.`);
-        return;
-    }
+    if (quantity > stockAvailable) return showPopup(`Only ${stockAvailable} available.`, "warning");
 
     try {
-        const user = auth.currentUser;
-        if (!user) {
-        alert("You need to be logged in to add items to the cart.");
-        return;
-        }
+      const user = auth.currentUser;
+      if (!user) return showPopup("Login required.", "error");
 
-        // 🔹 Fetch your Firestore user document to get custom userId
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (!userDocSnap.exists()) {
-        alert("User data not found in Firestore.");
-        return;
-        }
-        const customUserId = userDocSnap.data().userId; 
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (!userDocSnap.exists()) return showPopup("User data missing.", "error");
 
-        const cartItemCode = doc(collection(db, "cartItems")).id;
+      const customUserId = userDocSnap.data().userId;
+      const cartItemCode = doc(collection(db, "cartItems")).id;
 
-        await setDoc(doc(db, "cartItems", cartItemCode), {
+      await setDoc(doc(db, "cartItems", cartItemCode), {
         cartItemCode,
-        userId: customUserId,   // ✅ use your custom userId
+        userId: customUserId,
         productId: product.id,
         productID: product.productID,
-        productName: product.name,
-        productImage: product.imageUrl,
+        productName: product.productName,
+        imageUrl: product.imageUrl,
         size: selectedSize,
         quantity,
         price: product.price,
+        delivery: product.delivery,
         timestamp: serverTimestamp(),
-        });
+      });
 
-       // ✅ Create a notifications reference
-      const notificationsRef = collection(db, "notifications");
-
-      // ✅ Add notification document
-      await addDoc(notificationsRef, {
+      await addDoc(collection(db, "notifications"), {
         notifID: `CRT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        userId: customUserId, // use the actual user's ID
+        userId: customUserId,
         title: "Add to Cart",
-        message: `${product.name} (${selectedSize}) added to cart`,
-        productID: product.productID, // optional, but useful for reference
+        message: `${product.productName} (${selectedSize}) added to cart.`,
+        productID: product.productID,
         timestamp: serverTimestamp(),
         read: false,
       });
 
-
-        setModalVisible(false);
-        setQuantity(1);
-        setSelectedSize(null);
+      setModalVisible(false);
+      setCartSuccessModal(true);
+      setSelectedSize(null);
+      setQuantity(1);
     } catch (err) {
-        console.error("Error adding to cart:", err);
-        alert("Failed to add item to cart");
+      console.error("Error adding to cart:", err);
+      showPopup("Failed to add item to cart.", "error");
     }
+  };
+
+  const handleDirectCheckout = () => {
+    if (!selectedSize) return showPopup("Please select a size.", "warning");
+    const stockAvailable = getSizeStock(selectedSize);
+    if (quantity > stockAvailable) return showPopup(`Only ${stockAvailable} available.`, "warning");
+
+    const checkoutItem = {
+      productId: product.id,
+      productID: product.productID,
+      productName: product.productName,
+      imageUrl: product.imageUrl,
+      size: selectedSize,
+      quantity,
+      price: product.price,
+      delivery: product.delivery,
+      cartItemCode: `TEMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     };
+
+    navigate("/checkout", { state: { cartItems: [checkoutItem] } });
+    setDirectCheckoutModal(false);
+    setSelectedSize(null);
+    setQuantity(1);
+  };
 
   return (
     <div className="product-details-container">
-      <button className="back-button" onClick={() => window.history.back()}>← Back to Shop</button>
+      {popup.visible && (
+  <div className={`popup ${popup.type}`}>
+    <div className="popup-icon">
+      {popup.type === "info" && "ℹ️"}
+      {popup.type === "warning" && "⚠️"}
+      {popup.type === "error" && "❌"}
+    </div>
+    <div className="popup-text">
+      <strong className="popup-title">
+        {popup.type === "info"
+          ? "Information"
+          : popup.type === "warning"
+          ? "Warning!"
+          : "Error!"}
+      </strong>
+      <p className="popup-message">{popup.message}</p>
+    </div>
+    <button
+      className="popup-close"
+      onClick={() => setPopup({ visible: false, message: "", type: "" })}
+    >
+      ×
+    </button>
+  </div>
+)}
 
-      <div className="product-card">
-        <img src={product.imageUrl || PLACEHOLDER_IMAGE} alt={product.name} className="product-image" />
-        <div className="product-info">
-          <h2>{product.name}</h2>
+      <div className="product-layout">
+        <div className="product-image-section">
+          <img
+            src={product.imageUrl || PLACEHOLDER_IMAGE}
+            alt={product.productName}
+            className="product-image"
+          />
+        </div>
+
+        <div className="product-info-section">
+          <h2 className="product-title">{product.productName}</h2>
           <p className="price">₱{Number(product.price).toLocaleString()}</p>
           <p className="rating">⭐ {product.rating || "N/A"}</p>
           <p className="sold">{product.sold || 0} Sold</p>
 
           <div className="note">
-          Size recommendations and AR experience are available only on the mobile app.
+            Size recommendations and AR experience are available only on the mobile app.
           </div>
 
-          
-        </div>
-         <div className="button-group">
-            <button className="add-to-cart-btn" onClick={() => setModalVisible(true)}>Add to Cart</button>
-            <button className="checkout-btn" onClick={() => alert("Proceed to checkout")}>Checkout</button>
+          {/* ✅ Reviews Section */}
+          <div className="reviews-section">
+            <h3> Reviews</h3>
+            {showReviews && (
+              <div className="reviews-list">
+                {reviews.length > 0 ? (
+                  reviews.map((rev, index) => (
+                    <div key={index} className="review-card">
+                      <div className="review-avatar">A</div>
+                      <div className="review-content">
+                        <strong>{rev.userName || "Anonymous"}</strong>
+                        <p className="review-size">Size: {rev.size}</p>
+                        <p className="review-comment">{rev.comment}</p>
+                      </div>
+                      <div className="review-stars">
+                        {"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p>No reviews yet.</p>
+                )}
+              </div>
+            )}
+            {reviews.length > 0 && (
+              <p
+                className="toggle-reviews"
+                onClick={() => setShowReviews(!showReviews)}
+              >
+                {showReviews ? "Hide Reviews" : "Show Reviews"}
+              </p>
+            )}
+          </div>
+
+          <div className="button-group">
+            <button className="add-to-cart-btn" onClick={() => setModalVisible(true)}>
+              Add to Cart
+            </button>
+            <button className="checkout-btn" onClick={() => setDirectCheckoutModal(true)}>
+              Checkout
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* 🛒 Add to Cart Modal */}
       {modalVisible && (
         <div className="modal-overlay" onClick={() => setModalVisible(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Select Size & Quantity</h3>
+
             <div className="sizes">
-              {product.sizes?.map(size => (
+              {product.sizes?.map((size) => (
                 <button
                   key={size}
                   disabled={getSizeStock(size) === 0}
                   className={selectedSize === size ? "size-btn selected" : "size-btn"}
-                  onClick={() => { setSelectedSize(size); setQuantity(1); }}
+                  onClick={() => {
+                    setSelectedSize(size);
+                    setQuantity(1);
+                  }}
                 >
                   {size} ({getSizeStock(size)} pcs)
                 </button>
@@ -157,51 +276,385 @@ export default function ProductDetails() {
             </div>
 
             <div className="quantity">
+              <label className="quantity-label">Quantity:</label>
               <button onClick={decrementQuantity} disabled={quantity <= 1}>−</button>
-              <span>{quantity}</span>
-              <button onClick={incrementQuantity} disabled={selectedSize && quantity >= getSizeStock(selectedSize)}>＋</button>
+              <span className="quantity-value">{quantity}</span>
+              <button
+                onClick={incrementQuantity}
+                disabled={selectedSize && quantity >= getSizeStock(selectedSize)}
+              >
+                ＋
+              </button>
             </div>
 
-            <button className="confirm-btn" onClick={saveCartItem}>Add to Cart</button>
+            <button className="confirm-btn" onClick={saveCartItem}>
+              Add to Cart
+            </button>
           </div>
         </div>
       )}
 
+      {/* 💳 Direct Checkout Modal */}
+      {directCheckoutModal && (
+        <div className="modal-overlay" onClick={() => setDirectCheckoutModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Checkout Now</h3>
+            <p style={{ fontWeight: "bold" }}>{product.productName}</p>
+
+            <div className="sizes">
+              {product.sizes?.map((size) => (
+                <button
+                  key={size}
+                  disabled={getSizeStock(size) === 0}
+                  className={selectedSize === size ? "size-btn selected" : "size-btn"}
+                  onClick={() => {
+                    setSelectedSize(size);
+                    setQuantity(1);
+                  }}
+                >
+                  {size} ({getSizeStock(size)} pcs)
+                </button>
+              ))}
+            </div>
+
+            <div className="quantity">
+              <label className="quantity-label">Quantity:</label>
+              <button onClick={decrementQuantity}>−</button>
+              <span>{quantity}</span>
+              <button onClick={incrementQuantity}>＋</button>
+            </div>
+
+            <button className="confirm-btn" onClick={handleDirectCheckout}>
+              Proceed to Checkout
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Success Modal */}
+      {cartSuccessModal && (
+        <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Added to Cart!</h3>
+            <p>{product.productName} has been added to your cart.</p>
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
+              <button
+                className="confirm-btn"
+                style={{ flex: 1, backgroundColor: "#7B5CD6" }}
+                onClick={() => navigate("/landing")}
+              >
+                Continue Shopping
+              </button>
+              <button
+                className="confirm-btn"
+                style={{ flex: 1, backgroundColor: "#FF6B6B" }}
+                onClick={() => navigate("/cart")}
+              >
+                Go to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ CSS Reformatted */}
       <style>{`
-        .product-details-container { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; font-family: Arial, sans-serif; }
-        .back-button { margin-bottom: 20px; padding: 8px 16px; background: #7B5CD6; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .product-card { max-width: 400px; width: 100%; background: #fff; border-radius: 20px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); text-align: center; padding-bottom: 20px; }
-        .product-image { width: 100%; height: 400px; object-fit: cover; border-top-left-radius: 20px; border-top-right-radius: 20px; }
-        .product-info { padding: 20px; text-align: left; }
-        .price { font-weight: bold; color: #7B5CD6; }
-        .rating, .sold { color: #555; margin-bottom: 5px; }
-        .note { margin: 10px 0; color: #9747FF; font-weight: bold; }
-         .button-group {
-                display: flex;
-                gap: 15px; /* space between buttons */
-                justify-content: center;
-                margin-top: 15px;
-            }
+        /* ✅ Popup Styles */
+        .popup {
+          position: fixed;
+          top: 40px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 22px;
+          border-radius: 12px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+          font-family: 'Poppins', sans-serif;
+          color: #333;
+          animation: fadeIn 0.3s ease-in-out, fadeOut 0.5s ease-in-out 1.8s forwards;
+          z-index: 9999;
+          min-width: 320px;
+        }
 
-            .add-to-cart-btn, .checkout-btn {
-                flex: 1; /* equal width buttons */
-                padding: 10px 16px;
-                border-radius: 6px;
-                border: none;
-                cursor: pointer;
-                font-weight: bold;
-            }
+        .popup-icon {
+          font-size: 1.6rem;
+        }
 
-            .add-to-cart-btn { background-color: #9747FF; color: white; }
-            .checkout-btn { background-color: #FF6B6B; color: white; }
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; }
-        .sizes { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-        .size-btn { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; }
-        .size-btn.selected { border-color: #9747FF; background: #F3E5F5; }
-        .quantity { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .quantity button { padding: 5px 12px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
-        .confirm-btn { background: #9747FF; color: white; padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; width: 100%; }
+        .popup-text {
+          flex: 1;
+        }
+
+        .popup-title {
+          display: block;
+          font-weight: 700;
+          font-size: 1rem;
+          margin-bottom: 2px;
+        }
+
+        .popup-message {
+          font-size: 0.9rem;
+          color: #333;
+          margin: 0;
+        }
+
+        .popup-close {
+          background: transparent;
+          border: none;
+          font-size: 1.4rem;
+          cursor: pointer;
+          color: #333;
+          font-weight: bold;
+          margin-left: 8px;
+        }
+
+        /* Colors per type */
+        .popup.info {
+          background: #cfe4ff;
+          border-left: 6px solid #2196f3;
+        }
+
+        .popup.warning {
+          background: #fff3cd;
+          border-left: 6px solid #ff9800;
+        }
+
+        .popup.error {
+          background: #f8d7da;
+          border-left: 6px solid #f44336;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translate(-50%, -10px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        @keyframes fadeOut {
+          to { opacity: 0; transform: translate(-50%, -20px); }
+        }
+
+        .product-details-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 150px 20px;
+          font-family: Arial, sans-serif;
+        }
+
+        .product-layout {
+          display: flex;
+          flex-direction: row;
+          gap: 40px;
+          align-items: flex-start;
+          background: #fff;
+          border-radius: 20px;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+          padding: 30px;
+          max-width: 900px;
+          width: 100%;
+        }
+
+        .product-image {
+          width: 100%;
+          height: 450px;
+          object-fit: contain;
+          border-radius: 16px;
+          background-color: #f9f9f9;
+          padding: 10px;
+        }
+        
+        .note {
+          color: #9747FF;
+        }
+        
+        .price {
+          color: #9747FF;
+          font-weight: bold;
+        }
+        
+        .reviews-section {
+          margin-top: 20px;
+          background: #fff;
+          border-radius: 12px;
+          padding: 10px 15px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          max-height: 250px;
+          overflow-y: auto;
+        }
+
+        .reviews-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-top: 8px;
+        }
+
+        .review-card {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          background: #fff;
+          padding: 12px;
+          border-radius: 10px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .review-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: #9747FF;
+          color: #fff;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 10px;
+        }
+
+        .review-content {
+          flex: 1;
+        }
+
+        .review-size {
+          color: gray;
+          font-size: 0.85rem;
+          margin: 0;
+        }
+
+        .review-comment {
+          margin: 4px 0 0;
+          color: #555;
+        }
+
+        .review-stars {
+          font-size: 1.2rem;
+          color: gold;
+        }
+
+        .toggle-reviews {
+          color: #9747FF;
+          text-align: center;
+          margin-top: 10px;
+          cursor: pointer;
+          font-weight: 500;
+        }
+
+        .toggle-reviews:hover {
+          text-decoration: underline;
+        }
+
+        .button-group {
+          display: flex;
+          gap: 15px;
+          margin-top: 60px;
+        }
+
+        .add-to-cart-btn {
+          background-color: #9747FF;
+          color: white;
+          border: none;
+          padding: 10px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          width: 45%;
+        }
+
+        .checkout-btn {
+          background-color: white;
+          color: #9747FF;
+          border: 2px solid #9747FF;
+          padding: 10px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          width: 45%;
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .modal-content {
+          background: #fff;
+          padding: 20px;
+          border-radius: 12px;
+          width: 90%;
+          max-width: 400px;
+        }
+
+        .sizes {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 15px;
+        }
+
+        .quantity {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          margin: 15px 0 20px;
+        }
+
+        .quantity-label {
+          font-weight: 600;
+          color: #333;
+          font-size: 1rem;
+        }
+
+        .quantity button {
+          font-size: 1.4rem;
+          width: 40px;
+          height: 40px;
+          border: 1px solid #000000ff;
+          background: white;
+          color: #000000ff;
+          cursor: pointer;
+          font-weight: bold;
+        }
+
+        .quantity button:hover {
+          background: #9747FF;
+          color: white;
+        }
+
+        .quantity-value {
+          font-size: 1.2rem;
+          font-weight: bold;
+          min-width: 30px;
+          text-align: center;
+        }
+
+        .confirm-btn { 
+          background: #9747FF; 
+          color: white; 
+          padding: 10px 16px; 
+          border: none; 
+          border-radius: 6px; 
+          cursor: pointer; 
+          width: 100%; }
+
+        .size-btn {
+          padding: 12px 18px;
+          font-size: 1rem;
+        }
+
+        .size-btn.selected {
+          border-color: #9747FF;
+          background: #F3E5F5;
+        }
       `}</style>
     </div>
   );

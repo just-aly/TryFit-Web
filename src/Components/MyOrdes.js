@@ -35,7 +35,7 @@ const fetchProductDetails = async (productId) => {
 const db = getFirestore();
 const auth = getAuth();
 
-export default function Orders() {
+export default function MyOrders() {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [customUserId, setCustomUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('Orders');
@@ -169,12 +169,12 @@ const handleCancelOrder = async (order) => {
       createdAt: order.createdAt,
       deliveryFee: order.deliveryFee,
       items: order.items.map(item => ({
+        imageUrl: item.imageUrl,
         productId: item.productId,
         productName: item.productName,
         quantity: item.quantity,
         size: item.size,
         price: item.price,
-        status: 'Cancelled', 
       })),
       name: order.name,
       orderId: order.orderId,
@@ -242,7 +242,9 @@ const handleOrderReceived = async (order) => {
       address: order.address,
       createdAt: order.createdAt,
       deliveryFee: order.deliveryFee,
+      delivery: order.delivery,
       items: order.items.map(item => ({
+        imageUrl: item.imageUrl,
         productId: item.productId,
         productName: item.productName,
         quantity: item.quantity,
@@ -253,7 +255,7 @@ const handleOrderReceived = async (order) => {
       orderId: order.orderId,
       packedAt: order.packedAt,
       shippedAt: order.shippedAt,
-      receivedAt: new Date(), // new field
+      receivedAt: new Date(), 
       status: 'Completed',
       total: order.total,
       userId: order.userId,
@@ -281,7 +283,7 @@ const handleOrderReceived = async (order) => {
     // Switch to Completed tab
     setActiveTab('Completed');
 
-    alert('Order marked as received and moved to Completed.');
+    alert('Order is confirm received');
   } catch (err) {
     console.error('Error marking order as received:', err);
     alert('Failed to mark order as received. Try again.');

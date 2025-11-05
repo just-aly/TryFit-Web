@@ -185,23 +185,49 @@ export default function Notification() {
           line-height: 1.4;
         }
 
-        @media (max-width: 768px) {
-          .notif-header-inner {
-            padding: 0 25px;
+        
+        /* ---------- Mobile View ---------- */
+        @media (max-width: 480px) {
+          .notif-page {
+            padding: 120px 0 60px;
           }
 
-          .notif-box {
-            width: 100%;
-            padding: 25px;
+          .notif-header-inner {
+            padding: 0 15px;
+            margin-bottom: 20px;
+          }
+
+          .notif-title-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
           }
 
           .notif-title-row h1 {
-            font-size: 2rem;
+            font-size: 1.2rem;
+            padding: 10px 2px;
           }
 
           .header-line {
-            width: 83%;
-            height: 16px;
+            width: 100%;
+            height: 10px;
+          }
+
+          .notif-box {
+            width: 90%;
+            padding: 20px 15px;
+          }
+
+          .notif-item {
+            padding: 10px 12px;
+          }
+
+          .notif-header-text {
+            font-size: 0.9rem;
+          }
+
+          .notif-text {
+            font-size: 0.85rem;
           }
         }
       `}</style>

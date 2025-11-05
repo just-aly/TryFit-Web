@@ -51,7 +51,6 @@ export default function Footer() {
           <p className="footer-desc">
             Discover outfit ideas and find your style. Try in AR & shop—only in our app!
           </p>
-          <button className="download-btn">Download App</button>
         </div>
       </div>
 
@@ -64,11 +63,13 @@ export default function Footer() {
           padding: 40px 60px 20px;
           font-family: Arial, sans-serif;
         }
+
         .social-icons {
           margin-top: 15px;
           display: flex;
           gap: 15px;
         }
+
         .social-icon {
           font-size: 1.5rem;
           color: #fff;
@@ -81,9 +82,11 @@ export default function Footer() {
           align-items: center;
           transition: transform 0.2s ease, background 0.2s ease;
         }
+
         .social-icon:hover {
           transform: scale(1.1);
         }
+
         .facebook { background: #1877F2; }
         .instagram { background: #E4405F; }
         .twitter { background: #000; }
@@ -96,63 +99,119 @@ export default function Footer() {
           text-align: left;
           gap: 90px;
         }
+
         .footer-section {
           flex: 1;
           margin: 10px 20px;
         }
+
         .footer-section h3 {
           font-size: 2rem;
           margin-bottom: 15px;
         }
+
         .footer-section p,
         .footer-section ul li,
         .footer-section a {
           font-size: 1.5rem;
           line-height: 1.6;
         }
+
         .footer-section p.footer-desc {
           font-size: 1.2rem;
           margin-bottom: 12px;
         }
+
         .footer-section ul {
           list-style: none;
           padding: 0;
           margin: 0;
         }
+
         .footer-section ul li {
           margin-bottom: 10px;
         }
+
         .footer-section a {
           text-decoration: none;
           color: #ddd;
         }
+
         .footer-section a:hover {
           color: #fff;
         }
+          
         .icon {
           margin-right: 8px;
           color: #000;
         }
-        .download-btn {
-          background: #9747ff49;
-          color: #fff;
-          border: 2px solid #ccccccff;
-          padding: 12px 24px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 1.2rem;
-          font-weight: bold;
-        }
-        .download-btn:hover {
-          background: #9747FF;
-          color: #fff;
-        }
+
         .footer-bottom {
           margin-top: 30px;
           font-size: 1rem;
           color: #ddd;
           text-align: center;
         }
+
+@media (max-width: 480px) {
+.footer {
+padding: 25px 15px;
+}
+
+.footer-content {
+flex-direction: column;
+gap: 20px;
+text-align: center;
+align-items: center;
+}
+
+.footer-section {
+margin: 0;
+width: 100%;
+}
+
+.footer-section h3 {
+font-size: 1.2rem;
+margin-bottom: 10px;
+}
+
+.footer-section p,
+.footer-section ul li,
+.footer-section a,
+.footer-section p.footer-desc {
+font-size: 0.95rem;
+text-align: center;
+margin: 4px 0;
+}
+
+.footer-section ul {
+padding: 0;
+text-align: center;
+}
+
+.footer-section ul li {
+margin-bottom: 6px;
+}
+
+.social-icons {
+justify-content: center;
+gap: 10px;
+margin-top: 10px;
+}
+
+.social-icon {
+width: 36px;
+height: 36px;
+font-size: 1.5rem;
+padding: 8px;
+}
+
+.footer-bottom {
+font-size: 0.9rem;
+margin-top: 20px;
+}
+}
+
       `}</style>
     </footer>
   );

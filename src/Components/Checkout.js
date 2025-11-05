@@ -198,10 +198,12 @@ export default function Checkout() {
         productID: groupedItem.productID || groupedItem.productId || null,
         deliveryFee,
         total,
+        delivery: groupedItem.delivery,
         createdAt: serverTimestamp(),
         status: "Pending",
         items: [
           {
+            imageUrl: groupedItem.imageUrl,
             productId: groupedItem.productId,
             productName: groupedItem.productName,
             quantity: groupedItem.quantity,

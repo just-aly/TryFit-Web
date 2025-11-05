@@ -104,164 +104,203 @@ export default function AboutUs() {
         <p className="highlight">Download TryFit and start styling today!</p>
       </section>
 
-      <style>{`
-        .page {
-          font-family: "Poppins", sans-serif;
-          color: #1c143a;
-          overflow-x: hidden;
-        }
+<style>{`
+.page {
+  font-family: "Poppins", sans-serif;
+  color: #1c143a;
+  overflow-x: hidden;
+}
 
-        /* ===== WELCOME ===== */
-        .welcome {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 430px 10% 160px;
-          background: linear-gradient(to bottom, #e8e1ff, #f3f0ff);
-          gap: 40px;
-          flex-wrap: wrap;
-          position: relative;
-        }
+/* ===== WELCOME ===== */
+.welcome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 160px 8% 80px;
+  background: linear-gradient(to bottom, #e8e1ff, #f3f0ff);
+  gap: 30px;
+  flex-wrap: wrap;
+  position: relative;
+}
 
-        .text {
-          flex: 1;
-          min-width: 260px;
-          max-width: 480px;
-          margin-top: 80px;
-        }
+.text {
+  flex: 1;
+  min-width: 220px;
+  max-width: 450px;
+  margin-top: 30px;
+}
 
-        .text h1 {
-          font-size: 3rem;
-          color: #1c143a;
-          margin-bottom: 16px;
-        }
+.text h1 {
+  font-size: 2.2rem;
+  color: #1c143a;
+  margin-bottom: 14px;
+}
 
-        .text span {
-          color: #6a5acd;
-        }
+.text span {
+  color: #6a5acd;
+}
 
-        .phones {
-          flex: 1;
-          display: flex;
-          justify-content: center;
-          overflow: hidden;
-          max-width: 360px;
-          position: relative;
-        }
+.text p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
 
-        .track {
-          display: flex;
-          width: 400%;
-          gap: 20px;
-        }
+.phones {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  max-width: 280px;
+  position: relative;
+}
 
-        .item {
-          flex: 0 0 25%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
+.track {
+  display: flex;
+  width: 400%;
+  gap: 12px;
+}
 
-        .item img {
-          width: 220px;
-          max-height: 420px;
-          border-radius: 18px;
-          box-shadow: 0 18px 40px rgba(28, 20, 58, 0.18);
-        }
+.item {
+  flex: 0 0 25%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-        arrow-down {
-          font-size: 2em;
-        }
-      
-        .scroll-down {
-          position: absolute;
-          bottom: 40px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          color: #6a5acd;
-          cursor: pointer;
-          animation: bounce 1.5s infinite;
-        }
+.item img {
+  width: 140px;
+  max-height: 260px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(28, 20, 58, 0.15);
+}
 
-        @keyframes bounce {
-          0%, 100% { transform: translate(-50%, 0); }
-          50% { transform: translate(-50%, 10px); }
-        }
+.arrow-down {
+  font-size: 1.3em;
+}
 
-        .explore-text {
-          font-size: 1.6em;
-          font-weight: 500;
-          color: #6a5acd;
-        }
+.scroll-down {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6a5acd;
+  cursor: pointer;
+  animation: bounce 1.5s infinite;
+}
 
-        /* ===== ABOUT / MISSION ===== */
-        .about, .mission {
-          background: linear-gradient(135deg, #6a5acd 0%, #8e80ff 100%);
-          color: #fff;
-          padding: 160px 10%;
-        }
+@keyframes bounce {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 6px); }
+}
 
-        .cols {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 80px;
-          align-items: start;
-          max-width: 1100px;
-          margin: 0 auto;
-        }
+.explore-text {
+  font-size: 1em;
+  font-weight: 500;
+  color: #6a5acd;
+}
 
-        .left h2 {
-          font-size: 4rem;
-          font-weight: 700;
-          margin: 0;
-        }
+/* ===== ABOUT / MISSION ===== */
+.about,
+.mission {
+  background: linear-gradient(135deg, #6a5acd 0%, #8e80ff 100%);
+  color: #fff;
+  padding: 100px 5%;
+}
 
-        .right p {
-          font-size: 1.1rem;
-          line-height: 1.8;
-        }
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: start;
+  max-width: 900px;
+  margin: 0 auto;
+}
 
-        /* ===== JOIN US ===== */
-        .join {
-          background: #ffffff;
-          color: #222;
-          padding: 160px 10%;
-          text-align: center;
-        }
+.left h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+}
 
-        .join h2 {
-          font-size: 2.6rem;
-          color: #6a5acd;
-          margin-bottom: 20px;
-        }
+.right p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
 
-        .highlight {
-          color: #d220ff;
-          font-weight: 600;
-        }
+/* ===== JOIN US ===== */
+.join {
+  background: #ffffff;
+  color: #222;
+  padding: 100px 5%;
+  text-align: center;
+}
 
-        @media (max-width: 900px) {
-          .cols {
-            grid-template-columns: 1fr;
-            gap: 40px;
-          }
+.join h2 {
+  font-size: 1.8rem;
+  color: #6a5acd;
+  margin-bottom: 16px;
+}
 
-          .left h2 {
-            font-size: 3rem;
-          }
+.highlight {
+  color: #d220ff;
+  font-weight: 600;
+}
 
-          .item img {
-            width: 180px;
-          }
+/* ===== MEDIA QUERIES ===== */
+@media (max-width: 900px) {
+  .cols {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  .left h2 {
+    font-size: 2.2rem;
+  }
+  .item img {
+    width: 140px;
+  }
+}
 
-          .scroll-down {
-            bottom: 20px;
-          }
-        }
-      `}</style>
+@media (max-width: 480px) {
+  .welcome {
+    padding: 120px 5% 60px;
+    gap: 15px;
+  }
+  .text h1 {
+    font-size: 1.8rem;
+  }
+  .text p {
+    font-size: 0.9rem;
+  }
+  .phones {
+    max-width: 220px;
+  }
+  .item img {
+    width: 120px;
+    max-height: 220px;
+  }
+  .scroll-down {
+    gap: 5px;
+    bottom: 8px;
+  }
+  .explore-text {
+    font-size: 0.9em;
+    text-align: center;
+  }
+  .left h2 {
+    font-size: 1.8rem;
+  }
+  .right p {
+    font-size: 0.9rem;
+  }
+  .join h2 {
+    font-size: 1.6rem;
+  }
+}
+`}</style>
+
     </div>
   );
 }

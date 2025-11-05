@@ -1,3 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Krona+One&display=swap');
+
+.login-title, 
+.signup-title,
+.logo,
+.new-arrivals,
+.popular,
+.picks .section-title, 
+.sidebar-title, 
+.checkout-title-row,
+.about .left,
+.mission .left,
+.contact-left h1,
+.privacy-title,
+.notif-title-row,
+.privacy-title,
+.terms-title {
+  font-family: 'Krona One', sans-serif;
+   font-weight: 570;
+}
+
+
 html, body {
   margin: 0;
   padding: 0;

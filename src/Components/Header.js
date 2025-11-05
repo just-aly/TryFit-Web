@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   FaShoppingCart,
   FaShoppingBag,
@@ -18,25 +18,26 @@ export default function Header() {
   const [animate, setAnimate] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const SEARCH_SUGGESTIONS = ["T-Shirts", "Longsleeves", "Pants", "Shorts"];
 
-  // ✅ Create Fuse instance
+  const headerRef = useRef(null);
+  const searchRef = useRef(null);
+
   const fuse = useMemo(
     () =>
       new Fuse(SEARCH_SUGGESTIONS, {
         includeScore: true,
-        threshold: 0.4, // controls fuzzy matching
+        threshold: 0.4,
       }),
     []
   );
 
-  // ✅ Handle dropdown toggles
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
   };
 
-  // ✅ Animated placeholder rotation
   useEffect(() => {
     const items = ["T-Shirt", "Longsleeve", "Shorts", "Pants"];
     let index = 0;
@@ -55,7 +56,6 @@ export default function Header() {
     return () => clearInterval(interval);
   }, [inputValue]);
 
-  // ✅ Handle input change + Fuse.js search
   const handleSearchChange = (e) => {
     const text = e.target.value;
     setInputValue(text);
@@ -68,7 +68,6 @@ export default function Header() {
     }
   };
 
-  // ✅ When user clicks a suggestion
   const handleSuggestionClick = (item) => {
     setInputValue(item);
     setFilteredSuggestions([]);
@@ -80,108 +79,168 @@ export default function Header() {
     setOpenDropdown(null);
   };
 
+  // ✅ Outside click closes dropdowns & suggestions
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        headerRef.current &&
+        !headerRef.current.contains(event.target) &&
+        (!searchRef.current || !searchRef.current.contains(event.target))
+      ) {
+        setOpenDropdown(null);
+        setFilteredSuggestions([]);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ✅ Logout confirmation handlers
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+    setOpenDropdown(null);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    navigate("/login");
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
+  };
+
   return (
-    <header className="header">
-      <div className="logo" onClick={() => navigate("/landing")}>
-        TRYFIT
-      </div>
+    <>
+      <header className="header" ref={headerRef}>
+        <div className="logo" onClick={() => navigate("/landing")}>
+          TRYFIT
+        </div>
 
-      <div className="center-area">
-        {/* 🔍 Search bar with smart suggestions */}
-        <div className="search-wrapper">
-          <div className="placeholder-wrapper">
-            <input
-              type="text"
-              className="search-box"
-              value={inputValue}
-              onChange={handleSearchChange}
-              onFocus={() => setAnimate(true)}
-              onBlur={() => setAnimate(false)}
-            />
-            {inputValue.trim() === "" && (
-              <span className={`placeholder-text ${animate ? "slide" : ""}`}>
-                {placeholder}
-              </span>
-            )}
-          </div>
-          <FaSearch className="search-icon" />
-
-          {/* 💡 Suggestions dropdown */}
-          {filteredSuggestions.length > 0 && (
-            <div className="suggestions-container">
-              {filteredSuggestions.map((item, index) => (
-                <div
-                  key={index}
-                  className="suggestion-item"
-                  onClick={() => handleSuggestionClick(item)}
-                >
-                  {item}
-                </div>
-              ))}
+        <div className="center-area">
+          {/* 🔍 Search bar */}
+          <div className="search-wrapper" ref={searchRef}>
+            <div className="placeholder-wrapper">
+              <input
+                type="text"
+                className="search-box"
+                value={inputValue}
+                onChange={handleSearchChange}
+                onFocus={() => setAnimate(true)}
+                onBlur={() => setAnimate(false)}
+              />
+              {inputValue.trim() === "" && (
+                <span className={`placeholder-text ${animate ? "slide" : ""}`}>
+                  {placeholder}
+                </span>
+              )}
             </div>
-          )}
+            <FaSearch className="search-icon" />
+
+            {/* 💡 Search suggestions */}
+            {filteredSuggestions.length > 0 && (
+              <div className="suggestions-container">
+                {filteredSuggestions.map((item, index) => (
+                  <div
+                    key={index}
+                    className="suggestion-item"
+                    onClick={() => handleSuggestionClick(item)}
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Navigation items */}
+          <div className="nav-items">
+            {/* Tops */}
+            <div className="dropdown" onClick={() => toggleDropdown("tops")}>
+              Tops {openDropdown === "tops" ? "▴" : "▾"}
+              {openDropdown === "tops" && (
+                <ul className="dropdown-menu small-menu">
+                  <li onClick={() => goToCategory("T-Shirts")}>T-Shirt</li>
+                  <li onClick={() => goToCategory("Longsleeves")}>
+                    Longsleeves
+                  </li>
+                </ul>
+              )}
+            </div>
+
+            {/* Bottoms */}
+            <div className="dropdown" onClick={() => toggleDropdown("bottoms")}>
+              Bottoms {openDropdown === "bottoms" ? "▴" : "▾"}
+              {openDropdown === "bottoms" && (
+                <ul className="dropdown-menu small-menu">
+                  <li onClick={() => goToCategory("Pants")}>Pants</li>
+                  <li onClick={() => goToCategory("Shorts")}>Shorts</li>
+                </ul>
+              )}
+            </div>
+
+            {/* My Orders */}
+            <div
+              className="nav-icon-wrapper"
+              onClick={() => navigate("/myorders")}
+            >
+              <FaShoppingBag className="icon" />
+              <span className="tooltip">My Orders</span>
+            </div>
+
+            {/* Cart */}
+            <div
+              className="nav-icon-wrapper"
+              onClick={() => navigate("/cart")}
+            >
+              <FaShoppingCart className="icon" />
+              <span className="tooltip">Cart</span>
+            </div>
+
+            {/* Profile */}
+            <div
+              className="dropdown nav-icon-wrapper"
+              onClick={() => toggleDropdown("profile")}
+            >
+              <FaUser className="icon" />
+              <span className="tooltip">Profile</span>
+              {openDropdown === "profile" && (
+                <ul className="dropdown-menu profile-menu">
+                  <li onClick={() => navigate("/profile")}>
+                    <FaUser className="dropdown-icon" /> My Profile
+                  </li>
+                  <li onClick={() => navigate("/notification")}>
+                    <FaBell className="dropdown-icon" /> Notification
+                  </li>
+                  <li onClick={handleLogoutClick}>
+                    <FaSignOutAlt className="dropdown-icon" /> Logout
+                  </li>
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
+      </header>
 
-        {/* Navigation items */}
-        <div className="nav-items">
-          {/* Tops dropdown */}
-          <div className="dropdown" onClick={() => toggleDropdown("tops")}>
-            Tops {openDropdown === "tops" ? "▴" : "▾"}
-            {openDropdown === "tops" && (
-              <ul className="dropdown-menu small-menu">
-                <li onClick={() => goToCategory("T-Shirts")}>T-Shirt</li>
-                <li onClick={() => goToCategory("Longsleeves")}>Longsleeves</li>
-              </ul>
-            )}
-          </div>
-
-          {/* Bottoms dropdown */}
-          <div className="dropdown" onClick={() => toggleDropdown("bottoms")}>
-            Bottoms {openDropdown === "bottoms" ? "▴" : "▾"}
-            {openDropdown === "bottoms" && (
-              <ul className="dropdown-menu small-menu">
-                <li onClick={() => goToCategory("Pants")}>Pants</li>
-                <li onClick={() => goToCategory("Shorts")}>Shorts</li>
-              </ul>
-            )}
-          </div>
-
-          {/* My Orders */}
-          <div className="nav-icon-wrapper" onClick={() => navigate("/myorders")}>
-            <FaShoppingBag className="icon" />
-            <span className="tooltip">My Orders</span>
-          </div>
-
-          {/* Cart */}
-          <div className="nav-icon-wrapper" onClick={() => navigate("/cart")}>
-            <FaShoppingCart className="icon" />
-            <span className="tooltip">Cart</span>
-          </div>
-
-          {/* Profile */}
-          <div
-            className="dropdown nav-icon-wrapper"
-            onClick={() => toggleDropdown("profile")}
-          >
-            <FaUser className="icon" />
-            <span className="tooltip">Profile</span>
-            {openDropdown === "profile" && (
-              <ul className="dropdown-menu profile-menu">
-                <li onClick={() => navigate("/profile")}>
-                  <FaUser className="dropdown-icon" /> My Profile
-                </li>
-                <li onClick={() => navigate("/notification")}>
-                  <FaBell className="dropdown-icon" /> Notification
-                </li>
-                <li>
-                  <FaSignOutAlt className="dropdown-icon" /> Logout
-                </li>
-              </ul>
-            )}
+      {/* ✅ Logout Modal */}
+      {showLogoutModal && (
+        <div className="modal-overlay">
+          <div className="logout-modal">
+            <h3>Are you sure you want to sign out?</h3>
+            <div className="modal-buttons">
+              <button className="yes-btn" onClick={confirmLogout}>
+                Yes
+              </button>
+              <button className="no-btn" onClick={cancelLogout}>
+                No
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
+      {/* ---------- CSS ---------- */}
       <style>{`
         .header {
           display: flex;
@@ -200,20 +259,20 @@ export default function Header() {
           font-family: Arial, sans-serif;
         }
 
-        .logo {
-          font-size: 2rem;
-          font-weight: bold;
+        .logo { 
+          font-size: 2rem; 
+          font-weight: bold; 
           cursor: pointer;
+          font-family: 'Krona One', sans-serif;
         }
 
-        .logo:hover { color: #6A5ACD; }
+        .logo:hover { 
+          color: #6A5ACD; 
+        }
 
         .center-area {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex: 1;
-          gap: 100px;
+          display: flex; align-items: center; justify-content: center;
+          flex: 1; gap: 100px;
         }
 
         .search-wrapper {
@@ -227,12 +286,9 @@ export default function Header() {
         }
 
         .search-wrapper:hover,
-        .search-wrapper:focus-within {
-          border: 1px solid #6A5ACD;
-        }
+        .search-wrapper:focus-within { border: 1px solid #6A5ACD; }
 
         .placeholder-wrapper { position: relative; width: 700px; }
-
         .search-box {
           width: 100%;
           padding: 10px 8px;
@@ -254,11 +310,7 @@ export default function Header() {
           pointer-events: none;
           transition: transform 0.4s ease, opacity 0.4s ease;
         }
-
-        .placeholder-text.slide {
-          transform: translateX(-15px);
-          opacity: 0;
-        }
+        .placeholder-text.slide { transform: translateX(-15px); opacity: 0; }
 
         .suggestions-container {
           position: absolute;
@@ -276,7 +328,6 @@ export default function Header() {
           padding: 8px 10px;
           cursor: pointer;
         }
-
         .suggestion-item:hover {
           background: #6A5ACD;
           color: white;
@@ -288,17 +339,10 @@ export default function Header() {
           cursor: pointer;
           transition: color 0.2s ease-in-out;
         }
-
         .search-wrapper:hover .search-icon,
-        .search-wrapper:focus-within .search-icon {
-          color: #6A5ACD;
-        }
+        .search-wrapper:focus-within .search-icon { color: #6A5ACD; }
 
-        .nav-items {
-          display: flex;
-          align-items: center;
-          gap: 35px;
-        }
+        .nav-items { display: flex; align-items: center; gap: 35px; }
 
         .dropdown {
           position: relative;
@@ -307,11 +351,8 @@ export default function Header() {
           padding-bottom: 4px;
           transition: border-bottom 0.2s ease-in-out;
         }
-
         .dropdown:hover,
-        .nav-icon-wrapper:hover {
-          border-bottom: 2px solid #6A5ACD;
-        }
+        .nav-icon-wrapper:hover { border-bottom: 2px solid #6A5ACD; }
 
         .dropdown-menu {
           position: absolute;
@@ -334,14 +375,8 @@ export default function Header() {
           font-size: 0.9rem;
           border-bottom: 1px solid #eee;
         }
-
         .dropdown-menu li:last-child { border-bottom: none; }
-
-        .dropdown-menu li:hover {
-          background: #6A5ACD;
-          color: #fff;
-        }
-
+        .dropdown-menu li:hover { background: #6A5ACD; color: #fff; }
         .profile-menu { right: 0; left: auto; }
 
         .icon { font-size: 1.3rem; cursor: pointer; color: #333; }
@@ -371,12 +406,213 @@ export default function Header() {
           transition: opacity 0.2s;
           pointer-events: none;
         }
+        .icon:hover + .tooltip { visibility: visible; opacity: 1; }
 
-        .icon:hover + .tooltip {
-          visibility: visible;
-          opacity: 1;
+        /* ✅ Logout Modal */
+        .modal-overlay {
+          position: fixed;
+          font-family: Arial, sans-serif;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0, 0, 0, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 5000;
         }
+
+        .logout-modal {
+          background: #fff;
+          padding: 30px 40px;
+          border-radius: 10px;
+          text-align: center;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          width: 420px;
+          max-width: 90%;
+        }
+
+        .logout-modal h3 {
+          font-size: 1.2rem;
+          margin-bottom: 20px;
+          color: #333;
+        }
+
+        .modal-buttons {
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+        }
+
+        .yes-btn {
+          background-color: #6A5ACD;
+          color: #fff;
+          border: none;
+          padding: 10px 25px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 1rem;
+          transition: background 0.3s;
+        }
+        .yes-btn:hover { background-color: #5948b0; }
+
+        .no-btn {
+          background-color: #f1f1f1;
+          color: #333;
+          border: none;
+          padding: 10px 25px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 1rem;
+          transition: background 0.3s;
+        }
+        .no-btn:hover { background-color: #e0e0e0; }
+
+        /* ============================= */
+/* 📱 RESPONSIVE DESIGN ADJUSTMENTS */
+/* ============================= */
+
+   @media (max-width: 1024px) {
+          .header {
+            flex-direction: column;
+            align-items: center;
+            height: auto;
+            padding: 8px 15px;
+            gap: 8px;
+          }
+
+          .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+          }
+
+          .tryfit-text { display: inline; }
+          .home-icon { display: none; }
+
+          .center-area {
+            flex-direction: column;
+            gap: 8px;
+          }
+
+          .nav-items {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+          }
+
+          .search-wrapper {
+            width: 100%;
+            max-width: 400px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .header {
+            flex-direction: column;
+            align-items: stretch;
+            height: auto;
+            padding: 10px;
+            gap: 10px;
+          }
+
+          .logo {
+            justify-content: center;
+            font-size: 1.1rem;
+          }
+
+          .tryfit-text { display: none; }
+          .home-icon { display: inline; font-size: 1.4rem; cursor: pointer; }
+
+          .center-area {
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .search-wrapper {
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 90%;
+            max-width: 280px;
+            transition: all 0.3s ease;
+            position: relative;
+          }
+
+          .search-wrapper.active {
+            width: 90%;
+          }
+
+          .search-box {
+            font-size: 0.9rem;
+            padding: 6px 8px;
+          }
+
+          .nav-items {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.8rem;
+          }
+
+          .icon {
+            font-size: 1.1rem;
+          }
+
+          .dropdown-menu {
+            position: relative;
+            top: 0;
+            box-shadow: none;
+            border: 1px solid #eee;
+          }
+
+          .profile-menu {
+            right: auto;
+            left: 0;
+          }
+
+          .suggestions-container {
+            width: 100%;
+            top: 35px;
+            font-size: 0.85rem;
+          }
+
+          .dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%; /* directly below the parent */
+  left: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  margin: 0;
+  z-index: 1000;
+  list-style: none;
+  min-width: 130px;
+}
+
+.dropdown-menu li {
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dropdown-menu li:hover {
+  background: #f2f2f2;
+}
+
+.profile-menu {
+  right: 0;
+  left: auto; /* align profile dropdown to the right edge */
+}
+        }
+
       `}</style>
-    </header>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -7,20 +8,16 @@ import { doc, getDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [hidePassword, setHidePassword] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [animateExit, setAnimateExit] = useState(false);
 
-  const showErrorPopup = (message) => {
-    // simple alert to match existing behavior; you can replace with a modal later
-    alert(message);
-  };
+  const showErrorPopup = (message) => alert(message);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!email.trim() || !password.trim()) {
       showErrorPopup("Please enter both email and password.");
       return;
@@ -28,113 +25,104 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password.trim());
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password.trim()
+      );
       const user = userCredential.user;
 
       if (user) {
-        // fetch user document from Firestore, similar to Flutter logic
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-          console.log("User Firestore data:", userDocSnap.data());
-        } else {
-          console.log("No Firestore data found for this user.");
+        if (!userDocSnap.exists()) {
           showErrorPopup("Logged in, but user profile data not found.");
           setIsLoading(false);
           return;
         }
-
-        // Success: redirect to landing (replace route as needed)
         navigate("/landing");
       }
     } catch (err) {
-      console.error("FirebaseAuthException:", err?.code, err?.message);
       let message = "Login Failed. Please try again.";
-
-      // map common Firebase Auth error codes to friendly messages (matches Flutter logic)
       switch (err?.code) {
         case "auth/user-not-found":
-        case "user-not-found":
           message = "No user found with that Email.";
           break;
         case "auth/wrong-password":
-        case "wrong-password":
           message = "Incorrect Password.";
           break;
         case "auth/invalid-email":
-        case "invalid-email":
           message = "Please enter a valid email address.";
           break;
-        case "auth/invalid-credential":
-        case "invalid-credential":
-          message = "Invalid email or password.";
-          break;
         case "auth/too-many-requests":
-        case "too-many-requests":
           message = "Too many attempts. Try again later.";
           break;
         case "auth/network-request-failed":
-        case "network-request-failed":
           message = "Network error. Check your connection.";
           break;
         default:
-          // include raw message for debugging but keep user-friendly text
-          message = err?.message ? `${err.message}` : message;
+          message = err?.message || message;
           break;
       }
-
       showErrorPopup(message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleCreateAccountClick = () => {
+    setAnimateExit(true);
+    setTimeout(() => {
+      navigate("/signup");
+    }, 700); // let animation finish first
+  };
+
   return (
     <div className="login-page">
-      {/* Main Content Split */}
-      <div className="main-section">
-        {/* Welcome Text */}
-        <div className="welcome-section">
-          <h1 className="welcome-text">WELCOME to</h1>
-          <h1 className="tryfit-text">TRYFIT</h1>
-          <p className="tagline">
-            Try outfits in AR & shop instantly. Get the app now!
-          </p>
-          <button className="download-bttn">Download</button>
-        </div>
+      <div className="login-container">
+        {/* 🟣 Left Purple Panel — slides right only on Create Account click */}
+        <motion.div
+          className="left-panel"
+          animate={animateExit ? { x: "100%" } : { x: 0 }}
+          transition={{ duration: 0.7, ease: "easeInOut" }}
+        >
+          <h1>
+            Welcome back to <span>TryFit!</span>
+          </h1>
+          <p>Make shopping more exciting with the touch of AR!</p>
+        </motion.div>
 
-        {/* Login Form */}
-        <div className="login-section">
+        {/* White Section (Login Form) */}
+        <div className="right-panel">
           <div className="login-box">
-            <h2>Login</h2>
+            <h2 className="login-title">Login</h2>
             <form onSubmit={handleLogin}>
               <div className="form-group">
-                <label>Email Address</label>
+                <label className="input-label">Email</label>
                 <input
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="Enter your Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
               </div>
 
               <div className="form-group password-group">
-                <label>Password</label>
+                <label className="input-label">Password</label>
                 <div className="password-wrapper">
                   <input
                     type={hidePassword ? "password" : "text"}
-                    placeholder="Enter your password"
+                    placeholder="Enter your Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
                   <span
                     className="password-toggle"
                     onClick={() => setHidePassword(!hidePassword)}
-                    role="button"
-                    aria-label={hidePassword ? "Show password" : "Hide password"}
                   >
-                    {hidePassword ? <FaEye /> : <FaEyeSlash />}
+                    {hidePassword ? <FaEyeSlash /> : <FaEye />}
                   </span>
                 </div>
               </div>
@@ -145,13 +133,15 @@ export default function LoginPage() {
             </form>
 
             <p className="signup-text">
-              Don’t have an account? <Link to="/signup">Sign Up</Link>
+              New here?{" "}
+              <span className="link" onClick={handleCreateAccountClick}>
+                Create an Account
+              </span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Loading overlay */}
       {isLoading && (
         <div className="loading-overlay">
           <div className="spinner" />
@@ -159,209 +149,241 @@ export default function LoginPage() {
       )}
 
       <style>{`
-        body { margin: 0; padding: 0; }
-
         .login-page {
+          font-family: 'Poppins', sans-serif;
           display: flex;
-          flex-direction: column;
+          justify-content: center;
+          align-items: center;
           min-height: 100vh;
-          font-family: Arial, sans-serif;
-          background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, 
-          rgba(135, 123, 212, 0.6) 72%, rgba(106, 90, 205, 0.98) 100%);
+          background: linear-gradient(135deg, #f7f4fc 0%, #e3d9f9 25%, #d3c4fd 50%, #cac0fc 75%, #a997c9 100%);
+          overflow: hidden;
         }
 
-        .main-section {
-          flex: 1;
+        .login-container {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 60px 80px;
+          width: 90%;
+          max-width: 1000px;
+          height: 600px;
+          border-radius: 20px;
+          overflow: hidden;
+          background: white;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+          position: relative;
         }
 
-        .welcome-section {
+        /* 🟣 Left Panel */
+        .left-panel {
           flex: 1;
-          text-align: center;
+          background: linear-gradient(145deg, #7C4DFF 0%, #9C6BFF 50%, #B39DDB 100%);
+          color: white;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          align-items: center;
+          align-items: flex-start;
+          padding: 60px;
+          border-top-right-radius: 100px;
+          border-bottom-right-radius: 100px;
+          position: relative;
+          width: 50%;
+          z-index: 2;
         }
 
-        .welcome-text {
-          font-size: 4rem;
-          color: #000;
+        .left-panel h1 {
+          font-size: 2.8rem;
           margin: 0;
-          letter-spacing: 5px;
-        }
-
-        .tryfit-text {
-          font-size: 5rem;
-          color: #FF4ABA;
-          margin: 10px 0 20px;
-          letter-spacing: 8px;
-        }
-
-        .tagline {
-          font-size: 1.2rem;
-          color: #444;
-          margin-bottom: 20px;
-        }
-
-        .download-bttn {
-          background: #9747FF; 
-          color: #fff;           
-          border: 2px solid #9747FF;   
-          padding: 12px 24px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 1.2rem;
           font-weight: bold;
-          width: 30%;
+          line-height: 1.2;
         }
 
-        .download-bttn:hover {
-          background: #f8f8f8ff;       
-          color: #9747FF;          
+        .left-panel h1 span {
+          color: #FFD1FF;
         }
 
-        /* Login Section */
-        .login-section {
+        .left-panel p {
+          font-size: 1.1rem;
+          margin-top: 15px;
+          color: #f5f2ff;
+          opacity: 0.9;
+        }
+
+        /* ⚪ Right Section */
+        .right-panel {
           flex: 1;
           display: flex;
           justify-content: center;
+          align-items: center;
+          background: #fff;
+          z-index: 1;
         }
 
         .login-box {
-          background: #fff;
-          padding: 40px;
-          border-radius: 10px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
           width: 100%;
-          height: 450px;
-          max-width: 410px;
+          max-width: 360px;
+          padding: 40px;
+          background: #ffffff;
+          border-radius: 16px;
+          display: flex;
+          flex-direction: column;
         }
 
-        .login-box h2 {
-          margin-bottom: 25px;
-          font-size: 2rem;
-          text-align: center;
-        }
-
-        .form-group {
+        .login-title {
           text-align: left;
+          color: #7C4DFF;
+          font-size: 1.80rem;
           margin-bottom: 30px;
         }
 
-        .form-group label {
+        .input-label {
           display: block;
-          font-weight: normal;
-          margin-bottom: 8px;
-          font-size: 17px;
+          font-weight: 500;
+          color: #444;
+          margin-bottom: 6px;
+          font-size: 0.95rem;
+        }
+
+        .form-group {
+          margin-bottom: 18px;
         }
 
         .form-group input {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          box-sizing: border-box;
+          width: 85%;
+          padding: 13px 45px 13px 15px;
+          border: 1px solid #ccc;
+          border-radius: 30px;
           font-size: 1rem;
-          height: 42px;
+          color: #333;
+          transition: border 0.2s ease;
         }
 
-        /* Password field styles (match other inputs) */
-        .password-group {
-          position: relative;
+        .form-group input:focus {
+          border-color: #7C4DFF;
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.15);
         }
 
         .password-wrapper {
           position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .password-wrapper input {
-          width: 100%;
-          padding-right: 40px; /* space for icon */
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          height: 42px;
-          box-sizing: border-box;
-          padding: 12px;
         }
 
         .password-toggle {
           position: absolute;
-          right: 12px;
+          right: 15px;
+          top: 50%;
+          transform: translateY(-50%);
           cursor: pointer;
-          color: #6A5ACD;
-          font-size: 1.1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100%;
-        }
-
-        .password-toggle:hover {
-          color: #5746c6;
+          color: #666;
+          font-size: 1.2rem;
         }
 
         .login-btn {
-          background-color: #6A5ACD;
-          color: white;
-          padding: 12px;
+          width: 100%;
+          padding: 13px;
+          background: linear-gradient(90deg, #6f42c1, #9b7bff);
           border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          width: 50%;
-          margin: 15px auto;
+          border-radius: 30px;
+          color: #fff;
           font-size: 1rem;
-          display: block;
-          margin-bottom: 35px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s ease;
+          margin-top: 8px;
         }
 
         .login-btn:hover {
-          background-color: #5746c6;
+          background: linear-gradient(90deg, #5e35b1, #8660ff);
         }
 
         .signup-text {
-          margin-top: 15px;
           text-align: center;
+          margin-top: 20px;
+          color: #555;
           font-size: 0.95rem;
         }
 
-        .signup-text a {
-          color: #6A5ACD;
+        .link {
+          color: #7C4DFF;
           text-decoration: none;
-          font-weight: bold;
+          font-weight: 600;
+          cursor: pointer;
         }
 
-        .signup-text a:hover {
+        .link:hover {
           text-decoration: underline;
         }
 
-        /* Loading overlay */
-        .loading-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.35);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
+        @media (max-width: 900px) {
+          .login-container {
+            flex-direction: column;
+            height: auto;
+            border-radius: 16px;
+          }
+
+          .left-panel {
+            width: 100%;
+            border-radius: 16px 16px 0 0;
+            text-align: center;
+            align-items: center;
+            padding: 25px 5px;
+          }
+
+          .left-panel h1 {
+            font-size: 2rem;
+          }
+
+          .left-panel p {
+            font-size: 0.95rem;
+          }
+
+          .right-panel {
+            width: 100%;
+            padding: 30px 20px;
+          }
+
+          .login-box {
+            max-width: 100%;
+            padding: 10px;
+          }
+
+          .login-title {
+            font-size: 1.8rem;
+          }
+
+          .form-group input {
+            width: 75%;
+            font-size: 0.85rem;
+          }
+
+           .password-toggle {
+            left: 290px;
+           }
+
+          .login-btn {
+            width: 92%;
+            padding: 12px;
+            font-size: 1rem;
+          }
         }
 
-        .spinner {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          border: 6px solid rgba(255,255,255,0.2);
-          border-top-color: #9747FF;
-          animation: spin 1s linear infinite;
-        }
+        @media (max-width: 480px) {
+          .left-panel h1 {
+            font-size: 1.7rem;
+          }
 
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+          .left-panel p {
+            font-size: 0.85rem;
+          }
+
+          .login-title {
+            font-size: 1.6rem;
+          }
+
+          .form-group input {
+            font-size: 0.9rem;
+          }
+
+          .signup-text {
+            font-size: 0.85rem;
+          }
         }
       `}</style>
     </div>

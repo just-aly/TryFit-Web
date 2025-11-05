@@ -1,8 +1,3 @@
-// src/Components/Profile.js
-///////////////////////////////
-// STILL NOT FINAL VERSION   //
-// WILL STILL TEST           //
-///////////////////////////////
 import React, { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";

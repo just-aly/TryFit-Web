@@ -6,7 +6,7 @@ import { getAuth } from "firebase/auth";
 const db = getFirestore();
 const auth = getAuth();
 
-export default function ShoppingCart() {
+export default function Cart() {
   const navigate = useNavigate();
   const user = auth.currentUser;
   const [products, setProducts] = useState([]);
@@ -114,7 +114,7 @@ export default function ShoppingCart() {
               checked={product.selected}
               onChange={() => toggleSelect(product.id)}
             />
-            <img src={product.productImage || "https://via.placeholder.com/80"} alt={product.productName} className="cart-img" />
+            <img src={product.imageUrl || "https://via.placeholder.com/80"} alt={product.productName} className="cart-img" />
             <div className="cart-details">
               <h3>{product.productName}</h3>
               <p className="price">₱{Number(product.price).toLocaleString()}</p>
@@ -303,3 +303,4 @@ export default function ShoppingCart() {
     </div>
   );
 }
+
