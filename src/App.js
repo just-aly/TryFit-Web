@@ -20,6 +20,7 @@ import TermsOfService from "./Components/TermsOfService";
 import PrivacyAndPolicy from "./Components/PrivacyPolicy";
 import AboutUs from "./Components/AboutUs";
 import ProductDetails from "./Components/ProductDetails";
+import SearchResults from "./Components/SearchResults";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -56,6 +57,7 @@ function AppContent() {
         <Route path="/termsofservice" element={<TermsOfService />} />
         <Route path="/privacyandpolicy" element={<PrivacyAndPolicy />} />
         <Route path="/aboutus" element={<AboutUs />} />
+        <Route path="/searchresults" element={<SearchResults />} />
         <Route path="/product/:productId" element={<ProductDetails />} />
       </Routes>
 

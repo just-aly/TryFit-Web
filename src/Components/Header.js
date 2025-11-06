@@ -10,6 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 
+
 export default function Header() {
   const navigate = useNavigate();
 
@@ -20,26 +21,31 @@ export default function Header() {
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const SEARCH_SUGGESTIONS = ["T-Shirts", "Longsleeves", "Pants", "Shorts"];
-
   const headerRef = useRef(null);
   const searchRef = useRef(null);
 
+  // 🔹 Static base suggestions
+  const BASE_SUGGESTIONS = ["T-shirt", "Longsleeves", "Pants", "Shorts"];
+
+  const [searchSuggestions, setSearchSuggestions] = useState(BASE_SUGGESTIONS);
+
+  // ✅ Fuse for fuzzy search
   const fuse = useMemo(
     () =>
-      new Fuse(SEARCH_SUGGESTIONS, {
+      new Fuse(searchSuggestions, {
         includeScore: true,
         threshold: 0.4,
       }),
-    []
+    [searchSuggestions]
   );
 
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
   };
 
+  // 🔹 Placeholder animation
   useEffect(() => {
-    const items = ["T-Shirt", "Longsleeve", "Shorts", "Pants"];
+    const items = ["T-shirt", "Longsleeve", "Shorts", "Pants"];
     let index = 0;
 
     const interval = setInterval(() => {
@@ -56,6 +62,22 @@ export default function Header() {
     return () => clearInterval(interval);
   }, [inputValue]);
 
+  // 🔹 Fetch product names from backend (optional)
+  useEffect(() => {
+    const fetchProductNames = async () => {
+      try {
+        // Example: fetch from API or Firebase later
+        const fetchedNames = ["Joggers", "Hoodie", "Tank Top"];
+        const merged = Array.from(new Set([...BASE_SUGGESTIONS, ...fetchedNames]));
+        setSearchSuggestions(merged);
+      } catch (err) {
+        console.error("Error fetching product names:", err);
+      }
+    };
+    fetchProductNames();
+  }, []);
+
+  // ✅ Search handler
   const handleSearchChange = (e) => {
     const text = e.target.value;
     setInputValue(text);
@@ -68,15 +90,21 @@ export default function Header() {
     }
   };
 
+  // ✅ Handle suggestion click
   const handleSuggestionClick = (item) => {
-    setInputValue(item);
+    setInputValue("");
     setFilteredSuggestions([]);
-    navigate(`/categories?category=${encodeURIComponent(item)}`);
+    navigate(`/searchresults?query=${encodeURIComponent(item)}`);
   };
 
-  const goToCategory = (category) => {
-    navigate(`/categories?category=${encodeURIComponent(category)}`);
-    setOpenDropdown(null);
+  // ✅ Submit search manually
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (inputValue.trim() !== "") {
+      navigate(`/searchresults?query=${encodeURIComponent(inputValue.trim())}`);
+      setFilteredSuggestions([]);
+      setInputValue("");
+    }
   };
 
   // ✅ Outside click closes dropdowns & suggestions
@@ -91,7 +119,6 @@ export default function Header() {
         setFilteredSuggestions([]);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -113,14 +140,14 @@ export default function Header() {
 
   return (
     <>
-      <header className="header" ref={headerRef}>
+    <header className="header" ref={headerRef}>
         <div className="logo" onClick={() => navigate("/landing")}>
           TRYFIT
         </div>
 
         <div className="center-area">
           {/* 🔍 Search bar */}
-          <div className="search-wrapper" ref={searchRef}>
+          <form className="search-wrapper" ref={searchRef} onSubmit={handleSearchSubmit}>
             <div className="placeholder-wrapper">
               <input
                 type="text"
@@ -128,7 +155,7 @@ export default function Header() {
                 value={inputValue}
                 onChange={handleSearchChange}
                 onFocus={() => setAnimate(true)}
-                onBlur={() => setAnimate(false)}
+                onBlur={() => setAnimate(false)} 
               />
               {inputValue.trim() === "" && (
                 <span className={`placeholder-text ${animate ? "slide" : ""}`}>
@@ -136,9 +163,11 @@ export default function Header() {
                 </span>
               )}
             </div>
-            <FaSearch className="search-icon" />
+            <button type="submit" className="search-icon-btn">
+              <FaSearch className="search-icon" />
+            </button>
 
-            {/* 💡 Search suggestions */}
+            {/* 💡 Suggestions dropdown */}
             {filteredSuggestions.length > 0 && (
               <div className="suggestions-container">
                 {filteredSuggestions.map((item, index) => (
@@ -152,66 +181,54 @@ export default function Header() {
                 ))}
               </div>
             )}
-          </div>
+          </form>
 
-          {/* Navigation items */}
+          {/* Navigation */}
           <div className="nav-items">
-            {/* Tops */}
             <div className="dropdown" onClick={() => toggleDropdown("tops")}>
               Tops {openDropdown === "tops" ? "▴" : "▾"}
               {openDropdown === "tops" && (
                 <ul className="dropdown-menu small-menu">
-                  <li onClick={() => goToCategory("T-Shirts")}>T-Shirt</li>
-                  <li onClick={() => goToCategory("Longsleeves")}>
+                  <li onClick={() => navigate("/categories?category=T-Shirts")}>
+                    T-Shirts
+                  </li>
+                  <li onClick={() => navigate("/categories?category=Longsleeves")}>
                     Longsleeves
                   </li>
                 </ul>
               )}
             </div>
 
-            {/* Bottoms */}
             <div className="dropdown" onClick={() => toggleDropdown("bottoms")}>
               Bottoms {openDropdown === "bottoms" ? "▴" : "▾"}
               {openDropdown === "bottoms" && (
                 <ul className="dropdown-menu small-menu">
-                  <li onClick={() => goToCategory("Pants")}>Pants</li>
-                  <li onClick={() => goToCategory("Shorts")}>Shorts</li>
+                  <li onClick={() => navigate("/categories?category=Pants")}>Pants</li>
+                  <li onClick={() => navigate("/categories?category=Shorts")}>Shorts</li>
                 </ul>
               )}
             </div>
 
-            {/* My Orders */}
-            <div
-              className="nav-icon-wrapper"
-              onClick={() => navigate("/myorders")}
-            >
+            <div className="nav-icon-wrapper" onClick={() => navigate("/myorders")}>
               <FaShoppingBag className="icon" />
-              <span className="tooltip">My Orders</span>
             </div>
 
-            {/* Cart */}
-            <div
-              className="nav-icon-wrapper"
-              onClick={() => navigate("/cart")}
-            >
+            <div className="nav-icon-wrapper" onClick={() => navigate("/cart")}>
               <FaShoppingCart className="icon" />
-              <span className="tooltip">Cart</span>
             </div>
 
-            {/* Profile */}
             <div
               className="dropdown nav-icon-wrapper"
               onClick={() => toggleDropdown("profile")}
             >
               <FaUser className="icon" />
-              <span className="tooltip">Profile</span>
               {openDropdown === "profile" && (
                 <ul className="dropdown-menu profile-menu">
                   <li onClick={() => navigate("/profile")}>
                     <FaUser className="dropdown-icon" /> My Profile
                   </li>
                   <li onClick={() => navigate("/notification")}>
-                    <FaBell className="dropdown-icon" /> Notification
+                    <FaBell className="dropdown-icon" /> Notifications
                   </li>
                   <li onClick={handleLogoutClick}>
                     <FaSignOutAlt className="dropdown-icon" /> Logout
