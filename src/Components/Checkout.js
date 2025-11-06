@@ -8,7 +8,7 @@ export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || null; 
-  const userId = user?.userId || null; // ✅ your custom userId (e.g., "U0056")
+  const userId = user?.userId || null;
 
   const [notification, setNotification] = useState("");
   const [shippingLocation, setShippingLocation] = useState(null);
@@ -26,7 +26,6 @@ export default function Checkout() {
 
   const controls = useAnimation();
 
-  // ✅ Animation on mount
   useEffect(() => {
     controls.start({
       opacity: 1,
@@ -35,7 +34,7 @@ export default function Checkout() {
     });
   }, [controls]);
 
-  // ✅ Fetch shipping location from Firestore
+  // Fetch shipping location from Firestore
    useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
@@ -46,7 +45,7 @@ export default function Checkout() {
           return;
         }
 
-        // 🔹 Get the custom userId from users collection
+        // Get the custom userId from users collection
         const userDocRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userDocRef);
 
@@ -58,7 +57,6 @@ export default function Checkout() {
 
         const customUserId = userSnap.data().userId;
 
-        // 🔹 Now query shippingLocations using the custom userId
         const q = query(
           collection(db, "shippingLocations"),
           where("userId", "==", customUserId)
@@ -67,7 +65,6 @@ export default function Checkout() {
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-          // ✅ Get the most recent shipping address (if you have multiple)
           const shippingData = querySnapshot.docs
             .map((doc) => ({ id: doc.id, ...doc.data() }))
             .sort(
@@ -102,7 +99,7 @@ export default function Checkout() {
           const data = orderSnap.data();
           console.log("✅ Completed order data:", data);
 
-          // 🔹 Fetch imageUrl for each item from 'products' collection
+          //  Fetch imageUrl for each item from 'products' collection
           const itemsWithImages = await Promise.all(
             (data.items || []).map(async (item) => {
               if (!item.imageUrl && item.productId) {
@@ -122,7 +119,7 @@ export default function Checkout() {
             })
           );
 
-          // 🔹 Update state with the fetched data
+          //  Update state with the fetched data
           setOrderInfo(data);
           setCartItems(itemsWithImages);
         } else {
@@ -154,7 +151,7 @@ export default function Checkout() {
 
     setIsPlacingOrder(true);
 
-    // 🔹 Get custom userId
+    //  Get custom userId
     const userDocRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userDocRef);
     if (!userSnap.exists()) {
@@ -172,7 +169,6 @@ export default function Checkout() {
 
     const deliveryFee = 58;
 
-    // 🔹 Group cart items by productId + size
     const groupedItemsMap = new Map();
     cartItems.forEach((item) => {
       const key = `${item.productId}_${item.size}`;
@@ -180,11 +176,11 @@ export default function Checkout() {
         const existing = groupedItemsMap.get(key);
         existing.quantity += item.quantity;
       } else {
-        groupedItemsMap.set(key, { ...item }); // clone
+        groupedItemsMap.set(key, { ...item }); 
       }
     });
 
-    // 🔹 Create separate orders for each group
+    //  Create separate orders for each group
     for (const groupedItem of groupedItemsMap.values()) {
       const subtotal = groupedItem.price * groupedItem.quantity;
       const total = subtotal + deliveryFee;
@@ -215,13 +211,11 @@ export default function Checkout() {
 
       if (!orderData.productID) {
         console.warn("⚠️ Skipping item with undefined productID:", groupedItem);
-        continue; // skip this loop iteration
+        continue; 
       }
 
-      // 🔹 Save order to Firestore
       await addDoc(collection(db, "orders"), orderData);
 
-      // 🔹 Send notification
       await addDoc(collection(db, "notifications"), {
         notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         userId: customUserId,
@@ -232,7 +226,7 @@ export default function Checkout() {
         read: false,
       });
 
-      // 🔹 Update product stock
+      //  Update product stock
       const productRef = doc(db, "products", groupedItem.productId);
       const productSnap = await getDoc(productRef);
       if (productSnap.exists()) {
@@ -254,7 +248,7 @@ export default function Checkout() {
       }
     }
 
-    // 🔹 Remove placed items from cart
+    //  Remove placed items from cart
     const cartRef = collection(db, "cartItems");
     const q = query(cartRef, where("userId", "==", customUserId));
     const cartSnap = await getDocs(q);
@@ -280,10 +274,7 @@ export default function Checkout() {
   }
 };
 
-
-
-
-    // ✅ Navigate to add/edit address
+    // Navigate to add/edit address
     const handleAddAddress = () => {
       navigate("/profile", {
         state: {
@@ -320,7 +311,7 @@ export default function Checkout() {
         <div className="checkout-left">
           <h1>Checkout</h1>
 
-          {/* ✅ Shipping Address Section */}
+          {/*  Shipping Address Section */}
           {loading ? (
             <p>Loading shipping info...</p>
           ) : shippingLocation ? (
@@ -486,9 +477,18 @@ export default function Checkout() {
         .header-line {
           flex: none;
           height: 20px;
-          width: 83%;
+          width: 75%;
           background: #6c56ef;
           box-shadow: 0 2px 6px rgba(108, 86, 239, 0.3);
+        }
+        
+        .edit-btn {
+          background: #6c56ef;
+          border: none;
+          color: white;
+          padding: 10px 18px;
+          font-weight: 600;
+          border-radius: 8px;
         }
 
         /* ===== Main Content ===== */
@@ -661,11 +661,10 @@ export default function Checkout() {
         font-weight: 600;
         display: flex;
         justify-content: space-between;
-        align-items: center; /* <-- aligns ₱547 perfectly with label */
+        align-items: center; 
         font-size: 1rem;
         margin-top: 10px;
-}
-
+        }
 
         hr {
           margin: 15px 0;
@@ -712,20 +711,150 @@ export default function Checkout() {
           background: #5a45d2;
         }
 
-        @media (max-width: 850px) {
-          .checkout-content {
-            flex-direction: column;
-            padding: 25px;
-          }
-
-          .checkout-header-inner {
-            padding: 0 25px;
-          }
-
-          .checkout-right {
-            width: 100%;
-          }
+      @media (max-width: 600px) {
+        .checkout-page {
+          padding: 130px 10px 80px; 
         }
+
+        .checkout-header-inner {
+          padding: 0 12px;
+        }
+
+        .checkout-title-row {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          margin-top: 10px; 
+        }
+
+        .checkout-title-row h1 {
+          font-size: 1.4rem; 
+        }
+
+        .header-line {
+          width: 100%;
+          height: 6px;
+        }
+
+        .checkout-content {
+          flex-direction: column;
+          padding: 15px;
+          gap: 15px;
+        }
+
+        .checkout-left {
+          width: 100%;
+          min-width: auto;
+        }
+
+        .address-box {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 12px;
+        }
+
+        .product-card {
+          flex-direction: row;
+          align-items: flex-start;
+          padding: 8px;
+          gap: 8px;
+        }
+
+        .product-image {
+          width: 55px;
+          height: 55px;
+        }
+
+        .product-details h4 {
+          font-size: 0.8rem; 
+        }
+
+        .product-details p {
+          font-size: 0.7rem;
+        }
+
+        .price {
+          font-size: 0.75rem;
+        }
+
+        .qty {
+          font-size: 0.7rem;
+        }
+
+        .shipping-option {
+        display: flex;
+        flex-direction: row;               
+        justify-content: space-between;
+        align-items: center;
+        background: #efe9ff;
+        border-radius: 8px;
+        padding: 8px 10px;               
+        gap: 8px;
+        font-size: 0.75rem;             
+      }
+
+      .shipping-option .method {
+        font-weight: 500;
+        font-size: 0.75rem;
+        margin: 0;
+        white-space: nowrap;            
+      }
+
+      .shipping-option .guarantee {
+        font-size: 0.7rem;
+        color: #34a853;
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .shipping-option .ship-price {
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: #333;
+        white-space: nowrap;
+      }
+
+
+        .payment-card {
+          padding: 12px;
+          font-size: 0.8rem;
+        }
+
+        .order-card {
+          padding: 12px;
+          font-size: 0.8rem;
+        }
+
+        .order-total {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 8px;
+        }
+
+        .order-total p {
+          font-size: 0.75rem;
+        }
+
+        .order-total span {
+          font-size: 0.85rem;
+        }
+
+        .order-total button {
+          width: 100%;
+          font-size: 0.85rem;
+          padding: 10px;
+          margin-top: 10px; 
+        }
+      }
+
+      /* Tablets (slightly bigger screens) */
+      @media (min-width: 601px) and (max-width: 850px) {
+        .checkout-content {
+          flex-direction: column;
+          padding: 25px;
+        }
+      }
       `}</style>
     </div>
   );

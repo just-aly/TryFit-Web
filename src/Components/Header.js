@@ -67,7 +67,7 @@ export default function Header() {
     const fetchProductNames = async () => {
       try {
         // Example: fetch from API or Firebase later
-        const fetchedNames = ["Joggers", "Hoodie", "Tank Top"];
+        const fetchedNames = ["Joggers", "Hoodie",];
         const merged = Array.from(new Set([...BASE_SUGGESTIONS, ...fetchedNames]));
         setSearchSuggestions(merged);
       } catch (err) {
@@ -350,12 +350,22 @@ export default function Header() {
           color: white;
         }
 
-        .search-icon {
-          font-size: 1.2rem;
-          color: #666;
+        .search-icon-btn {
+          background: none;
+          border: none;
+          outline: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
-          transition: color 0.2s ease-in-out;
         }
+
+        .search-icon-btn:hover .search-icon {
+          color: #6A5ACD;
+        }
+
         .search-wrapper:hover .search-icon,
         .search-wrapper:focus-within .search-icon { color: #6A5ACD; }
 

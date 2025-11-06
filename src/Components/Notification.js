@@ -145,7 +145,7 @@ export default function Notification() {
         .header-line {
           flex: none;
           height: 20px;
-          width: 83%;
+          width: 65%;
           background: #6c56ef;
           box-shadow: 0 2px 6px rgba(108, 86, 239, 0.3);
         }
