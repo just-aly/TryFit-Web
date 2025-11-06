@@ -9,10 +9,14 @@ import {
   setDoc,
   updateDoc,
   serverTimestamp,
-  collection, 
-  addDoc, 
+  collection,
+  addDoc,
   deleteDoc,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
+
 import {
   reauthenticateWithCredential,
   EmailAuthProvider,
@@ -199,69 +203,77 @@ export default function Profile() {
     }, [location.state]);
 
     
-  useEffect(() => {
-    let mounted = true;
+useEffect(() => {
+  let mounted = true;
 
-    async function loadUserData() {
-      setLoading(true);
-      try {
-        const user = auth.currentUser; // ✅ Current logged-in user
-        if (!user) {
-          navigate("/login");
-          return;
-        }
-
-        setEmail(user.email || ""); // set email from auth
-        const uRef = doc(db, "users", user.uid); // doc path: users/{uid}
-        const uSnap = await getDoc(uRef);
-
-        if (uSnap.exists() && mounted) {
-          const data = uSnap.data();
-          setName(data.name ?? data.fullName ?? "");
-          setUsername(data.username ?? "");
-          setPhone(data.phone ?? "");
-          setGender(data.gender ?? "");
-          setUserId(data.userId ?? user.uid); // important for saving shipping later
-
-          // Load shipping location
-          const shipRef = doc(db, "users", user.uid, "shippingLocations", "default");
-          const shipSnap = await getDoc(shipRef);
-
-          if (shipSnap.exists()) {
-            const s = shipSnap.data();
-            setShipName(s.name ?? "");
-            setShipPhone(s.phone ?? "");
-            setShipHouse(s.house ?? "");
-            setMunicipality(s.municipality ?? "");
-            setBarangay(s.barangay ?? "");
-            setFinalAddress(s.fullAddress ?? "");
-            setShipPostal(s.postalCode ?? "");
-            setHasShipping(true);
-            if (s.fullAddress) setPickerStage("final");
-            else if (s.barangay) setPickerStage("final");
-            else if (s.municipality) setPickerStage("barangay");
-          } else {
-            // fallback
-            setShipHouse(uSnap.data().street ?? "");
-            setFinalAddress(uSnap.data().address ?? "");
-            setShipPostal(uSnap.data().postalId ?? "");
-            if (uSnap.data().address) setPickerStage("final");
-          }
-        } else {
-          // no user doc exists
-          setName(user.displayName ?? "");
-        }
-      } catch (e) {
-        console.error("Load user error", e);
-        alert("Failed to load profile data.");
-      } finally {
-        if (mounted) setLoading(false);
+  async function loadUserData() {
+    setLoading(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        navigate("/login");
+        return;
       }
-    }
 
-    loadUserData();
-    return () => (mounted = false);
-  }, [navigate]);
+      setEmail(user.email || "");
+
+      // Load user doc
+      const uRef = doc(db, "users", user.uid);
+      const uSnap = await getDoc(uRef);
+
+      if (uSnap.exists() && mounted) {
+        const data = uSnap.data();
+        setName(data.name ?? data.fullName ?? "");
+        setUsername(data.username ?? "");
+        setPhone(data.phone ?? "");
+        setGender(data.gender ?? "");
+        setUserId(data.userId ?? user.uid); // save unique ID
+
+        // Load shipping location by userId
+        const q = query(
+          collection(db, "shippingLocations"),
+          where("userId", "==", data.userId ?? user.uid)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const s = querySnapshot.docs[0].data();
+          setShipName(s.name ?? "");
+          setShipPhone(s.phone ?? "");
+          setShipHouse(s.house ?? "");
+          setMunicipality(s.municipality ?? "");
+          setBarangay(s.barangay ?? "");
+          setFinalAddress(s.fullAddress ?? "");
+          setShipPostal(s.postalCode ?? "");
+          setHasShipping(true);
+
+          // Set picker stage
+          if (s.fullAddress) setPickerStage("final");
+          else if (s.barangay) setPickerStage("final");
+          else if (s.municipality) setPickerStage("barangay");
+        } else {
+          // fallback: use user doc info if no shipping doc exists
+          setShipHouse(data.street ?? "");
+          setFinalAddress(data.address ?? "");
+          setShipPostal(data.postalCode ?? "");
+          if (data.address) setPickerStage("final");
+        }
+      } else {
+        // no user doc exists
+        setName(user.displayName ?? "");
+      }
+    } catch (e) {
+      console.error("Load user error", e);
+      alert("Failed to load profile data.");
+    } finally {
+      if (mounted) setLoading(false);
+    }
+  }
+
+  loadUserData();
+  return () => (mounted = false);
+}, [navigate]);
+
 
 
   // --- Edit Profile handlers ---
@@ -377,6 +389,32 @@ export default function Profile() {
   }
 
 const handleSaveShipping = async () => {
+  // ✅ Clean input values
+  const cleanedName = shipName.trim();
+  const cleanedPhone = shipPhone.replace(/\s+/g, '');
+  const cleanedHouse = shipHouse.trim();
+  const cleanedPostal = shipPostal.trim();
+
+  // ✅ Validation
+  if (!cleanedName || !/^[A-Za-z\s.]+$/.test(cleanedName)) {
+    return alert('Validation Error: Please enter a valid name (letters only).');
+  }
+  if (!cleanedPhone || !/^(09\d{9}|(\+639)\d{9})$/.test(cleanedPhone)) {
+    return alert('Validation Error: Please enter a valid mobile number (e.g., 09xxxxxxxxx).');
+  }
+  if (!cleanedHouse || cleanedHouse.length < 5) {
+    return alert('Validation Error: Please enter a more complete house/street/building information.');
+  }
+  if (!municipality) {
+    return alert('Validation Error: Please select a municipality.');
+  }
+  if (!barangay) {
+    return alert('Validation Error: Please select a barangay.');
+  }
+  if (!cleanedPostal || !/^\d{4}$/.test(cleanedPostal)) {
+    return alert('Validation Error: Please enter a valid 4-digit postal code.');
+  }
+
   try {
     const user = auth.currentUser;
     if (!user) {
@@ -386,21 +424,49 @@ const handleSaveShipping = async () => {
 
     setSaving(true);
 
+   // Get custom userId from users doc
+    const uSnap = await getDoc(doc(db, "users", user.uid));
+    const customUserId = uSnap.exists() ? uSnap.data().userId : user.uid;
+
+    // Query using the custom ID
+    const q = query(
+      collection(db, "shippingLocations"),
+      where("userId", "==", customUserId)
+    );
+    const querySnapshot = await getDocs(q);
+
+
+    // ✅ Prepare data to save/update
     const saveData = {
-      userId: userId, // ✅ still store your unique app-level userId in the document
-      name: shipName,
-      phone: shipPhone,
-      house: shipHouse,
+      userId: customUserId,
+      name: cleanedName,
+      phone: cleanedPhone,
+      house: cleanedHouse,
       municipality,
       barangay,
       fullAddress: finalAddress,
-      postal: shipPostal,
-      updatedAt: serverTimestamp(),
+      postalCode: cleanedPostal,
+      updatedAt: serverTimestamp(), // Always updated
     };
 
-    // ✅ Add to the top-level "shippingLocations" collection
-    // Firebase will auto-generate a unique document ID
+   if (querySnapshot.empty) {
+    // New doc
+    saveData.createdAt = new Date();
+    saveData.shippingLocationID = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     await addDoc(collection(db, "shippingLocations"), saveData);
+    console.log("✅ New shipping location created!");
+  } else {
+    // Update existing
+    const docRef = querySnapshot.docs[0].ref;
+    const existingData = querySnapshot.docs[0].data();
+
+    // Preserve createdAt & shippingLocationID
+    saveData.createdAt = existingData.createdAt || new Date();
+    saveData.shippingLocationID = existingData.shippingLocationID;
+
+    await updateDoc(docRef, saveData);
+    console.log("📦 Shipping location updated!");
+  }
 
     setHasShipping(true);
     setIsEditing(false);
@@ -408,7 +474,7 @@ const handleSaveShipping = async () => {
     setTimeout(() => setNotification(""), 2000);
 
   } catch (err) {
-    console.error("Error saving shipping location:", err);
+    console.error("❌ Error saving shipping location:", err);
     alert("Failed to save shipping location.");
   } finally {
     setSaving(false);
