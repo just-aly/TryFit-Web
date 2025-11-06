@@ -163,18 +163,87 @@ export default function SearchResults() {
 }
 
 const styles = {
-  pageContainer: { padding: "30px 50px", backgroundColor: "#f7f7f7", minHeight: "100vh" },
-  header: { display: "flex", alignItems: "center", marginBottom: "20px" },
-  headerTitle: { fontSize: "20px", fontWeight: "bold" },
-  resultsContainer: { backgroundColor: "#fff", padding: "20px", borderRadius: "12px" },
-  title: { fontSize: "18px", fontWeight: "600", marginBottom: "10px" },
-  message: { color: "#666", fontStyle: "italic", marginBottom: "20px" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "20px" },
-  card: { backgroundColor: "#fafafa", borderRadius: "10px", padding: "10px", cursor: "pointer" },
-  image: { width: "100%", height: "200px", objectFit: "cover", borderRadius: "8px" },
-  name: { fontSize: "14px", fontWeight: "bold", marginTop: "10px" },
-  price: { color: "#9747FF", fontWeight: "600", marginTop: "4px" },
-  meta: { fontSize: "12px", color: "#555" },
-  delivery: { fontSize: "12px", color: "green" },
-  noResults: { textAlign: "center", color: "#555", marginTop: "50px" },
+  pageContainer: { 
+    padding: "30px 50px", 
+    backgroundColor: "#f7f7f7", 
+    minHeight: "100vh",
+    fontStyle: "Poppins",
+  },
+
+  header: { 
+    display: "flex", 
+    alignItems: "center", 
+    marginBottom: "20px" 
+  },
+
+  headerTitle: { 
+    fontSize: "20px", 
+    fontWeight: "bold" 
+  },
+
+  resultsContainer: { 
+    backgroundColor: "#fff", 
+    padding: "20px", 
+    borderRadius: "12px" 
+  },
+  
+  title: { 
+    fontSize: "18px", 
+    fontWeight: "600", 
+    marginBottom: "10px" 
+  },
+
+  message: { 
+    color: "#666", 
+    fontStyle: "italic", 
+    marginBottom: "20px" 
+  },
+  
+  grid: { 
+    display: "grid", 
+    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", 
+    gap: "20px" 
+  },
+
+  card: { 
+    backgroundColor: "#fafafa", 
+    borderRadius: "10px", 
+    padding: "10px", 
+    cursor: "pointer" 
+  },
+
+  image: { 
+    width: "100%", 
+    height: "200px", 
+    objectFit: "cover", 
+    borderRadius: "8px" 
+  },
+
+  name: { 
+    fontSize: "14px", 
+    fontWeight: "bold", 
+    marginTop: "10px" 
+  },
+
+  price: { 
+    color: "#9747FF", 
+    fontWeight: "600", 
+    marginTop: "4px" 
+  },
+
+  meta: { 
+    fontSize: "12px", 
+    color: "#555" 
+  },
+  
+  delivery: { 
+    fontSize: "12px",
+    color: "green" 
+  },
+
+  noResults: { 
+    textAlign: "center", 
+    color: "#555", 
+    marginTop: "50px" 
+  },
 };

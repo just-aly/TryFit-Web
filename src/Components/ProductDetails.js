@@ -41,7 +41,7 @@ export default function ProductDetails() {
     fetchProduct();
   }, [productId]);
 
-   // ✅ Fetch reviews for this product
+   //  Fetch reviews for this product
  useEffect(() => {
   const fetchReviews = async () => {
     try {
@@ -52,7 +52,6 @@ export default function ProductDetails() {
       const querySnapshot = await getDocs(q);
       const fetched = querySnapshot.docs.map((doc) => doc.data());
 
-      // ✅ Add this line here:
       console.log("Reviews fetched:", fetched);
 
       setReviews(fetched);
@@ -166,14 +165,14 @@ export default function ProductDetails() {
       {popup.visible && (
   <div className={`popup ${popup.type}`}>
     <div className="popup-icon">
-      {popup.type === "info" && "ℹ️"}
+      {popup.type === "success" && "✅"}
       {popup.type === "warning" && "⚠️"}
       {popup.type === "error" && "❌"}
     </div>
     <div className="popup-text">
       <strong className="popup-title">
-        {popup.type === "info"
-          ? "Information"
+        {popup.type === "success"
+          ? "Success!"
           : popup.type === "warning"
           ? "Warning!"
           : "Error!"}
@@ -208,7 +207,7 @@ export default function ProductDetails() {
             Size recommendations and AR experience are available only on the mobile app.
           </div>
 
-          {/* ✅ Reviews Section */}
+          {/*  Reviews Section */}
           <div className="reviews-section">
             <h3> Reviews</h3>
             {showReviews && (
@@ -253,7 +252,7 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* 🛒 Add to Cart Modal */}
+      {/*  Add to Cart Modal */}
       {modalVisible && (
         <div className="modal-overlay" onClick={() => setModalVisible(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -294,7 +293,7 @@ export default function ProductDetails() {
         </div>
       )}
 
-      {/* 💳 Direct Checkout Modal */}
+      {/*  Direct Checkout Modal */}
       {directCheckoutModal && (
         <div className="modal-overlay" onClick={() => setDirectCheckoutModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -331,7 +330,7 @@ export default function ProductDetails() {
         </div>
       )}
 
-      {/* ✅ Success Modal */}
+      {/*  Success Modal */}
       {cartSuccessModal && (
         <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -358,7 +357,6 @@ export default function ProductDetails() {
         </div>
       )}
 
-      {/* ✅ CSS Reformatted */}
       <style>{`
         /* ✅ Popup Styles */
         .popup {
@@ -410,20 +408,21 @@ export default function ProductDetails() {
           margin-left: 8px;
         }
 
-        /* Colors per type */
-        .popup.info {
-          background: #cfe4ff;
-          border-left: 6px solid #2196f3;
+        .popup.success {
+          background: #e9f8ec;
+          border-left: 6px solid #4CAF50;
+          color: #256d32; 
         }
 
         .popup.warning {
-          background: #fff3cd;
-          border-left: 6px solid #ff9800;
+          background: #fff8e1;
+          border-left: 6px solid #f5b800; 
+          color: #b07e00;
         }
-
         .popup.error {
-          background: #f8d7da;
-          border-left: 6px solid #f44336;
+          background: #fdecea;
+          border-left: 6px solid #f44336; 
+          color: #a30000;
         }
 
         /* Animation */
@@ -655,6 +654,122 @@ export default function ProductDetails() {
           border-color: #9747FF;
           background: #F3E5F5;
         }
+
+        /* Mobile Responsive Design */
+        @media (max-width: 768px) {
+        .product-details-container {
+          padding: 100px 10px 80px; 
+        }
+
+        .product-layout {
+          flex-direction: column; 
+          align-items: center;
+          gap: 20px;
+          padding: 20px;
+          box-shadow: none;
+          border-radius: 0;
+        }
+
+        .product-image-section {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        .product-image {
+          width: 100%;
+          max-width: 350px;
+          height: auto;
+          border-radius: 12px;
+        }
+
+        .product-info-section {
+          width: 100%;
+          text-align: center;
+        }
+
+        .product-title {
+          font-size: 1.1rem;
+        }
+
+        .price {
+          font-size: 1rem;
+        }
+
+        .rating, .sold, .note {
+          font-size: 0.9rem;
+        }
+
+        .reviews-section {
+          margin-top: 20px;
+          padding: 8px;
+          box-shadow: none;
+          border: 1px solid #f0f0f0;
+          max-height: 180px;
+        }
+
+        .review-card {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 5px;
+        }
+
+        .review-stars {
+          align-self: flex-end;
+        }
+
+        .button-group {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 90%;
+          background: #fff;
+          border-top: 1px solid #ddd;
+          padding: 10px 16px;
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+          z-index: 1000;
+        }
+
+        .add-to-cart-btn, .checkout-btn {
+          flex: 1;
+          padding: 12px 0;
+          font-size: 0.9rem;
+          border-radius: 8px;
+        }
+
+        .modal-content {
+          width: 92%;
+          max-width: 350px;
+          padding: 15px;
+        }
+
+        .sizes {
+          justify-content: center;
+        }
+
+        .size-btn {
+          font-size: 0.9rem;
+          padding: 10px 14px;
+        }
+
+        .quantity-label {
+          font-size: 0.9rem;
+        }
+
+        .quantity button {
+          width: 36px;
+          height: 36px;
+          font-size: 1.2rem;
+        }
+
+        .confirm-btn {
+          font-size: 0.9rem;
+          padding: 10px;
+        }
+      }
       `}</style>
     </div>
   );

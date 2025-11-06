@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -14,12 +14,19 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [animateExit, setAnimateExit] = useState(false);
 
-  const showErrorPopup = (message) => alert(message);
+  const [popup, setPopup] = useState({ type: "", title: "", message: "" });
+
+  const showPopup = (type, title, message) => {
+    setPopup({ type, title, message });
+    setTimeout(() => setPopup({ type: "", title: "", message: "" }), 5000);
+  };
+
+  const closePopup = () => setPopup({ type: "", title: "", message: "" });
 
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      showErrorPopup("Please enter both email and password.");
+      showPopup("error", "Login Error", "Please enter both email and password.");
       return;
     }
 
@@ -36,11 +43,13 @@ export default function LoginPage() {
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (!userDocSnap.exists()) {
-          showErrorPopup("Logged in, but user profile data not found.");
+          showPopup("error", "Profile Missing", "Logged in, but user data not found.");
           setIsLoading(false);
           return;
         }
-        navigate("/landing");
+
+        showPopup("success", "Login Successful", "Redirecting to your dashboard...");
+        setTimeout(() => navigate("/landing"), 1200);
       }
     } catch (err) {
       let message = "Login Failed. Please try again.";
@@ -64,7 +73,7 @@ export default function LoginPage() {
           message = err?.message || message;
           break;
       }
-      showErrorPopup(message);
+      showPopup("error", "Login Error", message);
     } finally {
       setIsLoading(false);
     }
@@ -74,17 +83,16 @@ export default function LoginPage() {
     setAnimateExit(true);
     setTimeout(() => {
       navigate("/signup");
-    }, 700); // let animation finish first
+    }, 700);
   };
 
   return (
     <div className="login-page">
       <div className="login-container">
-        {/* 🟣 Left Purple Panel — slides right only on Create Account click */}
         <motion.div
           className="left-panel"
           animate={animateExit ? { x: "100%" } : { x: 0 }}
-          transition={{ duration: 0.7, ease: "easeInOut" }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
         >
           <h1>
             Welcome back to <span>TryFit!</span>
@@ -92,7 +100,6 @@ export default function LoginPage() {
           <p>Make shopping more exciting with the touch of AR!</p>
         </motion.div>
 
-        {/* White Section (Login Form) */}
         <div className="right-panel">
           <div className="login-box">
             <h2 className="login-title">Login</h2>
@@ -145,6 +152,24 @@ export default function LoginPage() {
       {isLoading && (
         <div className="loading-overlay">
           <div className="spinner" />
+        </div>
+      )}
+
+      {/* 🟣 Popup Notification */}
+      {popup.message && (
+        <div className="popup-overlay top">
+          <motion.div
+            className={`popup-box popup-${popup.type}`}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <button className="popup-close" onClick={closePopup}>
+              &times;
+            </button>
+            <h3>{popup.title}</h3>
+            <p>{popup.message}</p>
+          </motion.div>
         </div>
       )}
 
@@ -311,6 +336,77 @@ export default function LoginPage() {
           text-decoration: underline;
         }
 
+        .popup-overlay.top {
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 9999;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          width: 100%;
+          pointer-events: none;
+        }
+
+        .popup-box {
+          pointer-events: auto;
+          background: #fff;
+          border-radius: 12px;
+          padding: 18px 20px 15px;
+          text-align: left;
+          width: 340px;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+          animation: fadeIn 0.3s ease;
+          position: relative;
+        }
+
+        .popup-success {
+          border-left: 6px solid #28a745;
+        }
+
+        .popup-error {
+          border-left: 6px solid #d9534f;
+        }
+
+        .popup-warning {
+          border-left: 6px solid #f0ad4e;
+        }
+
+        .popup-box h3 {
+          margin: 0 0 6px;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #222;
+        }
+
+        .popup-box p {
+          font-size: 0.95rem;
+          color: #444;
+          margin: 0;
+        }
+
+        .popup-close {
+          position: absolute;
+          top: 6px;
+          right: 10px;
+          background: none;
+          border: none;
+          font-size: 1.3rem;
+          color: #999;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .popup-close:hover {
+          color: #333;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.5); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
         @media (max-width: 900px) {
           .login-container {
             flex-direction: column;
@@ -353,9 +449,9 @@ export default function LoginPage() {
             font-size: 0.85rem;
           }
 
-           .password-toggle {
-            left: 290px;
-           }
+          .password-toggle {
+            left: 250px;
+          }
 
           .login-btn {
             width: 92%;

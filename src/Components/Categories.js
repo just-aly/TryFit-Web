@@ -411,6 +411,115 @@ export default function Categories() {
           color: #777;
           padding: 40px;
         }
+
+        /* 📱 Mobile and Tablet Responsiveness *//* ✅ Compact mobile layout (fits perfectly in screen) */
+    /* 📱 Ultra-compact mobile layout - fits fully on small screens */
+    @media (max-width: 480px) {
+      .categories-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        flex-direction: row;
+        align-items: stretch;
+        border: none;
+        box-shadow: none;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        flex: 0 0 140px !important; /* ✅ shrink sidebar width */
+        padding: 8px;
+        background: #f8f6ff;
+        border-right: 1px solid #ddd;
+      }
+
+      .sidebar-title {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+      }
+
+      .category-group {
+        margin-bottom: 12px;
+      }
+
+      .categories-page {
+          padding-top: 120px !important; /* was 100px earlier — pushes container down */
+      }
+
+      .category-group h4 {
+        font-size: 0.8rem;
+        margin-bottom: 4px;
+      }
+
+      .category-group li {
+        font-size: 0.8rem;
+        padding: 5px 6px;
+        margin-bottom: 3px;
+        border-radius: 4px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .categories-content {
+        flex: 1;
+        background: #fff;
+        padding: 0;
+        overflow-y: auto;
+      }
+
+      .section-header {
+        padding: 10px 12px;
+        border-bottom: 1px solid #6a5acd;
+      }
+
+      .section-header h2 {
+        font-size: 1rem;
+      }
+
+      .tabs {
+        gap: 8px;
+      }
+
+      .tab {
+        font-size: 0.8rem;
+        padding: 3px 6px;
+      }
+
+      .content-wrapper {
+        padding: 10px;
+        gap: 10px;
+        grid-template-columns: 1fr; /* one column view */
+      }
+
+      .product-card {
+        height: auto;
+        padding: 8px;
+      }
+
+      .product-info {
+        padding: 8px;
+      }
+
+      .product-info h3 {
+        font-size: 0.85rem;
+      }
+
+      .price {
+        font-size: 0.85rem;
+      }
+
+      .meta,
+      .delivery {
+        font-size: 0.75rem;
+      }
+
+      .categories-page {
+        padding-top: 100px;
+        padding-bottom: 30px;
+        overflow-x: hidden;
+      }
+    }
       `}</style>
     </div>
   );

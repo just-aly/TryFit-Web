@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { auth, db } from "../firebase";
@@ -15,25 +15,45 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [animateExit, setAnimateExit] = useState(false);
 
+  // ✅ Popup state
+  const [popup, setPopup] = useState({ type: "", title: "", message: "" });
+  const [showPopupBox, setShowPopupBox] = useState(false);
+
+  // ✅ Popup functions
+  const showPopup = (type, title, message) => {
+    setPopup({ type, title, message });
+    setShowPopupBox(true);
+
+    // Auto hide after 3 seconds with fade out
+    setTimeout(() => {
+      setShowPopupBox(false);
+      setTimeout(() => setPopup({ type: "", title: "", message: "" }), 400);
+    }, 3000);
+  };
+
+  const closePopup = () => {
+    setShowPopupBox(false);
+    setTimeout(() => setPopup({ type: "", title: "", message: "" }), 400);
+  };
+
+  // ✅ Sign Up Logic
   const handleSignUp = async (e) => {
     e.preventDefault();
 
     if (!username.trim() || !email.trim() || !password.trim()) {
-      alert("Please fill all fields before continuing.");
+      showPopup("error", "Validation Error", "Please fill all fields before continuing.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // ✅ Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       const counterRef = doc(db, "counters", "userId");
       let userId;
 
-      // ✅ Firestore transaction for sequential userId
       await runTransaction(db, async (transaction) => {
         const counterDoc = await transaction.get(counterRef);
 
@@ -47,7 +67,6 @@ export default function SignUpPage() {
         }
       });
 
-      // ✅ Store user info in Firestore
       await setDoc(doc(db, "users", user.uid), {
         username: username.trim(),
         email: email.trim(),
@@ -55,10 +74,8 @@ export default function SignUpPage() {
         createdAt: serverTimestamp(),
       });
 
-      console.log("✅ New user created:", userId);
-      alert("Account created successfully!");
-
-      navigate("/landing");
+      showPopup("success", "Account Created!", "Welcome aboard, your account was successfully created!");
+      setTimeout(() => navigate("/landing"), 1500);
     } catch (error) {
       console.error("Firebase Sign Up Error:", error.code, error.message);
 
@@ -80,7 +97,7 @@ export default function SignUpPage() {
           break;
       }
 
-      alert(message);
+      showPopup("error", "Sign Up Failed", message);
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +107,7 @@ export default function SignUpPage() {
     setAnimateExit(true);
     setTimeout(() => {
       navigate("/login");
-    }, 700); // let animation finish first
+    }, 700);
   };
 
   return (
@@ -166,8 +183,18 @@ export default function SignUpPage() {
           </h1>
           <p>Join our team now!</p>
         </motion.div>
-
       </div>
+
+      {/* ✅ Popup Notification */}
+      {popup.type && (
+        <div
+          className={`popup-container popup-${popup.type} ${showPopupBox ? "show" : "hide"}`}
+        >
+          <button className="close-btn" onClick={closePopup}>×</button>
+          <h3>{popup.title}</h3>
+          <p>{popup.message}</p>
+        </div>
+      )}
 
       {isLoading && (
         <div className="loading-overlay">
@@ -196,14 +223,13 @@ export default function SignUpPage() {
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
         }
 
-       .left-panel {
+        .left-panel {
           flex: 1;
           display: flex;
           justify-content: center;
           align-items: center;
           background: #fff;
           position: relative;
-          z-index: 1; /* below purple */
         }
 
         .right-panel {
@@ -218,12 +244,10 @@ export default function SignUpPage() {
           padding: 60px;
           border-top-left-radius: 100px;
           border-bottom-left-radius: 100px;
-          z-index: 2; /* above white form */
         }
 
         .right-panel h1 {
           font-size: 2.8rem;
-          margin: 0;
           font-weight: bold;
           line-height: 1.2;
         }
@@ -250,18 +274,15 @@ export default function SignUpPage() {
         }
 
         .signup-title {
-          text-align: left;
           color: #7C4DFF;
           font-size: 1.80rem;
           margin-bottom: 30px;
         }
 
         .input-label {
-          display: block;
           font-weight: 500;
           color: #444;
           margin-bottom: 6px;
-          font-size: 0.95rem;
         }
 
         .form-group {
@@ -280,7 +301,6 @@ export default function SignUpPage() {
 
         .form-group input:focus {
           border-color: #7C4DFF;
-          outline: none;
           box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.15);
         }
 
@@ -320,20 +340,9 @@ export default function SignUpPage() {
           text-align: center;
           margin-top: 20px;
           color: #555;
-          font-size: 0.95rem;
         }
 
-        .login-text a {
-          color: #7C4DFF;
-          text-decoration: none;
-          font-weight: 600;
-        }
-
-        .login-text a:hover {
-          text-decoration: underline;
-        }
-
-          .link {
+        .link {
           color: #7C4DFF;
           text-decoration: none;
           font-weight: 600;
@@ -344,9 +353,65 @@ export default function SignUpPage() {
           text-decoration: underline;
         }
 
-        /* ===== Responsive ===== */
+        /* ✅ Popup Notification Styles */
+        .popup-container {
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #fff;
+          padding: 16px 24px;
+          border-radius: 12px;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+          text-align: center;
+          min-width: 300px;
+          z-index: 9999;
+          opacity: 0;
+          transition: opacity 0.4s ease, transform 0.4s ease;
+        }
 
-        @media (max-width: 900px) {
+        .popup-container.show {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+
+        .popup-container.hide {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+
+        .popup-success { border-left: 6px solid #28a745; }
+        .popup-error { border-left: 6px solid #d9534f; }
+        .popup-warning { border-left: 6px solid #f0ad4e; }
+
+        .popup-container h3 {
+          margin: 0 0 6px 0;
+          font-size: 1.1rem;
+          color: #333;
+        }
+
+        .popup-container p {
+          margin: 0;
+          font-size: 0.95rem;
+          color: #555;
+        }
+
+        .close-btn {
+          position: absolute;
+          top: 8px;
+          right: 12px;
+          background: none;
+          border: none;
+          font-size: 1.2rem;
+          color: #888;
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+
+        .close-btn:hover { color: #000; }
+
+        /* Responsive */
+     @media (max-width: 900px) {
           .signup-container {
             flex-direction: column-reverse;
             height: auto;
@@ -412,6 +477,10 @@ export default function SignUpPage() {
             font-size: 1.6rem;
           }
 
+          .password-toggle {
+            left: 250px;
+          }
+
           .form-group input {
             font-size: 0.9rem;
           }
@@ -420,11 +489,8 @@ export default function SignUpPage() {
             font-size: 0.85rem;
           }
         }
+        }
       `}</style>
     </div>
   );
 }
-
-
-
-

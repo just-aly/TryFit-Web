@@ -16,7 +16,6 @@ import {
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-
 const fetchProductDetails = async (productId) => {
   try {
     const productRef = doc(db, 'products', productId);
@@ -31,11 +30,19 @@ const fetchProductDetails = async (productId) => {
   }
 };
 
-
 const db = getFirestore();
 const auth = getAuth();
 
 export default function MyOrders() {
+  const [popup, setPopup] = useState({ visible: false, message: "", type: "" });
+
+  const showPopup = (message, type = "info") => {
+    setPopup({ visible: true, message, type });
+    setTimeout(() => setPopup({ visible: false, message: "", type: "" }), 2500);
+  };
+
+  const closePopup = () => setPopup({ visible: false, message: "", type: "" });
+
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [customUserId, setCustomUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('Orders');
@@ -50,9 +57,6 @@ export default function MyOrders() {
   const [rateOrderDetails, setRateOrderDetails] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-
-
-
   const [ordersData, setOrdersData] = useState({
     Orders: [],
     ToShip: [],
@@ -62,22 +66,21 @@ export default function MyOrders() {
   });
 
   const [ordersWithProducts, setOrdersWithProducts] = useState({
-  Orders: [],
-  ToShip: [],
-  ToReceive: [],
-  Completed: [],
-  Cancelled: [],
-});
+    Orders: [],
+    ToShip: [],
+    ToReceive: [],
+    Completed: [],
+    Cancelled: [],
+  });
 
   useEffect(() => {
     if (location.state?.fromCheckout && location.state?.orderId) {
-      alert(`✅ Your order ${location.state.orderId} has been placed successfully!`);
+      showPopup(`Your order ${location.state?.orderId} has been placed successfully!`, "success");
 
-      // Clear state to prevent alert from showing again
+      // Clear state to prevent popup from showing again
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate]);
-
 
   // Listen for auth state
   useEffect(() => {
@@ -138,76 +141,75 @@ export default function MyOrders() {
         );
 
         // ✅ Replace array entirely to prevent duplicates
-          setOrdersWithProducts(prev => {
-            const existingOrders = prev[key] || [];
-            const ordersMap = new Map();
+        setOrdersWithProducts(prev => {
+          const existingOrders = prev[key] || [];
+          const ordersMap = new Map();
 
-            // Add existing orders
-            existingOrders.forEach(o => ordersMap.set(o.id, o));
+          // Add existing orders
+          existingOrders.forEach(o => ordersMap.set(o.id, o));
 
-            // Add new orders, replacing duplicates
-            enrichedOrders.forEach(o => ordersMap.set(o.id, o));
+          // Add new orders, replacing duplicates
+          enrichedOrders.forEach(o => ordersMap.set(o.id, o));
 
-            return { ...prev, [key]: Array.from(ordersMap.values()) };
-          });
+          return { ...prev, [key]: Array.from(ordersMap.values()) };
+        });
       })
     );
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [customUserId]);
 
+  const handleCancelOrder = async (order) => {
+    const confirmCancel = window.confirm('Are you sure you want to cancel this order?');
+    if (!confirmCancel) return;
 
-const handleCancelOrder = async (order) => {
-  const confirmCancel = window.confirm('Are you sure you want to cancel this order?');
-  if (!confirmCancel) return;
-
-  try {
-    // ✅ Only the fields you listed + cancelledAt
-    const cancelledOrder = {
-      cancelledID: `CN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      address: order.address,
-      createdAt: order.createdAt,
-      deliveryFee: order.deliveryFee,
-      items: order.items.map(item => ({
-        imageUrl: item.imageUrl,
-        productId: item.productId,
-        productName: item.productName,
-        quantity: item.quantity,
-        size: item.size,
-        price: item.price,
-      })),
-      name: order.name,
-      orderId: order.orderId,
-      status: 'Cancelled',
-      total: order.total,
-      userId: order.userId,
-      cancelledAt: new Date(), // new field
-    };
-
-    const cancelledRef = doc(collection(db, 'cancelled'));
-    await setDoc(cancelledRef, cancelledOrder);
-
-    // Restore stock for each item
-    for (const item of order.items) {
-      const productRef = doc(db, 'products', item.productId);
-      const productSnap = await getDoc(productRef);
-      if (!productSnap.exists()) continue;
-
-      const productData = productSnap.data();
-      const updatedStock = {
-        ...productData.stock,
-        [item.size]: (productData.stock?.[item.size] || 0) + item.quantity,
+    try {
+      // ✅ Only the fields you listed + cancelledAt
+      const cancelledOrder = {
+        cancelledID: `CN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        address: order.address,
+        createdAt: order.createdAt,
+        deliveryFee: order.deliveryFee,
+        items: order.items.map(item => ({
+          imageUrl: item.imageUrl,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          size: item.size,
+          price: item.price,
+        })),
+        name: order.name,
+        orderId: order.orderId,
+        status: 'Cancelled',
+        total: order.total,
+        userId: order.userId,
+        cancelledAt: new Date(), // new field
       };
-      const totalStock = Object.values(updatedStock).reduce((sum, val) => sum + val, 0);
 
-      await setDoc(productRef, { ...productData, stock: updatedStock, totalStock }, { merge: true });
-    }
+      const cancelledRef = doc(collection(db, 'cancelled'));
+      await setDoc(cancelledRef, cancelledOrder);
 
-    // Delete the original order from 'orders'
-    const orderRef = doc(db, 'orders', order.id);
-    await deleteDoc(orderRef);
+      // Restore stock for each item
+      for (const item of order.items) {
+        const productRef = doc(db, 'products', item.productId);
+        const productSnap = await getDoc(productRef);
+        if (!productSnap.exists()) continue;
 
-    const notificationsRef = collection(db, "notifications");
+        const productData = productSnap.data();
+        const updatedStock = {
+          ...productData.stock,
+          [item.size]: (productData.stock?.[item.size] || 0) + item.quantity,
+        };
+        const totalStock = Object.values(updatedStock).reduce((sum, val) => sum + val, 0);
+
+        await setDoc(productRef, { ...productData, stock: updatedStock, totalStock }, { merge: true });
+      }
+
+      // Delete the original order from 'orders'
+      const orderRef = doc(db, 'orders', order.id);
+      await deleteDoc(orderRef);
+
+      const notificationsRef = collection(db, "notifications");
 
       await addDoc(notificationsRef, {
         notifID: `NTC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -219,56 +221,54 @@ const handleCancelOrder = async (order) => {
         read: false,
       });
 
-    // Switch to Cancelled tab
-    setActiveTab('Cancelled');
+      // Switch to Cancelled tab
+      setActiveTab('Cancelled');
 
-    alert('Order cancelled successfully and stock updated.');
-  } catch (err) {
-    console.error('Failed to cancel order:', err);
-    alert(`Failed to cancel order. Error: ${err.message}`);
-  }
-};
+      showPopup("Order cancelled successfully and stock updated.", "success");
+    } catch (err) {
+      console.error('Failed to cancel order:', err);
+      showPopup("Failed to cancel order.", "error");
+    }
+  };
 
+  const handleOrderReceived = async (order) => {
+    try {
+      // ✅ Only the fields you listed + receivedAt
+      const completedOrder = {
+        toshipID: order.toshipID,         
+        toreceiveID: order.toreceiveID,
+        productID: order.productID,
+        completedID: `CP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        address: order.address,
+        createdAt: order.createdAt,
+        deliveryFee: order.deliveryFee,
+        delivery: order.delivery,
+        items: order.items.map(item => ({
+          imageUrl: item.imageUrl,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          size: item.size,
+          price: item.price,     
+        })),
+        name: order.name,
+        orderId: order.orderId,
+        packedAt: order.packedAt,
+        shippedAt: order.shippedAt,
+        receivedAt: new Date(), 
+        status: 'Completed',
+        total: order.total,
+        userId: order.userId,
+      };
 
+      const completedRef = doc(collection(db, 'completed'));
+      await setDoc(completedRef, completedOrder);
 
-const handleOrderReceived = async (order) => {
-  try {
-    // ✅ Only the fields you listed + receivedAt
-    const completedOrder = {
-      toshipID: order.toshipID,         
-      toreceiveID: order.toreceiveID,
-      productID: order.productID,
-      completedID: `CP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      address: order.address,
-      createdAt: order.createdAt,
-      deliveryFee: order.deliveryFee,
-      delivery: order.delivery,
-      items: order.items.map(item => ({
-        imageUrl: item.imageUrl,
-        productId: item.productId,
-        productName: item.productName,
-        quantity: item.quantity,
-        size: item.size,
-        price: item.price,     
-      })),
-      name: order.name,
-      orderId: order.orderId,
-      packedAt: order.packedAt,
-      shippedAt: order.shippedAt,
-      receivedAt: new Date(), 
-      status: 'Completed',
-      total: order.total,
-      userId: order.userId,
-    };
+      // Delete the original doc from 'toReceive'
+      const toReceiveRef = doc(db, 'toReceive', order.id);
+      await deleteDoc(toReceiveRef);
 
-   const completedRef = doc(collection(db, 'completed'));
-    await setDoc(completedRef, completedOrder);
-
-    // Delete the original doc from 'toReceive'
-    const toReceiveRef = doc(db, 'toReceive', order.id);
-    await deleteDoc(toReceiveRef);
-
-    const notificationsRef = collection(db, "notifications");
+      const notificationsRef = collection(db, "notifications");
 
       await addDoc(notificationsRef, {
         notifID: `NTC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -280,15 +280,15 @@ const handleOrderReceived = async (order) => {
         read: false,
       });
 
-    // Switch to Completed tab
-    setActiveTab('Completed');
+      // Switch to Completed tab
+      setActiveTab('Completed');
 
-    alert('Order is confirm received');
-  } catch (err) {
-    console.error('Error marking order as received:', err);
-    alert('Failed to mark order as received. Try again.');
-  }
-};
+      showPopup("Order is confirm received", "success");
+    } catch (err) {
+      console.error('Error marking order as received:', err);
+      showPopup("Failed to mark order as received. Try again.", "error");
+    }
+  };
 
   const handleViewShippingDetails = async (order) => {
     try {
@@ -311,30 +311,29 @@ const handleOrderReceived = async (order) => {
       setShippingModalOpen(true);
     } catch (err) {
       console.error("Error fetching shipping details:", err);
-      alert("Failed to fetch shipping details.");
+      showPopup("Failed to fetch shipping details.", "error");
     }
   };
 
- const handleViewCancellationDetails = async (order) => {
-  try {
-    // Use the name already saved in the cancelled order document
-    setCancellationDetails({
-      ...order,
-      name: order.name || 'N/A',
-    });
+  const handleViewCancellationDetails = async (order) => {
+    try {
+      // Use the name already saved in the cancelled order document
+      setCancellationDetails({
+        ...order,
+        name: order.name || 'N/A',
+      });
 
-    setCancellationModalOpen(true);
-  } catch (err) {
-    console.error('Error fetching cancellation details:', err);
-    alert('Failed to fetch cancellation details.');
-  }
-};
+      setCancellationModalOpen(true);
+    } catch (err) {
+      console.error('Error fetching cancellation details:', err);
+      showPopup("Failed to fetch cancellation details.", "error");
+    }
+  };
 
-const handleRateOrder = (order) => {
-  setRateOrderDetails(order);
-  setRateModalOpen(true);
-};
-
+  const handleRateOrder = (order) => {
+    setRateOrderDetails(order);
+    setRateModalOpen(true);
+  };
 
   // ✅ Render orders per tab
   const renderOrders = () => {
@@ -381,7 +380,7 @@ const handleRateOrder = (order) => {
                   className="copy-btn"
                   onClick={() => {
                     navigator.clipboard.writeText(order.orderId);
-                    alert(`Order ID ${order.orderId} copied!`);
+                    showPopup(`Order ID ${order.orderId} copied!`, "success");
                   }}
                 >
                   COPY
@@ -401,7 +400,7 @@ const handleRateOrder = (order) => {
                     className="copy-btn"
                     onClick={() => {
                       navigator.clipboard.writeText(order.orderId);
-                      alert(`Order ID ${order.orderId} copied!`);
+                      showPopup(`Order ID ${order.orderId} copied!`, "success");
                     }}
                   >
                     COPY
@@ -435,7 +434,6 @@ const handleRateOrder = (order) => {
             </button>
           </div>
         )}
-
 
           {activeTab === 'Cancelled' && (
             <div className="button-group">
@@ -483,6 +481,30 @@ const handleRateOrder = (order) => {
           <div className="content-wrapper single-column">{renderOrders()}</div>
         </main>
       </div>
+
+      {/* Popup */}
+     {popup.visible && (
+  <div className={`popup ${popup.type}`}>
+    <div className="popup-icon">
+      {popup.type === "success" && "✅"}
+      {popup.type === "warning" && "⚠️"}
+      {popup.type === "error" && "❌"}
+    </div>
+    <div className="popup-text">
+      <strong className="popup-title">
+        {popup.type === "success"
+          ? "Success!"
+          : popup.type === "warning"
+          ? "Warning!"
+          : "Error!"}
+      </strong>
+      <p className="popup-message">{popup.message}</p>
+      <button className="popup-close" onClick={closePopup}>
+        ×
+      </button>
+    </div>
+  </div>
+)}
 
       {/* Shipping Modal */}
       {shippingModalOpen && shippingDetails && (
@@ -658,11 +680,11 @@ const handleRateOrder = (order) => {
                   });
                 }
 
-                alert("Ratings submitted successfully!");
+                showPopup("Ratings submitted successfully!", "success");
                 setRateModalOpen(false);
               } catch (err) {
                 console.error("Error submitting ratings:", err);
-                alert("Failed to submit ratings. Try again.");
+                showPopup("Failed to submit ratings. Try again.", "error");
               }
             }}
           >
@@ -921,7 +943,7 @@ const handleRateOrder = (order) => {
           color: #6a5acd;
         }
 
-        .buy-btn {
+        .buy-again-btn {
           border: 1.5px solid #6a5acd;
           background: #f9f7ff;
           color: #6a5acd;
@@ -933,7 +955,7 @@ const handleRateOrder = (order) => {
           transition: 0.3s;
         }
 
-        .buy-btn:hover {
+        .buy-again-btn:hover {
           background: #6a5acd;
           color: #fff;
         }
@@ -963,7 +985,246 @@ const handleRateOrder = (order) => {
           position: relative;
         }
 
-    `}</style>
+        .popup {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: white;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+          padding: 15px 20px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          z-index: 9999;
+          animation: fadeIn 0.3s ease;
+        }
+
+        .popup.success { border-left: 5px solid #28a745; }
+        .popup.error { border-left: 5px solid #dc3545; }
+        .popup.warning { border-left: 5px solid #ffc107; }
+
+        .popup-close {
+          background: transparent;
+          border: none;
+          font-size: 18px;
+          cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+          .orders-page {
+            padding-top: 120px !important; 
+            padding-bottom: 40px;
+            overflow-x: hidden;
+            background: linear-gradient(to right, #e5dcff, #f3f0ff);
+          }
+
+          .orders-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            flex-direction: row;
+            align-items: stretch;
+            border: none;
+            box-shadow: none;
+            overflow: hidden;
+          }
+
+          .button-group p {
+            font-size: 0.65rem !important;
+            color: #555;
+            text-align: center;
+            margin: 4px 0;
+            word-break: break-all;
+          }
+
+          .delivery-box {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            text-align: right;
+            width: 100%;
+            background: #f1e9ff;
+            border-radius: 6px;
+            padding: 6px 10px;
+            box-sizing: border-box;
+            margin-top: 6px;
+          }
+
+          @media (max-width: 480px) {
+            .delivery-box {
+              display: flex;
+              flex-direction: column;
+              align-items: center;        
+              justify-content: center;   
+              text-align: center;        
+              width: 200px;
+              background: #f1e9ff;
+              border-radius: 6px;
+              padding: 6px 10px;
+              box-sizing: border-box;
+              margin-top: 6px;
+            }
+
+            .delivery-box p {
+              font-size: 0.7rem !important;
+              left: 5px;
+              line-height: 1.3;
+            }
+
+            .delivery-box p:first-child {
+              font-weight: 600;
+              color: #6a5acd;
+            }
+
+            .delivery-box p:last-child {
+              color: #333;
+            }
+          }
+
+          /* Sidebar */
+          .sidebar {
+            flex: 0 0 120px !important; 
+            padding: 8px 6px;
+            top: 100px; 
+            background: #f8f6ff;
+            border-right: 1px solid #ddd;
+          }
+
+          .sidebar-title {
+.sidebar-title {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.sidebar-menu li {
+  font-size: 0.75rem;
+  padding: 5px 4px;
+  margin-bottom: 3px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  border-radius: 4px;
+}
+
+/* Right panel */
+.orders-content {
+  flex: 1;
+  background: #fff;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.section-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid #6a5acd;
+}
+
+.section-header h2 {
+  font-size: 1rem;
+}
+
+/* Order Cards */
+.content-wrapper {
+  padding: 10px;
+  gap: 10px;
+}
+
+.order-card {
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.order-image {
+  width: 85px;
+  height: 85px;
+  margin-bottom: 10px;
+  margin-right: 0;
+}
+
+.order-info h4 {
+  font-size: 0.85rem;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.order-id {
+  font-size: 0.75rem;
+  text-align: center;
+  color: #666;
+}
+
+.variant,
+.total,
+.price,
+.status {
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.delivery-box {
+  font-size: 0.7rem;
+  padding: 6px;
+  margin: 8px 0;
+}
+
+.order-footer {
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Buttons */
+.button-group {
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  align-items: center;
+}
+
+.order-btn,
+.copy-btn,
+.view-btn,
+.rate-btn,
+.buy-again-btn {
+  font-size: 0.75rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  width: 85%;
+  text-align: center;
+}
+
+/* Modal adjustments */
+.modal-content {
+  width: 90%;
+  padding: 12px;
+  max-height: 75vh;
+}
+
+.modal-content h3 {
+  font-size: 1rem;
+}
+
+.modal-content p {
+  font-size: 0.85rem;
+}
+
+.modal-content button {
+  font-size: 0.8rem;
+  padding: 6px 10px;
+}
+      `}</style>
     </div>
   );
 }
