@@ -41,27 +41,32 @@ export default function ProductDetails() {
     fetchProduct();
   }, [productId]);
 
-   //  Fetch reviews for this product
- useEffect(() => {
+useEffect(() => {
+  if (!product?.productID) return; // wait until product is loaded
+
   const fetchReviews = async () => {
     try {
       const q = query(
         collection(db, "productReviews"),
-        where("productID", "==", product?.productID)
+        where("productID", "==", product.productID)
       );
       const querySnapshot = await getDocs(q);
-      const fetched = querySnapshot.docs.map((doc) => doc.data());
 
-      console.log("Reviews fetched:", fetched);
+      const fetched = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      console.log("✅ Reviews fetched for", product.productID, fetched);
 
       setReviews(fetched);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
+      console.error("❌ Error fetching reviews:", error);
     }
   };
 
-  if (product?.productID) fetchReviews();
-}, [product]);
+  fetchReviews();
+}, [product?.productID]);
 
 
 
