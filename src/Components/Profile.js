@@ -139,7 +139,7 @@ const MUNICIPALITIES = {
 export default function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
-  //const [notification, setNotification] = useState("");
+  const [notification, setNotification] = useState("");
   const [activeOption, setActiveOption] = useState("Edit Profile");
 
   // password visibility states
