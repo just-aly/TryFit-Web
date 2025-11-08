@@ -8,15 +8,15 @@ export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || null; 
-  const userId = user?.userId || null;
+  //const userId = user?.userId || null;
 
-  const [notification, setNotification] = useState("");
+  //const [notification, setNotification] = useState("");
   const [shippingLocation, setShippingLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false); 
   const completedDocId = location.state?.completedDocId || null;
   const [cartItems, setCartItems] = useState([]);
-  const [orderInfo, setOrderInfo] = useState(null);
+  //const [orderInfo, setOrderInfo] = useState(null);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cartItems.reduce(

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
@@ -10,13 +10,13 @@ export default function Categories() {
   const [activeCategory, setActiveCategory] = useState("T-Shirts");
   const [activeTab, setActiveTab] = useState("Category");
 
-  const [allProducts, setAllProducts] = useState([]); // all products from Firestore
+  const [allProducts, setAllProducts] = useState([]); 
   const [categoryProducts, setCategoryProducts] = useState([]);
   const navigate = useNavigate();  
   
   useEffect(() => {
     if (location.state?.activeTab) {
-      setActiveTab(location.state.activeTab); // e.g., "Latest"
+      setActiveTab(location.state.activeTab);
     }
   }, [location.state]);
 
@@ -69,7 +69,6 @@ export default function Categories() {
           setCategoryProducts(latestProducts);
 
         } else if (activeTab === "Popular") {
-          // Popular products: sold >= 1000
           const snapshot = await getDocs(collection(db, "products"));
           const popularProducts = snapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -91,7 +90,6 @@ export default function Categories() {
   }, [activeTab, activeCategory, allProducts]);
 
 
-  // Fetch on component mount
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -337,7 +335,7 @@ export default function Categories() {
         /* Product Area */
         .content-wrapper {
           display: grid;
-          grid-template-columns: repeat(2, 1fr); /* 2 items per row */
+          grid-template-columns: repeat(2, 1fr);
           gap: 20px;
           padding: 40px;
           box-sizing: border-box;
@@ -412,8 +410,6 @@ export default function Categories() {
           padding: 40px;
         }
 
-        /* 📱 Mobile and Tablet Responsiveness *//* ✅ Compact mobile layout (fits perfectly in screen) */
-    /* 📱 Ultra-compact mobile layout - fits fully on small screens */
     @media (max-width: 480px) {
       .categories-container {
         width: 100%;
@@ -427,7 +423,7 @@ export default function Categories() {
       }
 
       .sidebar {
-        flex: 0 0 140px !important; /* ✅ shrink sidebar width */
+        flex: 0 0 140px !important; 
         padding: 8px;
         background: #f8f6ff;
         border-right: 1px solid #ddd;
@@ -443,7 +439,7 @@ export default function Categories() {
       }
 
       .categories-page {
-          padding-top: 120px !important; /* was 100px earlier — pushes container down */
+          padding-top: 120px !important; 
       }
 
       .category-group h4 {
@@ -489,7 +485,7 @@ export default function Categories() {
       .content-wrapper {
         padding: 10px;
         gap: 10px;
-        grid-template-columns: 1fr; /* one column view */
+        grid-template-columns: 1fr; 
       }
 
       .product-card {

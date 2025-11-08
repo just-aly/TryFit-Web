@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import { auth, db } from "../firebase"; // adjust if your firebase file is in different path
+import { auth, db } from "../firebase"; 
 import {
   doc,
   getDoc,
@@ -24,7 +24,7 @@ import {
   updateEmail,
   deleteUser,
 } from "firebase/auth";
-import { v4 as uuidv4 } from "uuid";
+// import { v4 as uuidv4 } from "uuid";
 
 const MUNICIPALITIES = {
   Bamban: [
@@ -139,7 +139,7 @@ const MUNICIPALITIES = {
 export default function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [notification, setNotification] = useState("");
+  //const [notification, setNotification] = useState("");
   const [activeOption, setActiveOption] = useState("Edit Profile");
 
   // password visibility states
@@ -181,7 +181,7 @@ export default function Profile() {
 
   // Delete account input - only password (per your request)
   const [deletePasswordInput, setDeletePasswordInput] = useState("");
-  const [confirmingDelete, setConfirmingDelete] = useState(false); // new confirmation state
+ // const [confirmingDelete, setConfirmingDelete] = useState(false); 
 
   // ✅ Popup system
 const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -534,29 +534,6 @@ const handleSaveShipping = async () => {
       setSaving(false);
     }
   }
-
-  // --- Confirm actual deletion ---
-async function confirmDeleteAccount() {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  try {
-    await deleteDoc(doc(db, "users", user.uid, "shippingLocations", "default"));
-  } catch (e) {
-    console.warn("delete shipping doc", e);
-  }
-
-  try {
-    await deleteDoc(doc(db, "users", user.uid));
-  } catch (e) {
-    console.warn("delete user doc", e);
-  }
-
-  await deleteUser(user);
-
-  showPopup("Account successfully deleted.", "success");
-  setTimeout(() => navigate("/login"), 1800);
-}
 
  // --- Delete Account --// 
 async function handleDeleteAccount() {
@@ -958,7 +935,6 @@ async function confirmDeleteAccount() {
                   }}
                   disabled={deleting}
                   style={{
-                    background: "#d9534f",
                     color: "white",
                     background: "#0cad00ff",
                     color: "#ffffffff",

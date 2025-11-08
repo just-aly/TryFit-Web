@@ -57,13 +57,13 @@ export default function MyOrders() {
   const [rateOrderDetails, setRateOrderDetails] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  const [ordersData, setOrdersData] = useState({
-    Orders: [],
-    ToShip: [],
-    ToReceive: [],
-    Completed: [],
-    Cancelled: [],
-  });
+  //const [ordersData, setOrdersData] = useState({
+  // Orders: [],
+  //  ToShip: [],
+  //  ToReceive: [],
+  //  Completed: [],
+  //  Cancelled: [],
+  // }); 
 
   const [ordersWithProducts, setOrdersWithProducts] = useState({
     Orders: [],
