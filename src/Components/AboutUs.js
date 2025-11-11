@@ -1,25 +1,55 @@
 import React, { useEffect, useState, useRef } from "react";
+import image1 from '../images/step1.jpg';
+import image2 from '../images/step2.jpg';
+import image3 from '../images/step3.jpg';
+import image4 from '../images/measurement.jpg';
+import image5 from '../images/tracking.jpg';
 
 export default function AboutUs() {
-  const [imageSet, setImageSet] = useState(0);
+  const [index, setIndex] = useState(1);
+  const trackRef = useRef(null);
   const aboutRef = useRef(null);
 
-  // Phone placeholder
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setImageSet((prev) => (prev + 1) % 4);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const images = [image1, image2, image3, image4, image5];
 
-  // Scroll down to About section
+  // Prepare slides with clones
+  const slides = [
+    images[images.length - 1], // clone last at start
+    ...images,
+    images[0], // clone first at end
+  ];
+
+  // Auto slide every 4s
+  useEffect(() => {
+    const interval = setInterval(() => slideTo(index + 1), 4000);
+    return () => clearInterval(interval);
+  }, [index]);
+
+  const slideTo = (newIndex) => {
+    if (!trackRef.current) return;
+    setIndex(newIndex);
+    trackRef.current.style.transition = "transform 1s ease-in-out";
+    trackRef.current.style.transform = `translateX(-${newIndex * 20}%)`;
+  };
+
+  const handleTransitionEnd = () => {
+    if (index === slides.length - 1) {
+      trackRef.current.style.transition = "none";
+      setIndex(1);
+      trackRef.current.style.transform = `translateX(-20%)`;
+    } else if (index === 0) {
+      trackRef.current.style.transition = "none";
+      setIndex(slides.length - 2);
+      trackRef.current.style.transform = `translateX(-${(slides.length - 2) * 20}%)`;
+    }
+  };
+
   const scrollToAbout = () => {
     aboutRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
     <div className="page">
-      {/* ===== WELCOME ===== */}
       <section className="welcome">
         <div className="text">
           <h1>
@@ -35,32 +65,23 @@ export default function AboutUs() {
         <div className="phones">
           <div
             className="track"
-            style={{
-              transform: `translateX(-${imageSet * 25}%)`,
-              transition: "transform 1.5s ease-in-out",
-            }}
+            ref={trackRef}
+            onTransitionEnd={handleTransitionEnd}
           >
-            {[
-              "https://via.placeholder.com/300x640?text=Phone+1",
-              "https://via.placeholder.com/300x640?text=Phone+2",
-              "https://via.placeholder.com/300x640?text=Phone+3",
-              "https://via.placeholder.com/300x640?text=Phone+4",
-            ].map((src, i) => (
+            {slides.map((src, i) => (
               <div className="item" key={i}>
-                <img src={src} alt={`Phone ${i + 1}`} />
+                <img src={src} alt={`Slide ${i}`} />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Explore + Arrow side by side */}
         <div className="scroll-down" onClick={scrollToAbout}>
           <span className="explore-text">Explore</span>
           <span className="arrow-down">▼</span>
         </div>
       </section>
 
-      {/* ===== ABOUT US ===== */}
       <section className="about" ref={aboutRef}>
         <div className="cols">
           <div className="left">
@@ -77,7 +98,6 @@ export default function AboutUs() {
         </div>
       </section>
 
-      {/* ===== OUR MISSION ===== */}
       <section className="mission">
         <div className="cols">
           <div className="left">
@@ -94,7 +114,6 @@ export default function AboutUs() {
         </div>
       </section>
 
-      {/* ===== JOIN US ===== */}
       <section className="join">
         <h2>Join&nbsp;Us</h2>
         <p>
@@ -104,203 +123,214 @@ export default function AboutUs() {
         <p className="highlight">Download TryFit and start styling today!</p>
       </section>
 
-<style>{`
-.page {
-  font-family: "Poppins", sans-serif;
-  color: #1c143a;
-  overflow-x: hidden;
-}
+      <style>{`
+        /* ===== GLOBAL ===== */
+        .page {
+          font-family: "Poppins", sans-serif;
+          color: #1c143a;
+          overflow-x: hidden;
+        }
 
-/* ===== WELCOME ===== */
-.welcome {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 160px 8% 80px;
-  background: linear-gradient(to bottom, #e8e1ff, #f3f0ff);
-  gap: 30px;
-  flex-wrap: wrap;
-  position: relative;
-}
+        /* ===== WELCOME SECTION ===== */
+        .welcome {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          padding: 250px 8% 80px;
+          background: linear-gradient(to bottom, #e8e1ff, #f3f0ff);
+          gap: 30px;
+          flex-wrap: wrap;
+          position: relative;
+        }
 
-.text {
-  flex: 1;
-  min-width: 220px;
-  max-width: 450px;
-  margin-top: 30px;
-}
+        .text {
+          flex: 1;
+          min-width: 220px;
+          max-width: 450px;
+        }
 
-.text h1 {
-  font-size: 2.2rem;
-  color: #1c143a;
-  margin-bottom: 14px;
-}
+        .text h1 {
+          font-size: 2.5rem;
+          color: #1c143a;
+          margin-bottom: 14px;
+        }
 
-.text span {
-  color: #6a5acd;
-}
+        .text span {
+          color: #6a5acd;
+        }
 
-.text p {
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
+        .text p {
+          font-size: 1rem;
+          line-height: 1.5;
+        }
 
-.phones {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  overflow: hidden;
-  max-width: 280px;
-  position: relative;
-}
+        .phones {
+          flex: 1;
+          display: flex;
+          justify-content: center;
+          overflow: hidden;
+          max-width: 700px;
+          position: relative;
+        }
 
-.track {
-  display: flex;
-  width: 400%;
-  gap: 12px;
-}
+        .track {
+          display: flex;
+          width: 100%;
+          gap: 15px; /* fixed gap between images */
+        }
 
-.item {
-  flex: 0 0 25%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+        .item {
+          flex: 0 0 20%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
 
-.item img {
-  width: 140px;
-  max-height: 260px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(28, 20, 58, 0.15);
-}
+        .item img {
+          width: 250px;
+          height: 400px; /* same height */
+          border-radius: 16px;
+          box-shadow: 0 15px 35px rgba(28, 20, 58, 0.2);
+          object-fit: cover;
+        }
 
-.arrow-down {
-  font-size: 1.3em;
-}
+        .scroll-down {
+          position: absolute;
+          bottom: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #6a5acd;
+          cursor: pointer;
+          animation: bounce 1.5s infinite;
+        }
 
-.scroll-down {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #6a5acd;
-  cursor: pointer;
-  animation: bounce 1.5s infinite;
-}
+        .arrow-down {
+          font-size: 1.5em;
+        }
 
-@keyframes bounce {
-  0%, 100% { transform: translate(-50%, 0); }
-  50% { transform: translate(-50%, 6px); }
-}
+        .explore-text {
+          font-size: 1.1em;
+          font-weight: 500;
+          color: #6a5acd;
+        }
 
-.explore-text {
-  font-size: 1em;
-  font-weight: 500;
-  color: #6a5acd;
-}
+        @keyframes bounce {
+          0%, 100% { transform: translate(-50%, 0); }
+          50% { transform: translate(-50%, 6px); }
+        }
 
-/* ===== ABOUT / MISSION ===== */
-.about,
-.mission {
-  background: linear-gradient(135deg, #6a5acd 0%, #8e80ff 100%);
-  color: #fff;
-  padding: 100px 5%;
-}
+        /* ===== ABOUT / MISSION ===== */
+        .about, .mission {
+          background: linear-gradient(135deg, #6a5acd 0%, #8e80ff 100%);
+          color: #fff;
+          padding: 100px 5%;
+        }
 
-.cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  align-items: start;
-  max-width: 900px;
-  margin: 0 auto;
-}
+        .cols {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 30px;
+          align-items: start;
+          max-width: 900px;
+          margin: 0 auto;
+        }
 
-.left h2 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin: 0;
-}
+        .left h2 {
+          font-size: 2.5rem;
+          font-weight: 700;
+          margin: 0;
+        }
 
-.right p {
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
+        .right p {
+          font-size: 0.95rem;
+          line-height: 1.5;
+        }
 
-/* ===== JOIN US ===== */
-.join {
-  background: #ffffff;
-  color: #222;
-  padding: 100px 5%;
-  text-align: center;
-}
+        /* ===== JOIN SECTION ===== */
+        .join {
+          background: #ffffff;
+          color: #222;
+          padding: 100px 5%;
+          text-align: center;
+        }
 
-.join h2 {
-  font-size: 1.8rem;
-  color: #6a5acd;
-  margin-bottom: 16px;
-}
+        .join h2 {
+          font-size: 1.8rem;
+          color: #6a5acd;
+          margin-bottom: 16px;
+        }
 
-.highlight {
-  color: #d220ff;
-  font-weight: 600;
-}
+        .highlight {
+          color: #d220ff;
+          font-weight: 600;
+        }
 
-/* ===== MEDIA QUERIES ===== */
-@media (max-width: 900px) {
-  .cols {
-    grid-template-columns: 1fr;
-    gap: 25px;
-  }
-  .left h2 {
-    font-size: 2.2rem;
-  }
-  .item img {
-    width: 140px;
-  }
-}
+        /* ===== MEDIA QUERIES ===== */
+        @media (max-width: 900px) {
+          .cols {
+            grid-template-columns: 1fr;
+            gap: 25px;
+          }
 
-@media (max-width: 480px) {
-  .welcome {
-    padding: 120px 5% 60px;
-    gap: 15px;
-  }
-  .text h1 {
-    font-size: 1.8rem;
-  }
-  .text p {
-    font-size: 0.9rem;
-  }
-  .phones {
-    max-width: 220px;
-  }
-  .item img {
-    width: 120px;
-    max-height: 220px;
-  }
-  .scroll-down {
-    gap: 5px;
-    bottom: 8px;
-  }
-  .explore-text {
-    font-size: 0.9em;
-    text-align: center;
-  }
-  .left h2 {
-    font-size: 1.8rem;
-  }
-  .right p {
-    font-size: 0.9rem;
-  }
-  .join h2 {
-    font-size: 1.6rem;
-  }
-}
-`}</style>
+          .left h2 {
+            font-size: 2.2rem;
+          }
 
+          .item img {
+            width: 200px;
+            height: 320px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .welcome {
+            padding: 150px 5% 60px;
+            gap: 15px;
+          }
+
+          .text h1 {
+            font-size: 1.8rem;
+          }
+
+          .text p {
+            font-size: 0.9rem;
+          }
+
+          .phones {
+            max-width: 220px;
+          }
+
+          .item img {
+            width: 140px;
+            height: 220px;
+          }
+
+          .scroll-down {
+            gap: 5px;
+            bottom: 8px;
+          }
+
+          .explore-text {
+            font-size: 0.9em;
+            text-align: center;
+          }
+
+          .left h2 {
+            font-size: 1.8rem;
+          }
+
+          .right p {
+            font-size: 0.9rem;
+          }
+
+          .join h2 {
+            font-size: 1.6rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

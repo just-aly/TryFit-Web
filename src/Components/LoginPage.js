@@ -397,8 +397,8 @@ export default function LoginPage() {
         /* Success message overlay */
         .success-overlay {
           position: fixed;
-          top: 20px;           /* distance from top */
-          left: 40%;           /* center horizontally */
+          top: 20px;          
+          left: 40%;         
           transform: translateX(-50%);
           z-index: 10000;
           pointer-events: none;
@@ -430,6 +430,7 @@ export default function LoginPage() {
           .login-title { font-size: 1.6rem; }
           .form-group input { font-size: 0.9rem; }
           .signup-text { font-size: 0.85rem; }
+          .success-text { font-size: 1rem; }
         }
       `}</style>
     </div>
