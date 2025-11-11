@@ -38,3 +38,9 @@ html, body {
   width: 100%;   
   box-sizing: border-box; 
 }
+
+@media (max-width: 768px) {
+  footer {
+    display: none;
+  }
+}

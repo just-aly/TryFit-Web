@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [animateExit, setAnimateExit] = useState(false);
 
   const [popup, setPopup] = useState({ type: "", title: "", message: "" });
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const showPopup = (type, title, message) => {
     setPopup({ type, title, message });
@@ -48,8 +49,9 @@ export default function LoginPage() {
           return;
         }
 
-        showPopup("success", "Login Successful", "Redirecting to your dashboard...");
-        setTimeout(() => navigate("/landing"), 1200);
+        // Show success message
+        setShowSuccessMessage(true);
+        setTimeout(() => navigate("/landing"), 3000);
       }
     } catch (err) {
       let message = "Login Failed. Please try again.";
@@ -81,14 +83,12 @@ export default function LoginPage() {
 
   const handleCreateAccountClick = () => {
     setAnimateExit(true);
-    setTimeout(() => {
-      navigate("/signup");
-    }, 700);
+    setTimeout(() => navigate("/signup"), 700);
   };
 
   return (
     <div className="login-page">
-      <div className="login-container">
+      <div className={`login-container ${showSuccessMessage ? "blur-background" : ""}`}>
         <motion.div
           className="left-panel"
           animate={animateExit ? { x: "100%" } : { x: 0 }}
@@ -155,7 +155,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      {/* 🟣 Popup Notification */}
+      {/* 🟣 Error Popups */}
       {popup.message && (
         <div className="popup-overlay top">
           <motion.div
@@ -173,6 +173,17 @@ export default function LoginPage() {
         </div>
       )}
 
+    {showSuccessMessage && (
+      <motion.div
+        className="success-overlay"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+      >
+        <div className="success-text">Login Successful!</div>
+      </motion.div>
+    )}
+
       <style>{`
         .login-page {
           font-family: 'Poppins', sans-serif;
@@ -182,6 +193,12 @@ export default function LoginPage() {
           min-height: 100vh;
           background: linear-gradient(135deg, #f7f4fc 0%, #e3d9f9 25%, #d3c4fd 50%, #cac0fc 75%, #a997c9 100%);
           overflow: hidden;
+        }
+
+        /* Blur effect on background when success popup is visible */
+        .blur-background {
+          filter: blur(4px);
+          transition: filter 0.3s ease;
         }
 
         .login-container {
@@ -196,7 +213,7 @@ export default function LoginPage() {
           position: relative;
         }
 
-        /* 🟣 Left Panel */
+        /* Left Panel */
         .left-panel {
           flex: 1;
           background: linear-gradient(145deg, #7C4DFF 0%, #9C6BFF 50%, #B39DDB 100%);
@@ -208,7 +225,6 @@ export default function LoginPage() {
           padding: 60px;
           border-top-right-radius: 100px;
           border-bottom-right-radius: 100px;
-          position: relative;
           width: 50%;
           z-index: 2;
         }
@@ -231,7 +247,7 @@ export default function LoginPage() {
           opacity: 0.9;
         }
 
-        /* ⚪ Right Section */
+        /* Right Panel */
         .right-panel {
           flex: 1;
           display: flex;
@@ -254,16 +270,8 @@ export default function LoginPage() {
         .login-title {
           text-align: left;
           color: #7C4DFF;
-          font-size: 1.80rem;
+          font-size: 1.8rem;
           margin-bottom: 30px;
-        }
-
-        .input-label {
-          display: block;
-          font-weight: 500;
-          color: #444;
-          margin-bottom: 6px;
-          font-size: 0.95rem;
         }
 
         .form-group {
@@ -336,6 +344,7 @@ export default function LoginPage() {
           text-decoration: underline;
         }
 
+        /* Popup styles */
         .popup-overlay.top {
           position: fixed;
           top: 20px;
@@ -361,30 +370,12 @@ export default function LoginPage() {
           position: relative;
         }
 
-        .popup-success {
-          border-left: 6px solid #28a745;
-        }
+        .popup-success { border-left: 6px solid #28a745; }
+        .popup-error { border-left: 6px solid #d9534f; }
+        .popup-warning { border-left: 6px solid #f0ad4e; }
 
-        .popup-error {
-          border-left: 6px solid #d9534f;
-        }
-
-        .popup-warning {
-          border-left: 6px solid #f0ad4e;
-        }
-
-        .popup-box h3 {
-          margin: 0 0 6px;
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #222;
-        }
-
-        .popup-box p {
-          font-size: 0.95rem;
-          color: #444;
-          margin: 0;
-        }
+        .popup-box h3 { margin: 0 0 6px; font-size: 1.1rem; font-weight: 600; color: #222; }
+        .popup-box p { font-size: 0.95rem; color: #444; margin: 0; }
 
         .popup-close {
           position: absolute;
@@ -398,88 +389,47 @@ export default function LoginPage() {
           transition: color 0.2s;
         }
 
-        .popup-close:hover {
-          color: #333;
-        }
-
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.5); }
           to { opacity: 1; transform: scale(1); }
         }
 
+        /* Success message overlay */
+        .success-overlay {
+          position: fixed;
+          top: 20px;           /* distance from top */
+          left: 40%;           /* center horizontally */
+          transform: translateX(-50%);
+          z-index: 10000;
+          pointer-events: none;
+        }
+
+        .success-text {
+          color: #7C4DFF;
+          font-size: 1.6rem;
+          font-weight: 600;
+          background: transparent;
+        }
+
         @media (max-width: 900px) {
-          .login-container {
-            flex-direction: column;
-            height: auto;
-            border-radius: 16px;
-          }
-
-          .left-panel {
-            width: 100%;
-            border-radius: 16px 16px 0 0;
-            text-align: center;
-            align-items: center;
-            padding: 25px 5px;
-          }
-
-          .left-panel h1 {
-            font-size: 2rem;
-          }
-
-          .left-panel p {
-            font-size: 0.95rem;
-          }
-
-          .right-panel {
-            width: 100%;
-            padding: 30px 20px;
-          }
-
-          .login-box {
-            max-width: 100%;
-            padding: 10px;
-          }
-
-          .login-title {
-            font-size: 1.8rem;
-          }
-
-          .form-group input {
-            width: 75%;
-            font-size: 0.85rem;
-          }
-
-          .password-toggle {
-            left: 250px;
-          }
-
-          .login-btn {
-            width: 92%;
-            padding: 12px;
-            font-size: 1rem;
-          }
+          .login-container { flex-direction: column; height: auto; border-radius: 16px; }
+          .left-panel { width: 100%; border-radius: 16px 16px 0 0; text-align: center; align-items: center; padding: 25px 5px; }
+          .left-panel h1 { font-size: 2rem; }
+          .left-panel p { font-size: 0.95rem; }
+          .right-panel { width: 100%; padding: 30px 20px; }
+          .login-box { max-width: 100%; padding: 10px; }
+          .login-title { font-size: 1.8rem; }
+          .form-group input { width: 75%; font-size: 0.85rem; }
+          .password-toggle { left: 250px; }
+          .login-btn { width: 92%; padding: 12px; font-size: 1rem; }
         }
 
         @media (max-width: 480px) {
-          .left-panel h1 {
-            font-size: 1.7rem;
-          }
-
-          .left-panel p {
-            font-size: 0.85rem;
-          }
-
-          .login-title {
-            font-size: 1.6rem;
-          }
-
-          .form-group input {
-            font-size: 0.9rem;
-          }
-
-          .signup-text {
-            font-size: 0.85rem;
-          }
+          .left-panel h1 { font-size: 1.7rem; }
+          .left-panel p { font-size: 0.85rem; }
+          .login-title { font-size: 1.6rem; }
+          .form-group input { font-size: 0.9rem; }
+          .signup-text { font-size: 0.85rem; }
         }
       `}</style>
     </div>
