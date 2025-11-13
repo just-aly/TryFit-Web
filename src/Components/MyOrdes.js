@@ -441,7 +441,7 @@ export default function MyOrders() {
                 className="view-btn"
                 onClick={() => handleViewCancellationDetails(order)}
               >
-                View Cancellation Details
+                Cancellation Details
               </button>
 
              
@@ -921,6 +921,7 @@ export default function MyOrders() {
           font-size: 0.85rem;
           border-radius: 4px;
           cursor: pointer;
+          width: 200px;
         }
 
         .view-btn:hover {
@@ -985,36 +986,83 @@ export default function MyOrders() {
           position: relative;
         }
 
-        .popup {
+        /* ✅ Popup Styles (Top Centered) */
+          .popup {
           position: fixed;
-          top: 20px;
-          right: 20px;
-          background: white;
-          border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-          padding: 15px 20px;
+          top: 40px;
+          left: 50%;
+          transform: translateX(-50%);
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
+          padding: 16px 22px;
+          border-radius: 12px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+          font-family: 'Poppins', sans-serif;
+          color: #333;
+          animation: fadeIn 0.3s ease-in-out, fadeOut 0.5s ease-in-out 1.8s forwards;
           z-index: 9999;
-          animation: fadeIn 0.3s ease;
+          min-width: 320px;
         }
 
-        .popup.success { border-left: 5px solid #28a745; }
-        .popup.error { border-left: 5px solid #dc3545; }
-        .popup.warning { border-left: 5px solid #ffc107; }
+        .popup-icon {
+          font-size: 1.6rem;
+        }
+
+        .popup-text {
+          flex: 1;
+        }
+
+        .popup-title {
+          display: block;
+          font-weight: 700;
+          font-size: 1rem;
+          margin-bottom: 2px;
+        }
+
+        .popup-message {
+          font-size: 0.9rem;
+          color: #333;
+          margin: 0;
+        }
 
         .popup-close {
           background: transparent;
           border: none;
-          font-size: 18px;
+          font-size: 1.4rem;
           cursor: pointer;
+          color: #333;
+          font-weight: bold;
+          margin-left: 8px;
         }
 
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+        .popup.success {
+          background: #e9f8ec;
+          border-left: 6px solid #4CAF50;
+          color: #256d32; 
         }
+
+        .popup.warning {
+          background: #fff8e1;
+          border-left: 6px solid #f5b800; 
+          color: #b07e00;
+        }
+        .popup.error {
+          background: #fdecea;
+          border-left: 6px solid #f44336; 
+          color: #a30000;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translate(-50%, -10px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        @keyframes fadeOut {
+          to { opacity: 0; transform: translate(-50%, -20px); }
+        }
+
 
         @media (max-width: 480px) {
           .orders-page {
@@ -1098,133 +1146,132 @@ export default function MyOrders() {
           }
 
           .sidebar-title {
-.sidebar-title {
-  font-size: 0.85rem;
-  margin-bottom: 8px;
-  text-align: center;
-}
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-align: center;
+          }
 
-.sidebar-menu li {
-  font-size: 0.75rem;
-  padding: 5px 4px;
-  margin-bottom: 3px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-  border-radius: 4px;
-}
+          .sidebar-menu li {
+            font-size: 0.75rem;
+            padding: 5px 4px;
+            margin-bottom: 3px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            border-radius: 4px;
+          }
 
-/* Right panel */
-.orders-content {
-  flex: 1;
-  background: #fff;
-  padding: 0;
-  overflow-y: auto;
-}
+          /* Right panel */
+          .orders-content {
+            flex: 1;
+            background: #fff;
+            padding: 0;
+            overflow-y: auto;
+          }
 
-.section-header {
-  padding: 10px 12px;
-  border-bottom: 1px solid #6a5acd;
-}
+          .section-header {
+            padding: 10px 12px;
+            border-bottom: 1px solid #6a5acd;
+          }
 
-.section-header h2 {
-  font-size: 1rem;
-}
+          .section-header h2 {
+            font-size: 1rem;
+          }
 
-/* Order Cards */
-.content-wrapper {
-  padding: 10px;
-  gap: 10px;
-}
+          /* Order Cards */
+          .content-wrapper {
+            padding: 10px;
+            gap: 10px;
+          }
 
-.order-card {
-  flex-direction: column;
-  align-items: center;
-  padding: 10px;
-  width: 100%;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
+          .order-card {
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
 
-.order-image {
-  width: 85px;
-  height: 85px;
-  margin-bottom: 10px;
-  margin-right: 0;
-}
+          .order-image {
+            width: 85px;
+            height: 85px;
+            margin-bottom: 10px;
+            margin-right: 0;
+          }
 
-.order-info h4 {
-  font-size: 0.85rem;
-  text-align: center;
-  margin-bottom: 4px;
-}
+          .order-info h4 {
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 4px;
+          }
 
-.order-id {
-  font-size: 0.75rem;
-  text-align: center;
-  color: #666;
-}
+          .order-id {
+            font-size: 0.75rem;
+            text-align: center;
+            color: #666;
+          }
 
-.variant,
-.total,
-.price,
-.status {
-  font-size: 0.75rem;
-  text-align: center;
-}
+          .variant,
+          .total,
+          .price,
+          .status {
+            font-size: 0.75rem;
+            text-align: center;
+          }
 
-.delivery-box {
-  font-size: 0.7rem;
-  padding: 6px;
-  margin: 8px 0;
-}
+          .delivery-box {
+            font-size: 0.7rem;
+            padding: 6px;
+            margin: 8px 0;
+          }
 
-.order-footer {
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
+          .order-footer {
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+          }
 
-/* Buttons */
-.button-group {
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  align-items: center;
-}
+          /* Buttons */
+          .button-group {
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            align-items: center;
+          }
 
-.order-btn,
-.copy-btn,
-.view-btn,
-.rate-btn,
-.buy-again-btn {
-  font-size: 0.75rem;
-  padding: 5px 8px;
-  border-radius: 6px;
-  width: 85%;
-  text-align: center;
-}
+          .order-btn,
+          .copy-btn,
+          .view-btn,
+          .rate-btn,
+          .buy-again-btn {
+            font-size: 0.6rem;
+            padding: 5px 8px;
+            border-radius: 6px;
+            width: 85%;
+            text-align: center;
+          }
 
-/* Modal adjustments */
-.modal-content {
-  width: 90%;
-  padding: 12px;
-  max-height: 75vh;
-}
+          /* Modal adjustments */
+          .modal-content {
+            width: 90%;
+            padding: 12px;
+            max-height: 75vh;
+          }
 
-.modal-content h3 {
-  font-size: 1rem;
-}
+          .modal-content h3 {
+            font-size: 1rem;
+          }
 
-.modal-content p {
-  font-size: 0.85rem;
-}
+          .modal-content p {
+            font-size: 0.85rem;
+          }
 
-.modal-content button {
-  font-size: 0.8rem;
-  padding: 6px 10px;
-}
-      `}</style>
-    </div>
-  );
-}
+          .modal-content button {
+            font-size: 0.8rem;
+            padding: 6px 10px;
+          }
+                `}</style>
+              </div>
+            );
+          }

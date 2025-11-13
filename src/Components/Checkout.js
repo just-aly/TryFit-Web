@@ -17,7 +17,7 @@ export default function Checkout() {
   const completedDocId = location.state?.completedDocId || null;
   const [cartItems, setCartItems] = useState([]);
   const [orderInfo, setOrderInfo] = useState(null);
-
+ 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -263,7 +263,7 @@ export default function Checkout() {
 
     await Promise.all(deletePromises);
 
-    alert("✅ Order placed successfully!");
+    alert(" Order placed successfully!");
     navigate("/myorders", { state: { fromCheckout: true }, replace: true });
 
   } catch (err) {
@@ -321,7 +321,7 @@ export default function Checkout() {
                 <p><strong>House No:</strong> {shippingLocation.house}</p>
                 <p><strong>Full Address:</strong> {shippingLocation.fullAddress}</p>
                 <p><strong>Phone number:</strong> {shippingLocation.phone}</p>
-                <p><strong>Postal:</strong> {shippingLocation.postal}</p>
+                <p><strong>Postal:</strong> {shippingLocation.postalCode}</p>
               </div>
               <button onClick={handleAddAddress} className="edit-btn">
                 Edit

@@ -715,10 +715,10 @@ async function confirmDeleteAccount() {
                   Phone
                   <input
                     type="text"
-                    value={phone}
+                    value={shipPhone}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, ""); // remove non-numeric
-                      if (value.length <= 11) setPhone(value);
+                      if (value.length <= 11) setShipPhone(value);
                     }}
                     placeholder="Enter your phone number"
                   />
