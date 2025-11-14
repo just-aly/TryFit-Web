@@ -169,7 +169,9 @@ export default function MyOrders() {
         cancelledID: `CN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         address: order.address,
         createdAt: order.createdAt,
+        productID: order.productID,
         deliveryFee: order.deliveryFee,
+        delivery: order.delivery,
         items: order.items.map(item => ({
           imageUrl: item.imageUrl,
           productId: item.productId,
@@ -420,33 +422,41 @@ export default function MyOrders() {
               </button>
             )}
 
-        {activeTab === 'Completed' && (
-          <div className="button-group">
-            <button className="rate-btn" onClick={() => handleRateOrder(order)}>
-              Rate
-            </button>
+              {activeTab === 'Completed' && (
+                <div className="button-group">
+                  <button className="rate-btn" onClick={() => handleRateOrder(order)}>
+                    Rate
+                  </button>
 
-            <button
-              className="buy-again-btn"
-              onClick={() => navigate('/checkout', { state: { completedDocId: order.id } })}
-            >
-              Buy Again
-            </button>
-          </div>
-        )}
+                  <button className="buy-again-btn"
+                    onClick={() => navigate('/recheckout', { state: { completedID: order.completedID } })} >
+                    Buy Again
+                  </button>
 
-          {activeTab === 'Cancelled' && (
-            <div className="button-group">
-              <button
-                className="view-btn"
-                onClick={() => handleViewCancellationDetails(order)}
-              >
-                Cancellation Details
-              </button>
+                </div>
+              )}
 
-             
-            </div>
-          )}
+                {activeTab === 'Cancelled' && (
+                  <div className="button-group">
+                    <button
+                      className="view-btn"
+                      onClick={() => handleViewCancellationDetails(order)}
+                    >
+                      Cancellation Details
+                    </button>
+
+                    <button
+                      className="buy-again-btn"
+                      onClick={() =>
+                        navigate('/recheckout', { state: { cancelledID: order.cancelledID } })
+                      }
+                    >
+                      Buy Again
+                    </button>
+
+                  
+                  </div>
+                )}
 
           </div>
         </div>
@@ -482,29 +492,29 @@ export default function MyOrders() {
         </main>
       </div>
 
-      {/* Popup */}
-     {popup.visible && (
-  <div className={`popup ${popup.type}`}>
-    <div className="popup-icon">
-      {popup.type === "success" && "✅"}
-      {popup.type === "warning" && "⚠️"}
-      {popup.type === "error" && "❌"}
-    </div>
-    <div className="popup-text">
-      <strong className="popup-title">
-        {popup.type === "success"
-          ? "Success!"
-          : popup.type === "warning"
-          ? "Warning!"
-          : "Error!"}
-      </strong>
-      <p className="popup-message">{popup.message}</p>
-      <button className="popup-close" onClick={closePopup}>
-        ×
-      </button>
-    </div>
-  </div>
-)}
+            {/* Popup */}
+          {popup.visible && (
+        <div className={`popup ${popup.type}`}>
+          <div className="popup-icon">
+            {popup.type === "success" && "✅"}
+            {popup.type === "warning" && "⚠️"}
+            {popup.type === "error" && "❌"}
+          </div>
+          <div className="popup-text">
+            <strong className="popup-title">
+              {popup.type === "success"
+                ? "Success!"
+                : popup.type === "warning"
+                ? "Warning!"
+                : "Error!"}
+            </strong>
+            <p className="popup-message">{popup.message}</p>
+            <button className="popup-close" onClick={closePopup}>
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Shipping Modal */}
       {shippingModalOpen && shippingDetails && (

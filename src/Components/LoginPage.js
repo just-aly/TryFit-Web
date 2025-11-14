@@ -24,6 +24,16 @@ export default function LoginPage() {
 
   const closePopup = () => setPopup({ type: "", title: "", message: "" });
 
+  React.useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        navigate("/landing"); // redirect to landing page
+      }
+    });
+
+    return unsubscribe;
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {

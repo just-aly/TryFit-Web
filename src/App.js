@@ -7,7 +7,6 @@ import Checkout from "./Components/Checkout";
 import ChatComponent from "./Components/ChatComponent";
 import ChatSupport from "./ChatSupport";
 import "./App.css";
-
 import Header from "./Components/Header";
 import MyOrders from "./Components/MyOrdes";
 import Profile from "./Components/Profile";
@@ -21,6 +20,8 @@ import PrivacyAndPolicy from "./Components/PrivacyPolicy";
 import AboutUs from "./Components/AboutUs";
 import ProductDetails from "./Components/ProductDetails";
 import SearchResults from "./Components/SearchResults";
+import Recheckout from "./Components/Recheckout";
+
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -53,6 +54,7 @@ function AppContent() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/Recheckout" element={<Recheckout />} />
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/termsofservice" element={<TermsOfService />} />
         <Route path="/privacyandpolicy" element={<PrivacyAndPolicy />} />

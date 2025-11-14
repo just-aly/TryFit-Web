@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Categories() {
   const location = useLocation();
-  const [activeCategory, setActiveCategory] = useState("T-Shirts");
+  const [activeCategory, setActiveCategory] = useState("T-Shirt");
   const [activeTab, setActiveTab] = useState("Category");
 
   const [allProducts, setAllProducts] = useState([]); 
@@ -77,8 +77,9 @@ export default function Categories() {
 
         } else {
           // Category tab
-          const filtered = allProducts.filter(p => p.categorySub === activeCategory);
+          const filtered = allProducts.filter( p => p.categorySub?.toLowerCase() === activeCategory.toLowerCase());
           setCategoryProducts(filtered);
+
         }
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -106,7 +107,7 @@ export default function Categories() {
           <div className="category-group">
             <h4>Tops</h4>
             <ul>
-              {["T-Shirts", "Longsleeves"].map((cat) => (
+              {["T-Shirt", "Longsleeves"].map((cat) => (
                 <li
                   key={cat}
                   className={activeCategory === cat ? "active" : ""}

@@ -15,6 +15,7 @@ import {
   query,
   where,
   getDocs,
+  getFirestore,
 } from "firebase/firestore";
 
 import {
@@ -23,6 +24,7 @@ import {
   updatePassword,
   updateEmail,
   deleteUser,
+  signOut,
 } from "firebase/auth";
 // import { v4 as uuidv4 } from "uuid";
 
@@ -287,88 +289,87 @@ useEffect(() => {
 
 
 
-  // --- Edit Profile handlers ---
-    async function handleSaveProfile() {
-      const user = auth.currentUser;
-      if (!user) {
-       showPopup("Not logged in.");
-        return;
-      }
+  async function handleSaveProfile() {
+    const user = auth.currentUser;
+    if (!user) {
+      showPopup("Not logged in.");
+      return;
+    }
 
-      // validation
-      if (!username.trim() || !email.trim()) {
-        showPopup("Please fill username and email.", "warning");
-        return;
-      }
-      if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
-        showPopup("Please enter a valid email address.", "warning");
-        return;
-      }
+    // validation
+    if (!username.trim() || !email.trim()) {
+      showPopup("Please fill username and email.", "warning");
+      return;
+    }
+    if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+      showPopup("Please enter a valid email address.", "warning");
+      return;
+    }
 
-      setSaving(true);
+    setSaving(true);
 
-      try {
-        // Update displayName in Auth
-        if (username !== (user.displayName ?? "")) {
-          try {
-            await user.updateProfile({ displayName: username });
-          } catch (err) {
-            console.warn("updateProfile error", err);
-          }
+    try {
+      // Update displayName in Auth
+      if (username !== (user.displayName ?? "")) {
+        try {
+          await user.updateProfile({ displayName: username });
+        } catch (err) {
+          console.warn("updateProfile error", err);
         }
+      }
 
-        // Update email in Auth
-        if (email !== (user.email ?? "")) {
-          try {
-            await updateEmail(user, email);
-          } catch (err) {
-            if ((err?.code || "").includes("requires-recent-login")) {
-              const pw = window.prompt("Enter your current password to change email:");
-              if (!pw) {
-                showPopup("Password required to change email.", "warning");
-                setSaving(false);
-                return;
-              }
-              try {
-                const cred = EmailAuthProvider.credential(user.email || "", pw);
-                await reauthenticateWithCredential(user, cred);
-                await updateEmail(user, email);
-              } catch (reauthErr) {
-                showPopup(reauthErr?.message ?? "Failed to reauthenticate.");
-                setSaving(false);
-                return;
-              }
-            } else {
-              showPopup(err?.message ?? "Failed to update email.", "error");
+      // Update email in Auth
+      if (email !== (user.email ?? "")) {
+        try {
+          await updateEmail(user, email);
+        } catch (err) {
+          if ((err?.code || "").includes("requires-recent-login")) {
+            const pw = window.prompt("Enter your current password to change email:");
+            if (!pw) {
+              showPopup("Password required to change email.", "warning");
               setSaving(false);
               return;
             }
+            try {
+              const cred = EmailAuthProvider.credential(user.email || "", pw);
+              await reauthenticateWithCredential(user, cred);
+              await updateEmail(user, email);
+            } catch (reauthErr) {
+              showPopup(reauthErr?.message ?? "Failed to reauthenticate.");
+              setSaving(false);
+              return;
+            }
+          } else {
+            showPopup(err?.message ?? "Failed to update email.", "error");
+            setSaving(false);
+            return;
           }
         }
-
-        // Save to Firestore
-        await setDoc(
-          doc(db, "users", user.uid),
-          {
-            name: name.trim(),
-            username: username.trim(),
-            phone: phone.trim(),
-            gender: gender || null,
-            email: email.trim(),
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        await user.reload();
-        showPopup("Profile updated successfully.", "success");
-      } catch (e) {
-        console.error("Save profile error", e);
-       showPopup("Failed to save profile: " + (e?.message || e));
-      } finally {
-        setSaving(false);
       }
+
+      // Save to Firestore
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          name: name.trim(),
+          username: username.trim(),
+          phone: phone.trim(),
+          gender: gender || null,
+          email: email.trim(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      await user.reload();
+      showPopup("Profile updated successfully.", "success");
+    } catch (e) {
+      console.error("Save profile error", e);
+      showPopup("Failed to save profile: " + (e?.message || e));
+    } finally {
+      setSaving(false);
     }
+  }
 
 
    // --- Shipping logic: municipality -> barangay -> final (matches mobile) ---
@@ -492,50 +493,68 @@ const handleSaveShipping = async () => {
   }
 };
 
-  // --- Change Password --
-  async function handleChangePassword() {
-    const user = auth.currentUser;
-    if (!user) {
-     showPopup("Not logged in.");
-      return;
-    }
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-      showPopup("Please fill all password fields.", "warning");
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      showPopup("New password and confirm password do not match.", "warning");
-      return;
-    }
-    if (newPassword.length < 6) {
-      showPopup("New password should be at least 6 characters.", "warning");
-      return;
-    }
-    setSaving(true);
-    try {
-      const cred = EmailAuthProvider.credential(user.email || "", currentPassword);
-      await reauthenticateWithCredential(user, cred);
-      await updatePassword(user, newPassword);
-      showPopup("Password changed successfully.", "success");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-    } catch (e) {
-      console.error("Change password error", e);
-      const code = e?.code || "";
-      if (code === "auth/wrong-password") {
-        showPopup("Current password is incorrect.", "error");
-      } else if (code === "auth/weak-password") {
-        showPopup("New password is weak. Choose a stronger password.", "error");
-      } else {
-        showPopup("Failed to change password: ", "error" + (e?.message || e));
-      }
-    } finally {
-      setSaving(false);
-    }
+ async function handleChangePassword() {
+  const user = auth.currentUser;
+  if (!user) {
+    showPopup("Not logged in.", "error");
+    return;
   }
 
- // --- Delete Account --// 
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    showPopup("Please fill all password fields.", "warning");
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    showPopup("New password and confirm password do not match.", "warning");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showPopup("New password should be at least 6 characters.", "warning");
+    return;
+  }
+
+  // 🔥 Ask for confirmation
+  const confirmed = window.confirm("Are you sure you want to change your password?");
+  if (!confirmed) return; // user cancelled
+
+  setSaving(true);
+
+  try {
+    const cred = EmailAuthProvider.credential(user.email || "", currentPassword);
+    await reauthenticateWithCredential(user, cred);
+    await updatePassword(user, newPassword);
+
+    showPopup("Password changed successfully.", "success");
+
+    // Logout after password change
+    await signOut(auth);
+
+    // Prevent navigating back
+    window.history.pushState(null, "", window.location.href);
+    window.onpopstate = function () {
+      window.history.go(1);
+    };
+
+    navigate("/login", { replace: true });
+  } catch (e) {
+    console.error("Change password error", e);
+    const code = e?.code || "";
+    if (code === "auth/wrong-password") {
+      showPopup("Current password is incorrect.", "error");
+    } else if (code === "auth/weak-password") {
+      showPopup("New password is weak. Choose a stronger password.", "error");
+    } else {
+      showPopup("Failed to change password: " + (e?.message || e), "error");
+    }
+  } finally {
+    setSaving(false);
+  }
+}
+
+
+ 
 async function handleDeleteAccount() {
   const user = auth.currentUser;
   if (!user) {
@@ -568,34 +587,90 @@ async function handleDeleteAccount() {
   }
 }
 
-// --- Final Confirmation Step ---
-async function confirmDeleteAccount() {
-  const user = auth.currentUser;
-  if (!user) return;
+  async function confirmDeleteAccount() {
+    const user = auth.currentUser;
+    if (!user) return;
 
-  setDeleting(true);
-  try {
-    // ✅ Delete from Firestore: user doc + shippingLocations
-    const q = query(collection(db, "shippingLocations"), where("userId", "==", user.uid));
-    const snapshot = await getDocs(q);
-    for (const docSnap of snapshot.docs) {
-      await deleteDoc(docSnap.ref);
+    setDeleting(true);
+    try {
+      const db = getFirestore();
+
+      // Get user's document
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (!userDocSnap.exists()) throw new Error("User document not found.");
+      const userData = userDocSnap.data();
+      const userUniqueId = userData.userId || user.uid;
+
+      // 1️⃣ Delete user profile
+      await deleteDoc(userDocRef);
+
+      // 2️⃣ Collections to anonymize
+      const collectionsToAnonymize = ["chatMessages", "productReviews"];
+      for (const collectionName of collectionsToAnonymize) {
+        const q = query(collection(db, collectionName), where("userId", "==", userUniqueId));
+        const querySnapshot = await getDocs(q);
+        for (const docSnap of querySnapshot.docs) {
+          await updateDoc(docSnap.ref, {
+            userId: null,
+            username: "User not found",
+          });
+        }
+      }
+
+      // 3️⃣ Collections to delete completely
+      const collectionsToDelete = ["cartItems", "measurements", "notifications", "shippingLocations"];
+      for (const collectionName of collectionsToDelete) {
+        const q = query(collection(db, collectionName), where("userId", "==", userUniqueId));
+        const querySnapshot = await getDocs(q);
+        for (const docSnap of querySnapshot.docs) {
+          await deleteDoc(docSnap.ref);
+        }
+      }
+
+      // 4️⃣ Orders: delete pending, anonymize others
+      const ordersRef = collection(db, "orders");
+      const ordersQuery = query(ordersRef, where("userId", "==", userUniqueId));
+      const ordersSnapshot = await getDocs(ordersQuery);
+      for (const docSnap of ordersSnapshot.docs) {
+        const data = docSnap.data();
+        if (data.status === "pending") {
+          await deleteDoc(docSnap.ref);
+        } else {
+          await updateDoc(docSnap.ref, {
+            name: "User not found",
+            address: null,
+            userId: null,
+          });
+        }
+      }
+
+      // 5️⃣ Update toReceive and toShip
+      const toUpdateCollections = ["toReceive", "toShip"];
+      for (const collectionName of toUpdateCollections) {
+        const q = query(collection(db, collectionName), where("userId", "==", userUniqueId));
+        const querySnapshot = await getDocs(q);
+        for (const docSnap of querySnapshot.docs) {
+          await updateDoc(docSnap.ref, {
+            name: "User not found",
+            address: null,
+            userId: null,
+          });
+        }
+      }
+
+      // 6️⃣ Delete user from Auth
+      await deleteUser(user);
+
+      showPopup("Account successfully deleted.", "success");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("confirmDeleteAccount error", error);
+      showPopup("Failed to delete account: " + error.message, "error");
+    } finally {
+      setDeleting(false);
     }
-
-    await deleteDoc(doc(db, "users", user.uid));
-
-    // ✅ Delete from Firebase Auth
-    await deleteUser(user);
-
-    showPopup("Account successfully deleted.", "success");
-    setTimeout(() => navigate("/login"), 1500);
-  } catch (e) {
-    console.error("confirmDeleteAccount error", e);
-    showPopup("Failed to delete account. Please try again.", "error");
-  } finally {
-    setDeleting(false);
   }
-}
 
 
   // --- Helper UI for picker items ---
@@ -668,14 +743,15 @@ async function confirmDeleteAccount() {
                     Phone
                     <input
                       type="text"
-                      value={phone}
+                      value={phone} // <-- use profile phone state
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, ""); // remove non-numeric
-                        if (value.length <= 11) setPhone(value);
+                        const value = e.target.value.replace(/\D/g, ""); // digits only
+                        if (value.length <= 11) setPhone(value); // save to profile state
                       }}
                       placeholder="Enter your phone number"
                     />
                   </label>
+
 
                   <label className="gender-label">Gender</label>
                   <div className="gender-options">

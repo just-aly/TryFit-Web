@@ -2,29 +2,37 @@ import React, { useEffect, useState } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { db, auth } from "../firebase";
-import { collection, addDoc, getDoc, doc, getDocs, query, where, setDoc, serverTimestamp, deleteDoc  } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  addDoc,
+  setDoc,
+  serverTimestamp,
+  deleteDoc,
+} from "firebase/firestore";
 
-export default function Checkout() {
+export default function Recheckout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = location.state?.user || null; 
-  //const userId = user?.userId || null;
+  const controls = useAnimation();
 
-  const [notification, setNotification] = useState("");
   const [shippingLocation, setShippingLocation] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false); 
-  const completedDocId = location.state?.completedDocId || null;
-  const [cartItems, setCartItems] = useState([]);
-  const [orderInfo, setOrderInfo] = useState(null);
- 
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cartItems.reduce(
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [reorderItems, setReorderItems] = useState([]);
+  const { completedID, cancelledID } = location.state || {};
+  const [order, setOrder] = useState(null);
+
+
+  const totalItems = reorderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = reorderItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-
-  const controls = useAnimation();
 
   useEffect(() => {
     controls.start({
@@ -34,8 +42,8 @@ export default function Checkout() {
     });
   }, [controls]);
 
-  // Fetch shipping location from Firestore
-   useEffect(() => {
+  // Fetch shipping location
+  useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
         const currentUser = auth.currentUser;
@@ -45,10 +53,8 @@ export default function Checkout() {
           return;
         }
 
-        // Get the custom userId from users collection
         const userDocRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userDocRef);
-
         if (!userSnap.exists()) {
           console.warn("No user document found for UID:", currentUser.uid);
           setLoading(false);
@@ -87,162 +93,120 @@ export default function Checkout() {
     fetchShippingLocation();
   }, []);
 
-  useEffect(() => {
-    if (!completedDocId && location.state?.cartItems) {
-      setCartItems(location.state.cartItems);
-    }
-  }, [completedDocId, location.state]);
+    useEffect(() => {
+    const fetchOrder = async () => {
+        try {
+        let orderData = null;
+
+        if (completedID) {
+            const q = query(
+            collection(db, "completed"),
+            where("completedID", "==", completedID)
+            );
+            const querySnap = await getDocs(q);
+            if (!querySnap.empty) orderData = querySnap.docs[0].data();
+        } else if (cancelledID) {
+            const q = query(
+            collection(db, "cancelled"),
+            where("cancelledID", "==", cancelledID)
+            );
+            const querySnap = await getDocs(q);
+            if (!querySnap.empty) orderData = querySnap.docs[0].data();
+        }
+
+        if (orderData) {
+            setReorderItems(orderData.items || []);
+            setOrder(orderData); // store full document for reference
+        } else {
+            console.warn("Order not found");
+        }
+        } catch (err) {
+        console.error("Error fetching order:", err);
+        }
+    };
+
+    fetchOrder();
+    }, [completedID, cancelledID]);
 
 
+ const handlePlaceOrder = async () => {
+  if (!auth.currentUser) return alert("You must be logged in.");
+  if (!shippingLocation) return alert("Add shipping address first.");
+  if (!reorderItems.length) return alert("No items to reorder.");
 
-  const handlePlaceOrder = async () => {
+  setIsPlacingOrder(true);
+
   try {
-    const user = auth.currentUser;
-    if (!user) {
-      alert("You must be logged in to place an order.");
-      return;
-    }
+    const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+    if (!userDoc.exists()) throw new Error("User not found");
+    const customUserId = userDoc.data().userId;
 
-    setIsPlacingOrder(true);
+    const subtotal = reorderItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const total = subtotal + 58;
 
-    //  Get custom userId
-    const userDocRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userDocRef);
-    if (!userSnap.exists()) {
-      alert("User not found in the database.");
-      setIsPlacingOrder(false);
-      return;
-    }
-    const customUserId = userSnap.data().userId;
+    const newOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    if (!shippingLocation) {
-      alert("Please add a shipping address before placing an order.");
-      setIsPlacingOrder(false);
-      return;
-    }
-
-    const deliveryFee = 58;
-
-    const groupedItemsMap = new Map();
-    cartItems.forEach((item) => {
-      const key = `${item.productId}_${item.size}`;
-      if (groupedItemsMap.has(key)) {
-        const existing = groupedItemsMap.get(key);
-        existing.quantity += item.quantity;
-      } else {
-        groupedItemsMap.set(key, { ...item }); 
-      }
-    });
-
-    //  Create separate orders for each group
-    for (const groupedItem of groupedItemsMap.values()) {
-      const subtotal = groupedItem.price * groupedItem.quantity;
-      const total = subtotal + deliveryFee;
-      const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-      const orderData = {
-        orderId,
+    const orderData = {
+        orderId: newOrderId,
         userId: customUserId,
         name: shippingLocation.name,
         address: `${shippingLocation.house}, ${shippingLocation.fullAddress}`,
-        productID: groupedItem.productID || groupedItem.productId || null,
-        deliveryFee,
+        deliveryFee: 58,
         total,
-        delivery: groupedItem.delivery,
-        createdAt: serverTimestamp(),
+        // ⬇️ Added exact same handling as mobile version
+        productID: order?.productID || null,
+        delivery: order?.delivery || "Standard Shipping",
         status: "Pending",
-        items: [
-          {
-            imageUrl: groupedItem.imageUrl,
-            productId: groupedItem.productId,
-            productName: groupedItem.productName,
-            quantity: groupedItem.quantity,
-            price: groupedItem.price,
-            size: groupedItem.size || "-",
-          },
-        ],
-      };
+        createdAt: serverTimestamp(),
 
-      if (!orderData.productID) {
-        console.warn("⚠️ Skipping item with undefined productID:", groupedItem);
-        continue; 
-      }
+        items: reorderItems.map((item) => ({
+            imageUrl: item.imageUrl || "",
+            productId: item.productId || "",
+            productName: item.productName || "",
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+            size: item.size || "-",
+        })),
+        };
 
-      await addDoc(collection(db, "orders"), orderData);
 
-      await addDoc(collection(db, "notifications"), {
-        notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        userId: customUserId,
-        title: "Order Placed",
-        message: `Your order ${orderId} with total ₱${total.toLocaleString()} has been placed.`,
-        orderId,
-        timestamp: serverTimestamp(),
-        read: false,
-      });
+    await addDoc(collection(db, "orders"), orderData);
 
-      //  Update product stock
-      const productRef = doc(db, "products", groupedItem.productId);
-      const productSnap = await getDoc(productRef);
-      if (productSnap.exists()) {
-        const productData = productSnap.data();
-        const currentStock = productData.stock || {};
-        const currentQty = currentStock[groupedItem.size] || 0;
-        const newQty = Math.max(currentQty - groupedItem.quantity, 0);
-
-        await setDoc(
-          productRef,
-          {
-            stock: {
-              ...currentStock,
-              [groupedItem.size]: newQty,
-            },
-          },
-          { merge: true }
-        );
-      }
-    }
-
-    //  Remove placed items from cart
-    const cartRef = collection(db, "cartItems");
-    const q = query(cartRef, where("userId", "==", customUserId));
-    const cartSnap = await getDocs(q);
-
-    const deletePromises = cartSnap.docs.map(async (docSnap) => {
-      const cartData = docSnap.data();
-      const isOrdered = cartItems.some(
-        (item) => item.productId === cartData.productId && item.size === cartData.size
-      );
-      if (isOrdered) await deleteDoc(docSnap.ref);
+    await addDoc(collection(db, "notifications"), {
+      notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      userId: customUserId,
+      title: "Re-Order Placed",
+      message: `Your re-order ${newOrderId} totaling ₱${total.toLocaleString()} has been placed.`,
+      orderId: newOrderId,
+      timestamp: serverTimestamp(),
+      read: false,
     });
 
-    await Promise.all(deletePromises);
-
-    alert(" Order placed successfully!");
-    navigate("/myorders", { state: { fromCheckout: true }, replace: true });
-
+    alert("✅ Re-order placed successfully!");
+    navigate("/myorders", { state: { fromCheckout: true } });
   } catch (err) {
-    console.error("Error placing order:", err);
-    alert("❌ Failed to place order. Please try again.");
+    console.error(err);
+    alert("❌ Failed to place reorder. Try again.");
   } finally {
     setIsPlacingOrder(false);
   }
 };
 
-    // Navigate to add/edit address
-    const handleAddAddress = () => {
-      navigate("/profile", {
-        state: {
-          openShippingLocations: true,
-          fromCheckout: true,
-        },
-      });
-    };
+
+  const handleAddAddress = () => {
+    navigate("/profile", {
+      state: {
+        openShippingLocations: true,
+        fromCheckout: true,
+      },
+    });
+  };
 
   return (
     <div className="checkout-page">
-      {notification && <div className="notification">{notification}</div>}
-
-      {/* ===== Header Section ===== */}
       <motion.div
         className="checkout-header"
         initial={{ opacity: 0, y: -20 }}
@@ -250,22 +214,20 @@ export default function Checkout() {
       >
         <div className="checkout-header-inner">
           <div className="checkout-title-row">
-            <h1>Checkout</h1>
+            <h1>Re-Checkout</h1>
             <div className="header-line"></div>
           </div>
         </div>
       </motion.div>
 
-      {/* ===== Main Section ===== */}
       <motion.section
         className="checkout-content"
         initial={{ opacity: 0, y: 30 }}
         animate={controls}
       >
         <div className="checkout-left">
-          <h1>Checkout</h1>
+          <h1>Re-Checkout</h1>
 
-          {/*  Shipping Address Section */}
           {loading ? (
             <p>Loading shipping info...</p>
           ) : shippingLocation ? (
@@ -283,33 +245,25 @@ export default function Checkout() {
             </div>
           ) : (
             <p
-              style={{
-                color: "red",
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
+              style={{ color: "red", cursor: "pointer", textDecoration: "underline" }}
               onClick={handleAddAddress}
             >
               No shipping address. Click here to add one.
             </p>
           )}
 
-          <p>Total items: {cartItems.length}</p>
+          <p>Total items: {reorderItems.length}</p>
 
-
-          {/* Product List */}
-          {cartItems.length === 0 ? (
-            <p>No items selected.</p>
+          {reorderItems.length === 0 ? (
+            <p>No cancelled or completed items to reorder.</p>
           ) : (
-            cartItems.map((item) => (
-              <div key={item.cartItemCode} className="product-card">
-               <img
-                  src={item.productImage || item.imageUrl || "https://via.placeholder.com/80"}
+            reorderItems.map((item, index) => (
+              <div key={`${item.productId}-${index}`} className="product-card">
+                <img
+                  src={item.imageUrl || "https://via.placeholder.com/80"}
                   alt={item.productName}
                   className="product-image"
                 />
-
-
                 <div className="product-details">
                   <h4>{item.productName}</h4>
                   <p>Size: {item.size}</p>
@@ -320,7 +274,6 @@ export default function Checkout() {
             ))
           )}
 
-          {/* Shipping Option */}
           <div className="shipping-box">
             <h4>Shipping Option</h4>
             <div className="shipping-option">
@@ -332,37 +285,11 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Totals */}
           <div className="total-items">
             <p>Total {totalItems} item(s)</p>
             <p className="total">₱{totalPrice.toLocaleString()}</p>
           </div>
 
-          {/* Payment Card */}
-          <div className="payment-card">
-            <h3>Payment Details</h3>
-            <div className="payment-row">
-              <p>Merchandise Subtotal</p>
-              <span>₱{totalPrice.toLocaleString()}</span>
-            </div>
-            <div className="payment-row">
-              <p>Shipping Subtotal</p>
-              <span>₱58</span>
-            </div>
-            <div className="payment-row">
-              <p>Shipping Discount Subtotal</p>
-              <span>₱0</span>
-            </div>
-
-            <hr />
-
-            <div className="payment-row total-row">
-              <p>Total Payment</p>
-              <span>₱{(totalPrice + 58).toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* Place Order Button */}
           <div className="order-card">
             <div className="order-total">
               <p>
@@ -370,10 +297,10 @@ export default function Checkout() {
               </p>
               <button
                 onClick={handlePlaceOrder}
-                disabled={!shippingLocation || isPlacingOrder}
+                disabled={!shippingLocation || isPlacingOrder || reorderItems.length === 0}
                 style={{
-                  backgroundColor: !shippingLocation ? "#ccc" : "#6c56ef",
-                  cursor: !shippingLocation ? "not-allowed" : "pointer",
+                  backgroundColor: !shippingLocation || reorderItems.length === 0 ? "#ccc" : "#6c56ef",
+                  cursor: !shippingLocation || reorderItems.length === 0 ? "not-allowed" : "pointer",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
@@ -381,9 +308,8 @@ export default function Checkout() {
                   fontSize: "16px",
                 }}
               >
-                {isPlacingOrder ? "Placing Order..." : "Place Order"}
+                {isPlacingOrder ? "Placing Order..." : "Re-Place Order"}
               </button>
-
             </div>
           </div>
         </div>

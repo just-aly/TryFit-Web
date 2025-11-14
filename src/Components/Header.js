@@ -9,6 +9,9 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase"; 
+
 
 
 export default function Header() {
@@ -129,10 +132,20 @@ export default function Header() {
     setOpenDropdown(null);
   };
 
-  const confirmLogout = () => {
-    setShowLogoutModal(false);
-    navigate("/login");
-  };
+    const confirmLogout = async () => {
+      await signOut(auth);
+      setShowLogoutModal(false);
+
+      // Prevent back navigation
+      window.history.pushState(null, "", window.location.href);
+      window.onpopstate = function () {
+        window.history.go(1);
+      };
+
+      // Reset navigation like React Native reset()
+      navigate("/login", { replace: true });
+    };
+
 
   const cancelLogout = () => {
     setShowLogoutModal(false);
@@ -189,7 +202,7 @@ export default function Header() {
               Tops {openDropdown === "tops" ? "▴" : "▾"}
               {openDropdown === "tops" && (
                 <ul className="dropdown-menu small-menu">
-                  <li onClick={() => navigate("/categories?category=T-Shirts")}>
+                  <li onClick={() => navigate("/categories?category=T-Shirt")}>
                     T-Shirts
                   </li>
                   <li onClick={() => navigate("/categories?category=Longsleeves")}>
