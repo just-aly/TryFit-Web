@@ -183,9 +183,11 @@ export default function Profile() {
 
   // Delete account input - only password (per your request)
   const [deletePasswordInput, setDeletePasswordInput] = useState("");
- // const [confirmingDelete, setConfirmingDelete] = useState(false); 
+ // const [confirmingDelete, setConfirmingDelete] = useState(false);
+ 
+ const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
-  // ✅ Popup system
+  //  Popup system
 const [popup, setPopup] = useState({ show: false, message: "", type: "" });
 const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -731,7 +733,7 @@ async function handleDeleteAccount() {
 
                   <label>
                     User name
-                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" />
+                    <input type="text" maxLength={50} value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" />
                   </label>
 
                   <label>
@@ -1589,7 +1591,6 @@ async function handleDeleteAccount() {
   background: #fff;            
   border-radius: 50%;          
   padding: 4px;                
-  box-shadow: 0 0 2px rgba(0,0,0,0.2); 
   display: flex;
   align-items: center;
   justify-content: center;

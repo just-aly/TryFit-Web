@@ -13,7 +13,7 @@ export default function Footer() {
         {/* Contact Info */}
         <div className="footer-section">
           <h3>Contact Us</h3>
-          <p><FaEnvelope className="icon" /> tryfit@gmail.com</p>
+          <p><FaEnvelope className="icon" /> tryfitar@gmail.com</p>
           <p><FaPhone className="icon" /> +63 912 345 6789</p>
           <p><FaMapMarkerAlt className="icon" /> Tarlac City, Philippines</p>
 

@@ -41,45 +41,31 @@ export default function ProductDetails() {
     fetchProduct();
   }, [productId]);
 
-useEffect(() => {
-  if (!product?.productID) return; // wait until product is loaded
-
-  const fetchReviews = async () => {
-    try {
-      const q = query(
-        collection(db, "productReviews"),
-        where("productID", "==", product.productID)
-      );
-      const querySnapshot = await getDocs(q);
-
-      const fetched = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      console.log("✅ Reviews fetched for", product.productID, fetched);
-
-      setReviews(fetched);
-    } catch (error) {
-      console.error("❌ Error fetching reviews:", error);
-    }
-  };
-
-  fetchReviews();
-}, [product?.productID]);
-
-
+  useEffect(() => {
+    if (!product?.productID) return; // wait until product is loaded
+    const fetchReviews = async () => {
+      try {
+        const q = query(
+          collection(db, "productReviews"),
+          where("productID", "==", product.productID)
+        );
+        const querySnapshot = await getDocs(q);
+        const fetched = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setReviews(fetched);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+      }
+    };
+    fetchReviews();
+  }, [product?.productID]);
 
   const showPopup = (message, type = "info") => {
     setPopup({ visible: true, message, type });
     setTimeout(() => setPopup({ visible: false, message: "", type: "" }), 2000);
   };
 
-  if (loading)
-    return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading product...</p>;
-
-  if (!product)
-    return <p style={{ textAlign: "center", marginTop: "50px" }}>Product not found.</p>;
+  if (loading) return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading product...</p>;
+  if (!product) return <p style={{ textAlign: "center", marginTop: "50px" }}>Product not found.</p>;
 
   const safeStock = product.stock || {};
   const getSizeStock = (size) => Number(safeStock[size]) || 0;
@@ -168,38 +154,34 @@ useEffect(() => {
   return (
     <div className="product-details-container">
       {popup.visible && (
-  <div className={`popup ${popup.type}`}>
-    <div className="popup-icon">
-      {popup.type === "success" && "✅"}
-      {popup.type === "warning" && "⚠️"}
-      {popup.type === "error" && "❌"}
-    </div>
-    <div className="popup-text">
-      <strong className="popup-title">
-        {popup.type === "success"
-          ? "Success!"
-          : popup.type === "warning"
-          ? "Warning!"
-          : "Error!"}
-      </strong>
-      <p className="popup-message">{popup.message}</p>
-    </div>
-    <button
-      className="popup-close"
-      onClick={() => setPopup({ visible: false, message: "", type: "" })}
-    >
-      ×
-    </button>
-  </div>
-)}
+        <div className={`popup ${popup.type}`}>
+          <div className="popup-icon">
+            {popup.type === "success" && "✅"}
+            {popup.type === "warning" && "⚠️"}
+            {popup.type === "error" && "❌"}
+          </div>
+          <div className="popup-text">
+            <strong className="popup-title">
+              {popup.type === "success"
+                ? "Success!"
+                : popup.type === "warning"
+                ? "Warning!"
+                : "Error!"}
+            </strong>
+            <p className="popup-message">{popup.message}</p>
+          </div>
+          <button
+            className="popup-close"
+            onClick={() => setPopup({ visible: false, message: "", type: "" })}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div className="product-layout">
         <div className="product-image-section">
-          <img
-            src={product.imageUrl || PLACEHOLDER_IMAGE}
-            alt={product.productName}
-            className="product-image"
-          />
+          <img src={product.imageUrl || PLACEHOLDER_IMAGE} alt={product.productName} className="product-image" />
         </div>
 
         <div className="product-info-section">
@@ -208,11 +190,9 @@ useEffect(() => {
           <p className="rating">⭐ {product.rating || "N/A"}</p>
           <p className="sold">{product.sold || 0} Sold</p>
 
-          <div className="note">
-            Size recommendations and AR experience are available only on the mobile app.
-          </div>
+          <div className="note">Size recommendations and AR experience are available only on the mobile app.</div>
 
-          {/*  Reviews Section */}
+          {/* Reviews Section */}
           <div className="reviews-section">
             <h3> Reviews</h3>
             {showReviews && (
@@ -226,9 +206,7 @@ useEffect(() => {
                         <p className="review-size">Size: {rev.size}</p>
                         <p className="review-comment">{rev.comment}</p>
                       </div>
-                      <div className="review-stars">
-                        {"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}
-                      </div>
+                      <div className="review-stars">{"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}</div>
                     </div>
                   ))
                 ) : (
@@ -237,10 +215,7 @@ useEffect(() => {
               </div>
             )}
             {reviews.length > 0 && (
-              <p
-                className="toggle-reviews"
-                onClick={() => setShowReviews(!showReviews)}
-              >
+              <p className="toggle-reviews" onClick={() => setShowReviews(!showReviews)}>
                 {showReviews ? "Hide Reviews" : "Show Reviews"}
               </p>
             )}
@@ -257,7 +232,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/*  Add to Cart Modal */}
+      {/* Add to Cart Modal */}
       {modalVisible && (
         <div className="modal-overlay" onClick={() => setModalVisible(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -269,10 +244,7 @@ useEffect(() => {
                   key={size}
                   disabled={getSizeStock(size) === 0}
                   className={selectedSize === size ? "size-btn selected" : "size-btn"}
-                  onClick={() => {
-                    setSelectedSize(size);
-                    setQuantity(1);
-                  }}
+                  onClick={() => { setSelectedSize(size); setQuantity(1); }}
                 >
                   {size} ({getSizeStock(size)} pcs)
                 </button>
@@ -283,22 +255,15 @@ useEffect(() => {
               <label className="quantity-label">Quantity:</label>
               <button onClick={decrementQuantity} disabled={quantity <= 1}>−</button>
               <span className="quantity-value">{quantity}</span>
-              <button
-                onClick={incrementQuantity}
-                disabled={selectedSize && quantity >= getSizeStock(selectedSize)}
-              >
-                ＋
-              </button>
+              <button onClick={incrementQuantity} disabled={selectedSize && quantity >= getSizeStock(selectedSize)}>＋</button>
             </div>
 
-            <button className="confirm-btn" onClick={saveCartItem}>
-              Add to Cart
-            </button>
+            <button className="confirm-btn" onClick={saveCartItem}>Add to Cart</button>
           </div>
         </div>
       )}
 
-      {/*  Direct Checkout Modal */}
+      {/* Direct Checkout Modal */}
       {directCheckoutModal && (
         <div className="modal-overlay" onClick={() => setDirectCheckoutModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -311,10 +276,7 @@ useEffect(() => {
                   key={size}
                   disabled={getSizeStock(size) === 0}
                   className={selectedSize === size ? "size-btn selected" : "size-btn"}
-                  onClick={() => {
-                    setSelectedSize(size);
-                    setQuantity(1);
-                  }}
+                  onClick={() => { setSelectedSize(size); setQuantity(1); }}
                 >
                   {size} ({getSizeStock(size)} pcs)
                 </button>
@@ -328,39 +290,39 @@ useEffect(() => {
               <button onClick={incrementQuantity}>＋</button>
             </div>
 
-            <button className="confirm-btn" onClick={handleDirectCheckout}>
-              Proceed to Checkout
-            </button>
+            <button className="confirm-btn" onClick={handleDirectCheckout}>Proceed to Checkout</button>
           </div>
         </div>
       )}
 
-      {/*  Success Modal */}
-      {cartSuccessModal && (
-        <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Added to Cart!</h3>
-            <p>{product.productName} has been added to your cart.</p>
-
-            <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
-              <button
-                className="confirm-btn"
-                style={{ flex: 1, backgroundColor: "#7B5CD6" }}
-                onClick={() => navigate("/landing")}
-              >
-                Continue Shopping
-              </button>
-              <button
-                className="confirm-btn"
-                style={{ flex: 1, backgroundColor: "#FF6B6B" }}
-                onClick={() => navigate("/cart")}
-              >
-                Go to Cart
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ✅ Purple Check Success Modal */}
+     {/* ✅ Purple Check Success Modal with animation */}
+{cartSuccessModal && (
+  <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
+    <div className="modal-content animated" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
+      <div className="checkmark-circle">
+        <span className="checkmark">✔</span>
+      </div>
+      <h3 style={{ marginBottom: "10px" }}>Order added to cart!</h3>
+      <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
+        <button
+          className="confirm-btn"
+          style={{ flex: 1, backgroundColor: "#7B5CD6" }}
+          onClick={() => navigate("/landing")}
+        >
+          Continue Shopping
+        </button>
+        <button
+          className="cart-btn"
+          style={{ flex: 1, border:  "1px solid #7B5CD6" }}
+          onClick={() => navigate("/cart")}
+        >
+          Go to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       <style>{`
         /* ✅ Popup Styles */
@@ -646,7 +608,7 @@ useEffect(() => {
           color: white; 
           padding: 10px 16px; 
           border: none; 
-          border-radius: 6px; 
+          border-radius: 3px; 
           cursor: pointer; 
           width: 100%; }
 
@@ -658,6 +620,78 @@ useEffect(() => {
         .size-btn.selected {
           border-color: #9747FF;
           background: #F3E5F5;
+        }
+
+         .modal-overlay {
+          position: fixed;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          background: rgba(0,0,0,0.5);
+          display: flex; justify-content: center; align-items: center;
+          z-index: 10000;
+          animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-content.animated {
+          background: #fff;
+          padding: 20px;
+          border-radius: 12px;
+          width: 90%;
+          max-width: 350px;
+          animation: scaleIn 0.5s ease-out;
+        }
+
+        .checkmark-circle {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          background-color: transparent;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 0 auto 20px auto;
+          animation: bounce 0.6s ease-out;
+        }
+
+        .checkmark {
+          color: #9747FF;
+          font-size: 2rem;
+          transform: scale(0) rotate(-45deg);
+          animation: checkAnimation 0.6s forwards;
+        }
+
+        @keyframes checkAnimation {
+        0% {
+          transform: scale(0) rotate(-45deg);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.2) rotate(15deg);
+          opacity: 1;
+        }
+        70% {
+          transform: scale(0.9) rotate(-5deg);
+        }
+        100% {
+          transform: scale(1) rotate(0deg);
+        }
+       }
+          
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+          0% { transform: scale(0.5); opacity: 0; }
+          60% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(1); }
+        }
+
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-15px); }
+          60% { transform: translateY(-7px); }
         }
 
         /* Mobile Responsive Design */

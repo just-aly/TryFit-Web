@@ -57,13 +57,8 @@ export default function MyOrders() {
   const [rateOrderDetails, setRateOrderDetails] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  //const [ordersData, setOrdersData] = useState({
-  // Orders: [],
-  //  ToShip: [],
-  //  ToReceive: [],
-  //  Completed: [],
-  //  Cancelled: [],
-  // }); 
+  const [confirmCancelModalOpen, setConfirmCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState(null);
 
   const [ordersWithProducts, setOrdersWithProducts] = useState({
     Orders: [],
@@ -159,12 +154,16 @@ export default function MyOrders() {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [customUserId]);
 
-  const handleCancelOrder = async (order) => {
-    const confirmCancel = window.confirm('Are you sure you want to cancel this order?');
-    if (!confirmCancel) return;
+  const handleCancelOrder = (order) => {
+    setOrderToCancel(order);
+    setConfirmCancelModalOpen(true);
+  };
 
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel) return;
     try {
-      // ✅ Only the fields you listed + cancelledAt
+      const order = orderToCancel;
+
       const cancelledOrder = {
         cancelledID: `CN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         address: order.address,
@@ -185,13 +184,12 @@ export default function MyOrders() {
         status: 'Cancelled',
         total: order.total,
         userId: order.userId,
-        cancelledAt: new Date(), // new field
+        cancelledAt: new Date(),
       };
 
       const cancelledRef = doc(collection(db, 'cancelled'));
       await setDoc(cancelledRef, cancelledOrder);
 
-      // Restore stock for each item
       for (const item of order.items) {
         const productRef = doc(db, 'products', item.productId);
         const productSnap = await getDoc(productRef);
@@ -207,12 +205,10 @@ export default function MyOrders() {
         await setDoc(productRef, { ...productData, stock: updatedStock, totalStock }, { merge: true });
       }
 
-      // Delete the original order from 'orders'
       const orderRef = doc(db, 'orders', order.id);
       await deleteDoc(orderRef);
 
       const notificationsRef = collection(db, "notifications");
-
       await addDoc(notificationsRef, {
         notifID: `NTC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         userId: order.userId,
@@ -223,14 +219,19 @@ export default function MyOrders() {
         read: false,
       });
 
-      // Switch to Cancelled tab
       setActiveTab('Cancelled');
-
+      setConfirmCancelModalOpen(false);
       showPopup("Order cancelled successfully and stock updated.", "success");
     } catch (err) {
       console.error('Failed to cancel order:', err);
       showPopup("Failed to cancel order.", "error");
+      setConfirmCancelModalOpen(false);
     }
+  };
+
+  const cancelCancelOrder = () => {
+    setOrderToCancel(null);
+    setConfirmCancelModalOpen(false);
   };
 
   const handleOrderReceived = async (order) => {
@@ -494,12 +495,13 @@ export default function MyOrders() {
 
             {/* Popup */}
           {popup.visible && (
-        <div className={`popup ${popup.type}`}>
+       <div className={`popup ${popup.type}`}>
           <div className="popup-icon">
             {popup.type === "success" && "✅"}
             {popup.type === "warning" && "⚠️"}
             {popup.type === "error" && "❌"}
           </div>
+
           <div className="popup-text">
             <strong className="popup-title">
               {popup.type === "success"
@@ -509,10 +511,9 @@ export default function MyOrders() {
                 : "Error!"}
             </strong>
             <p className="popup-message">{popup.message}</p>
-            <button className="popup-close" onClick={closePopup}>
-              ×
-            </button>
           </div>
+
+          <button className="popup-close" onClick={closePopup}>×</button>
         </div>
       )}
 
@@ -540,6 +541,35 @@ export default function MyOrders() {
             ))}
 
             <button className="order-btn" onClick={() => setShippingModalOpen(false)}>Close</button>
+          </div>
+        </div>
+      )}
+
+    {/* Confirm Cancel Modal */}
+      {confirmCancelModalOpen && orderToCancel && (
+        <div className="modal-overlay" onClick={cancelCancelOrder}>
+          <div
+            className="modal-content confirm-cancel-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>Confirm Cancellation</h2>
+            <p>Are you sure you want to cancel this item?</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '20px' }}>
+              <button
+                className="order-btn"
+                onClick={cancelCancelOrder}
+                style={{ background: '#ffffffff', borderColor: '#6a5acd', color: '#6a5acd' }}
+              >
+                No
+              </button>
+              <button
+                className="order-btn"
+                onClick={confirmCancelOrder}
+                style={{ background: '#6a5acd', color: '#ffffffff' }}
+              >
+                Yes, Cancel Order
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -700,8 +730,6 @@ export default function MyOrders() {
           >
             Submit Ratings
           </button>
-
-
           </div>
         </div>
       )}
@@ -996,6 +1024,16 @@ export default function MyOrders() {
           position: relative;
         }
 
+        /* Confirm Cancel Modal specific styling */
+        .confirm-cancel-modal {
+          width: 320px;       
+          max-width: 90%;     
+          padding: 20px 25px; 
+          text-align: center; 
+          border-radius: 8px;
+          margin-bottom: 620px;
+        }
+
         /* ✅ Popup Styles (Top Centered) */
           .popup {
           position: fixed;
@@ -1043,7 +1081,7 @@ export default function MyOrders() {
           cursor: pointer;
           color: #333;
           font-weight: bold;
-          margin-left: 8px;
+          margin-left: auto;
         }
 
         .popup.success {

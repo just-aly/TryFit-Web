@@ -145,21 +145,24 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Drag handlers (kept from your design code)
+  // ===== DRAG HANDLERS =====
   const handleMouseDown = (e) => {
     isDragging.current = true;
     if (dragRef.current) dragRef.current.classList.add("dragging");
     startX.current = e.pageX - (dragRef.current?.offsetLeft || 0);
     scrollStart.current = dragRef.current?.scrollLeft || 0;
   };
+
   const handleMouseLeave = () => {
     isDragging.current = false;
     if (dragRef.current) dragRef.current.classList.remove("dragging");
   };
+
   const handleMouseUp = () => {
     isDragging.current = false;
     if (dragRef.current) dragRef.current.classList.remove("dragging");
   };
+
   const handleMouseMove = (e) => {
     if (!isDragging.current || !dragRef.current) return;
     e.preventDefault();
@@ -168,15 +171,24 @@ export default function LandingPage() {
     dragRef.current.scrollLeft = scrollStart.current - walk;
   };
 
-  // Mobile touch
-  const handleTouchStart = (e) => handleMouseDown(e.touches[0]);
-  const handleTouchMove = (e) => handleMouseMove(e.touches[0]);
-  const handleTouchEnd = () => handleMouseUp();
+  // ===== MOBILE TOUCH FIX =====
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    handleMouseDown({
+      pageX: touch.pageX,
+      preventDefault: () => {},
+    });
+  };
 
-  const popularItems = [1, 2, 3, 4, 5, 6];
-  const popularIndex = 0;
-  const prevSlide = () => {};
-  const nextSlide = () => {};
+  const handleTouchMove = (e) => {
+    const touch = e.touches[0];
+    handleMouseMove({
+      pageX: touch.pageX,
+      preventDefault: () => {},
+    });
+  };
+
+  const handleTouchEnd = () => handleMouseUp();
 
   return (
     <div className={`landing-page ${bgColor}`}>
@@ -369,9 +381,26 @@ export default function LandingPage() {
           justify-content: center;
           color: white;
         }
-      /* New Arrival */
+   
+        /* New Arrival */
+        img {
+          -webkit-user-drag: none;
+          -moz-user-select: none;
+          -webkit-user-select: none;
+          user-select: none;
+        }
 
-       .arrival-item {
+        .arrivals-scroll,
+        .popular-scroll {
+          cursor: grab;
+        }
+
+        .arrivals-scroll.dragging,
+        .popular-scroll.dragging {
+          cursor: grabbing;
+        }
+
+        .arrival-item {
           flex: 0 0 auto;
           width: 300px;              
           height: 420px;             
@@ -387,6 +416,7 @@ export default function LandingPage() {
           transform: translateY(-8px);
           box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
         }
+
         .arrivals-scroll {
           overflow-x: auto;           
           overflow-y: hidden;         
@@ -431,6 +461,17 @@ export default function LandingPage() {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+        }
+
+        /* Hide scrollbars */
+        .arrivals-scroll::-webkit-scrollbar,
+        .popular-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        .arrivals-scroll,
+        .popular-scroll {
+          -ms-overflow-style: none;  
+          scrollbar-width: none;     
         }
 
        /* ===== POPULAR ===== */

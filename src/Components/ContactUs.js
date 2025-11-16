@@ -20,7 +20,7 @@ export default function ContactUs() {
           <h2 className="section-title">Contacts</h2>
           <p className="contact-item">
             <FaEnvelope className="icon" />
-            tryfit@gmail.com
+            tryfitar@gmail.com
           </p>
           <p className="contact-item">
             <FaPhone className="icon" />

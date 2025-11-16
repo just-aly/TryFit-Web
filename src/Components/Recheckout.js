@@ -12,7 +12,6 @@ import {
   addDoc,
   setDoc,
   serverTimestamp,
-  deleteDoc,
 } from "firebase/firestore";
 
 export default function Recheckout() {
@@ -27,12 +26,13 @@ export default function Recheckout() {
   const { completedID, cancelledID } = location.state || {};
   const [order, setOrder] = useState(null);
 
+  // UI states
+  const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showSuccessAnim, setShowSuccessAnim] = useState(false);
 
   const totalItems = reorderItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = reorderItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const totalPrice = reorderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   useEffect(() => {
     controls.start({
@@ -42,13 +42,18 @@ export default function Recheckout() {
     });
   }, [controls]);
 
+  // Toast helper
+  const showToast = (message, type = "info", ms = 2500) => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ visible: false, message: "", type: "info" }), ms);
+  };
+
   // Fetch shipping location
   useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
         const currentUser = auth.currentUser;
         if (!currentUser) {
-          console.warn("User not logged in");
           setLoading(false);
           return;
         }
@@ -56,7 +61,6 @@ export default function Recheckout() {
         const userDocRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userDocRef);
         if (!userSnap.exists()) {
-          console.warn("No user document found for UID:", currentUser.uid);
           setLoading(false);
           return;
         }
@@ -85,6 +89,7 @@ export default function Recheckout() {
         }
       } catch (err) {
         console.error("Error fetching shipping location:", err);
+        showToast("Failed to load shipping info.", "error");
       } finally {
         setLoading(false);
       }
@@ -93,108 +98,119 @@ export default function Recheckout() {
     fetchShippingLocation();
   }, []);
 
-    useEffect(() => {
+  // Fetch previous order items
+  useEffect(() => {
     const fetchOrder = async () => {
-        try {
+      try {
         let orderData = null;
 
         if (completedID) {
-            const q = query(
+          const q = query(
             collection(db, "completed"),
             where("completedID", "==", completedID)
-            );
-            const querySnap = await getDocs(q);
-            if (!querySnap.empty) orderData = querySnap.docs[0].data();
+          );
+          const querySnap = await getDocs(q);
+          if (!querySnap.empty) orderData = querySnap.docs[0].data();
         } else if (cancelledID) {
-            const q = query(
+          const q = query(
             collection(db, "cancelled"),
             where("cancelledID", "==", cancelledID)
-            );
-            const querySnap = await getDocs(q);
-            if (!querySnap.empty) orderData = querySnap.docs[0].data();
+          );
+          const querySnap = await getDocs(q);
+          if (!querySnap.empty) orderData = querySnap.docs[0].data();
         }
 
         if (orderData) {
-            setReorderItems(orderData.items || []);
-            setOrder(orderData); // store full document for reference
+          setReorderItems(orderData.items || []);
+          setOrder(orderData);
         } else {
-            console.warn("Order not found");
+          console.warn("Order not found");
         }
-        } catch (err) {
+      } catch (err) {
         console.error("Error fetching order:", err);
-        }
+      }
     };
 
     fetchOrder();
-    }, [completedID, cancelledID]);
+  }, [completedID, cancelledID]);
 
+  // Confirmation modal before placing order
+  const handlePlaceOrderClick = () => {
+    if (!auth.currentUser) {
+      showToast("You must be logged in to place an order.", "error");
+      return;
+    }
+    if (!shippingLocation) {
+      showToast("Please add a shipping address before placing an order.", "warning");
+      return;
+    }
+    if (!reorderItems || reorderItems.length === 0) {
+      showToast("No items selected.", "warning");
+      return;
+    }
+    setShowConfirm(true);
+  };
 
- const handlePlaceOrder = async () => {
-  if (!auth.currentUser) return alert("You must be logged in.");
-  if (!shippingLocation) return alert("Add shipping address first.");
-  if (!reorderItems.length) return alert("No items to reorder.");
+  const placeOrderConfirmed = async () => {
+    setShowConfirm(false);
+    setIsPlacingOrder(true);
 
-  setIsPlacingOrder(true);
+    try {
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+      if (!userDoc.exists()) throw new Error("User not found");
+      const customUserId = userDoc.data().userId;
 
-  try {
-    const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
-    if (!userDoc.exists()) throw new Error("User not found");
-    const customUserId = userDoc.data().userId;
+      const subtotal = reorderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const total = subtotal + 58;
 
-    const subtotal = reorderItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const total = subtotal + 58;
+      const newOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    const newOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-    const orderData = {
+      const orderData = {
         orderId: newOrderId,
         userId: customUserId,
         name: shippingLocation.name,
         address: `${shippingLocation.house}, ${shippingLocation.fullAddress}`,
         deliveryFee: 58,
         total,
-        // ⬇️ Added exact same handling as mobile version
         productID: order?.productID || null,
         delivery: order?.delivery || "Standard Shipping",
         status: "Pending",
         createdAt: serverTimestamp(),
-
         items: reorderItems.map((item) => ({
-            imageUrl: item.imageUrl || "",
-            productId: item.productId || "",
-            productName: item.productName || "",
-            quantity: item.quantity || 1,
-            price: item.price || 0,
-            size: item.size || "-",
+          imageUrl: item.imageUrl || "",
+          productId: item.productId || "",
+          productName: item.productName || "",
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          size: item.size || "-",
         })),
-        };
+      };
 
+      await addDoc(collection(db, "orders"), orderData);
 
-    await addDoc(collection(db, "orders"), orderData);
+      await addDoc(collection(db, "notifications"), {
+        notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        userId: customUserId,
+        title: "Re-Order Placed",
+        message: `Your re-order ${newOrderId} totaling ₱${total.toLocaleString()} has been placed.`,
+        orderId: newOrderId,
+        timestamp: serverTimestamp(),
+        read: false,
+      });
 
-    await addDoc(collection(db, "notifications"), {
-      notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      userId: customUserId,
-      title: "Re-Order Placed",
-      message: `Your re-order ${newOrderId} totaling ₱${total.toLocaleString()} has been placed.`,
-      orderId: newOrderId,
-      timestamp: serverTimestamp(),
-      read: false,
-    });
-
-    alert("✅ Re-order placed successfully!");
-    navigate("/myorders", { state: { fromCheckout: true } });
-  } catch (err) {
-    console.error(err);
-    alert("❌ Failed to place reorder. Try again.");
-  } finally {
-    setIsPlacingOrder(false);
-  }
-};
-
+      // Show success animation
+      setShowSuccessAnim(true);
+      setTimeout(() => {
+        setShowSuccessAnim(false);
+        navigate("/myorders", { state: { fromCheckout: true } });
+      }, 2200);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to place reorder. Try again.", "error");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
 
   const handleAddAddress = () => {
     navigate("/profile", {
@@ -207,11 +223,50 @@ export default function Recheckout() {
 
   return (
     <div className="checkout-page">
-      <motion.div
-        className="checkout-header"
-        initial={{ opacity: 0, y: -20 }}
-        animate={controls}
-      >
+      {/* Top toast */}
+      {toast.visible && (
+        <div className={`toast ${toast.type}`}>
+          <div className="toast-message">{toast.message}</div>
+        </div>
+      )}
+
+      {showConfirm && (
+        <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Are you sure you want to proceed?</h3>
+            <p>This will place the order and charge you accordingly.</p>
+            <div className="confirm-actions">
+              <button className="btn cancel" onClick={() => setShowConfirm(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn confirm"
+                onClick={() => placeOrderConfirmed()}
+                disabled={isPlacingOrder}
+              >
+                {isPlacingOrder ? "Placing..." : "Yes, proceed"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Success animation overlay */}
+      {showSuccessAnim && (
+        <div className="success-overlay">
+          <div className="success-card" role="status" aria-live="polite">
+            <svg className="check-svg" viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="60" cy="60" r="54" fill="none" strokeWidth="4" opacity="0.12" />
+              <path className="check-path" d="M34 62 L52 80 L86 40" fill="none" stroke="#6c56ef" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div className="success-text">Order successfully placed!</div>
+          </div>
+        </div>
+      )}
+
+      {/* Page content */}
+      <motion.div className="checkout-header" initial={{ opacity: 0, y: -20 }} animate={controls}>
         <div className="checkout-header-inner">
           <div className="checkout-title-row">
             <h1>Re-Checkout</h1>
@@ -220,11 +275,7 @@ export default function Recheckout() {
         </div>
       </motion.div>
 
-      <motion.section
-        className="checkout-content"
-        initial={{ opacity: 0, y: 30 }}
-        animate={controls}
-      >
+      <motion.section className="checkout-content" initial={{ opacity: 0, y: 30 }} animate={controls}>
         <div className="checkout-left">
           <h1>Re-Checkout</h1>
 
@@ -239,15 +290,10 @@ export default function Recheckout() {
                 <p><strong>Phone number:</strong> {shippingLocation.phone}</p>
                 <p><strong>Postal:</strong> {shippingLocation.postalCode}</p>
               </div>
-              <button onClick={handleAddAddress} className="edit-btn">
-                Edit
-              </button>
+              <button onClick={handleAddAddress} className="edit-btn">Edit</button>
             </div>
           ) : (
-            <p
-              style={{ color: "red", cursor: "pointer", textDecoration: "underline" }}
-              onClick={handleAddAddress}
-            >
+            <p style={{ color: "red", cursor: "pointer", textDecoration: "underline" }} onClick={handleAddAddress}>
               No shipping address. Click here to add one.
             </p>
           )}
@@ -259,11 +305,7 @@ export default function Recheckout() {
           ) : (
             reorderItems.map((item, index) => (
               <div key={`${item.productId}-${index}`} className="product-card">
-                <img
-                  src={item.imageUrl || "https://via.placeholder.com/80"}
-                  alt={item.productName}
-                  className="product-image"
-                />
+                <img src={item.imageUrl || "https://via.placeholder.com/80"} alt={item.productName} className="product-image" />
                 <div className="product-details">
                   <h4>{item.productName}</h4>
                   <p>Size: {item.size}</p>
@@ -292,11 +334,9 @@ export default function Recheckout() {
 
           <div className="order-card">
             <div className="order-total">
-              <p>
-                Total: <span>₱{(totalPrice + 58).toLocaleString()}</span>
-              </p>
+              <p>Total: <span>₱{(totalPrice + 58).toLocaleString()}</span></p>
               <button
-                onClick={handlePlaceOrder}
+                onClick={handlePlaceOrderClick}
                 disabled={!shippingLocation || isPlacingOrder || reorderItems.length === 0}
                 style={{
                   backgroundColor: !shippingLocation || reorderItems.length === 0 ? "#ccc" : "#6c56ef",
@@ -315,8 +355,9 @@ export default function Recheckout() {
         </div>
       </motion.section>
 
+      {/* Styles */}
       <style>{`
-        .checkout-page {
+           .checkout-page {
           font-family: 'Poppins', sans-serif;
           background: linear-gradient(to bottom, #ece5ff, #f7f3ff);
           min-height: 100vh;
@@ -357,7 +398,7 @@ export default function Recheckout() {
         .header-line {
           flex: none;
           height: 20px;
-          width: 75%;
+          width: 65%;
           background: #6c56ef;
           box-shadow: 0 2px 6px rgba(108, 86, 239, 0.3);
         }
@@ -369,6 +410,104 @@ export default function Recheckout() {
           padding: 10px 18px;
           font-weight: 600;
           border-radius: 8px;
+        }
+
+        /* ------------------------------
+   CONFIRMATION MODAL
+------------------------------ */
+.modal-overlay {
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
+  background: rgba(0,0,0,0.45);
+  padding-bottom: 650px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+}
+
+.confirm-modal {
+  background: white;
+  padding: 22px 24px;
+  width: 92%;
+  max-width: 420px;
+  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+
+.confirm-modal h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.confirm-modal p {
+  margin: 0 0 16px;
+  color: #444;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.cancel {
+  background: #f1f1f1;
+  color: #333;
+  border: 1px solid #6c56ef;
+}
+
+.btn.confirm {
+  background: #6c56ef;
+  color: white;
+}
+	
+  .success-overlay {
+          position: fixed;
+          top: 0; 
+          left: 0; 
+          right: 0; 
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9998;
+          background: rgba(0, 0, 0, 0.25);
+          backdrop-filter: blur(6px);
+        }
+        .success-card {
+          background: transparent;
+          padding: 28px 26px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          align-items: center;
+        }
+        .check-svg { display: block; }
+        .check-path {
+          stroke: #6c56ef;
+          stroke-dasharray: 120;
+          stroke-dashoffset: 120;
+          animation: draw 0.9s ease forwards;
+        }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        .success-text {
+          font-weight: 700;
+          color: #222;
+          font-size: 1.5rem;
+          text-align: center;
         }
 
         /* ===== Main Content ===== */
@@ -725,6 +864,36 @@ export default function Recheckout() {
           font-size: 0.85rem;
           padding: 10px;
           margin-top: 10px; 
+        }
+
+        
+        .modal-overlay {
+          position: fixed;
+          top: 0; 
+          left: 0; 
+          right: 0; 
+          bottom: 0;
+          background: rgba(0,0,0,0.45);
+          padding-bottom: 550px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 5000;
+        }
+
+        .confirm-modal {
+          background: white;
+          padding: 22px 24px;
+          width: 70%;
+          max-width: 320px;
+          text-align: center;
+          border-radius: 10px;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+
+        .confirm-modal h3 {
+          margin: 0 0 8px;
+          font-size: 0.9rem;
         }
       }
 

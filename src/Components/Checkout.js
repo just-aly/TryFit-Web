@@ -2,27 +2,37 @@ import React, { useEffect, useState } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { db, auth } from "../firebase";
-import { collection, addDoc, getDoc, doc, getDocs, query, where, setDoc, serverTimestamp, deleteDoc  } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDoc,
+  doc,
+  getDocs,
+  query,
+  where,
+  setDoc,
+  serverTimestamp,
+  deleteDoc,
+} from "firebase/firestore";
 
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = location.state?.user || null; 
-  //const userId = user?.userId || null;
-
   const [notification, setNotification] = useState("");
   const [shippingLocation, setShippingLocation] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false); 
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const completedDocId = location.state?.completedDocId || null;
   const [cartItems, setCartItems] = useState([]);
   const [orderInfo, setOrderInfo] = useState(null);
- 
+
+  // UI states
+  const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showSuccessAnim, setShowSuccessAnim] = useState(false);
+
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const controls = useAnimation();
 
@@ -34,34 +44,27 @@ export default function Checkout() {
     });
   }, [controls]);
 
-  // Fetch shipping location from Firestore
-   useEffect(() => {
+  // Fetch shipping location
+  useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
         const currentUser = auth.currentUser;
         if (!currentUser) {
-          console.warn("User not logged in");
           setLoading(false);
           return;
         }
 
-        // Get the custom userId from users collection
         const userDocRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userDocRef);
 
         if (!userSnap.exists()) {
-          console.warn("No user document found for UID:", currentUser.uid);
           setLoading(false);
           return;
         }
 
         const customUserId = userSnap.data().userId;
 
-        const q = query(
-          collection(db, "shippingLocations"),
-          where("userId", "==", customUserId)
-        );
-
+        const q = query(collection(db, "shippingLocations"), where("userId", "==", customUserId));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
@@ -79,6 +82,7 @@ export default function Checkout() {
         }
       } catch (err) {
         console.error("Error fetching shipping location:", err);
+        showToast("Failed to load shipping info.", "error");
       } finally {
         setLoading(false);
       }
@@ -93,156 +97,239 @@ export default function Checkout() {
     }
   }, [completedDocId, location.state]);
 
+  // Toast helper
+  const showToast = (message, type = "info", ms = 2500) => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ visible: false, message: "", type: "info" }), ms);
+  };
 
-
-  const handlePlaceOrder = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) {
-      alert("You must be logged in to place an order.");
+  // When user clicks Place Order, show confirmation modal
+  const handlePlaceOrderClick = () => {
+    if (!auth.currentUser) {
+      showToast("You must be logged in to place an order.", "error");
       return;
     }
+    if (!shippingLocation) {
+      showToast("Please add a shipping address before placing an order.", "warning");
+      return;
+    }
+    if (!cartItems || cartItems.length === 0) {
+      showToast("No items selected.", "warning");
+      return;
+    }
+    setShowConfirm(true);
+  };
 
+  // Actual place order logic (called after confirm)
+  const placeOrderConfirmed = async () => {
+    setShowConfirm(false);
     setIsPlacingOrder(true);
 
-    //  Get custom userId
-    const userDocRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userDocRef);
-    if (!userSnap.exists()) {
-      alert("User not found in the database.");
-      setIsPlacingOrder(false);
-      return;
-    }
-    const customUserId = userSnap.data().userId;
-
-    if (!shippingLocation) {
-      alert("Please add a shipping address before placing an order.");
-      setIsPlacingOrder(false);
-      return;
-    }
-
-    const deliveryFee = 58;
-
-    const groupedItemsMap = new Map();
-    cartItems.forEach((item) => {
-      const key = `${item.productId}_${item.size}`;
-      if (groupedItemsMap.has(key)) {
-        const existing = groupedItemsMap.get(key);
-        existing.quantity += item.quantity;
-      } else {
-        groupedItemsMap.set(key, { ...item }); 
-      }
-    });
-
-    //  Create separate orders for each group
-    for (const groupedItem of groupedItemsMap.values()) {
-      const subtotal = groupedItem.price * groupedItem.quantity;
-      const total = subtotal + deliveryFee;
-      const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-      const orderData = {
-        orderId,
-        userId: customUserId,
-        name: shippingLocation.name,
-        address: `${shippingLocation.house}, ${shippingLocation.fullAddress}`,
-        productID: groupedItem.productID || groupedItem.productId || null,
-        deliveryFee,
-        total,
-        delivery: groupedItem.delivery,
-        createdAt: serverTimestamp(),
-        status: "Pending",
-        items: [
-          {
-            imageUrl: groupedItem.imageUrl,
-            productId: groupedItem.productId,
-            productName: groupedItem.productName,
-            quantity: groupedItem.quantity,
-            price: groupedItem.price,
-            size: groupedItem.size || "-",
-          },
-        ],
-      };
-
-      if (!orderData.productID) {
-        console.warn("⚠️ Skipping item with undefined productID:", groupedItem);
-        continue; 
+    try {
+      // get custom userId
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("Login required.", "error");
+        setIsPlacingOrder(false);
+        return;
       }
 
-      await addDoc(collection(db, "orders"), orderData);
+      const userDocRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userDocRef);
+      if (!userSnap.exists()) {
+        showToast("User not found in the database.", "error");
+        setIsPlacingOrder(false);
+        return;
+      }
+      const customUserId = userSnap.data().userId;
 
-      await addDoc(collection(db, "notifications"), {
-        notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        userId: customUserId,
-        title: "Order Placed",
-        message: `Your order ${orderId} with total ₱${total.toLocaleString()} has been placed.`,
-        orderId,
-        timestamp: serverTimestamp(),
-        read: false,
+      const deliveryFee = 58;
+
+      // group items by productId + size
+      const groupedItemsMap = new Map();
+      cartItems.forEach((item) => {
+        const key = `${item.productId}_${item.size}`;
+        if (groupedItemsMap.has(key)) {
+          const existing = groupedItemsMap.get(key);
+          existing.quantity += item.quantity;
+        } else {
+          groupedItemsMap.set(key, { ...item });
+        }
       });
 
-      //  Update product stock
-      const productRef = doc(db, "products", groupedItem.productId);
-      const productSnap = await getDoc(productRef);
-      if (productSnap.exists()) {
-        const productData = productSnap.data();
-        const currentStock = productData.stock || {};
-        const currentQty = currentStock[groupedItem.size] || 0;
-        const newQty = Math.max(currentQty - groupedItem.quantity, 0);
+      for (const groupedItem of groupedItemsMap.values()) {
+        const subtotal = groupedItem.price * groupedItem.quantity;
+        const total = subtotal + deliveryFee;
+        const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-        await setDoc(
-          productRef,
-          {
-            stock: {
-              ...currentStock,
-              [groupedItem.size]: newQty,
+        const orderData = {
+          orderId,
+          userId: customUserId,
+          name: shippingLocation.name,
+          address: `${shippingLocation.house}, ${shippingLocation.fullAddress}`,
+          productID: groupedItem.productID || groupedItem.productId || null,
+          deliveryFee,
+          total,
+          delivery: groupedItem.delivery,
+          createdAt: serverTimestamp(),
+          status: "Pending",
+          items: [
+            {
+              imageUrl: groupedItem.imageUrl,
+              productId: groupedItem.productId,
+              productName: groupedItem.productName,
+              quantity: groupedItem.quantity,
+              price: groupedItem.price,
+              size: groupedItem.size || "-",
             },
-          },
-          { merge: true }
-        );
+          ],
+        };
+
+        if (!orderData.productID) {
+          console.warn("Skipping item with undefined productID:", groupedItem);
+          continue;
+        }
+
+        await addDoc(collection(db, "orders"), orderData);
+
+        await addDoc(collection(db, "notifications"), {
+          notifID: `NCK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          userId: customUserId,
+          title: "Order Placed",
+          message: `Your order ${orderId} with total ₱${total.toLocaleString()} has been placed.`,
+          orderId,
+          timestamp: serverTimestamp(),
+          read: false,
+        });
+
+        // update product stock
+        const productRef = doc(db, "products", groupedItem.productId);
+        const productSnap = await getDoc(productRef);
+        if (productSnap.exists()) {
+          const productData = productSnap.data();
+          const currentStock = productData.stock || {};
+          const currentQty = currentStock[groupedItem.size] || 0;
+          const newQty = Math.max(currentQty - groupedItem.quantity, 0);
+
+          await setDoc(
+            productRef,
+            {
+              stock: {
+                ...currentStock,
+                [groupedItem.size]: newQty,
+              },
+            },
+            { merge: true }
+          );
+        }
       }
-    }
 
-    //  Remove placed items from cart
-    const cartRef = collection(db, "cartItems");
-    const q = query(cartRef, where("userId", "==", customUserId));
-    const cartSnap = await getDocs(q);
+      // remove placed items from cart collection for that user
+      const cartRef = collection(db, "cartItems");
+      const q = query(cartRef, where("userId", "==", userSnap.data().userId));
+      const cartSnap = await getDocs(q);
 
-    const deletePromises = cartSnap.docs.map(async (docSnap) => {
-      const cartData = docSnap.data();
-      const isOrdered = cartItems.some(
-        (item) => item.productId === cartData.productId && item.size === cartData.size
-      );
-      if (isOrdered) await deleteDoc(docSnap.ref);
-    });
-
-    await Promise.all(deletePromises);
-
-    alert(" Order placed successfully!");
-    navigate("/myorders", { state: { fromCheckout: true }, replace: true });
-
-  } catch (err) {
-    console.error("Error placing order:", err);
-    alert("❌ Failed to place order. Please try again.");
-  } finally {
-    setIsPlacingOrder(false);
-  }
-};
-
-    // Navigate to add/edit address
-    const handleAddAddress = () => {
-      navigate("/profile", {
-        state: {
-          openShippingLocations: true,
-          fromCheckout: true,
-        },
+      const deletePromises = cartSnap.docs.map(async (docSnap) => {
+        const cartData = docSnap.data();
+        const isOrdered = cartItems.some(
+          (item) => item.productId === cartData.productId && item.size === cartData.size
+        );
+        if (isOrdered) await deleteDoc(docSnap.ref);
       });
-    };
+
+      await Promise.all(deletePromises);
+
+      // show success animation then redirect
+      setShowSuccessAnim(true);
+      setTimeout(() => {
+        setShowSuccessAnim(false);
+        navigate("/landing", { replace: true });
+      }, 2200); // animation duration + buffer
+
+    } catch (err) {
+      console.error("Error placing order:", err);
+      showToast("Failed to place order. Please try again.", "error");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  // Navigate to add/edit address
+  const handleAddAddress = () => {
+    navigate("/profile", {
+      state: {
+        openShippingLocations: true,
+        fromCheckout: true,
+      },
+    });
+  };
 
   return (
     <div className="checkout-page">
-      {notification && <div className="notification">{notification}</div>}
+      {/* Top toast */}
+      {toast.visible && (
+        <div className={`toast ${toast.type}`}>
+          <div className="toast-message">{toast.message}</div>
+        </div>
+      )}
 
-      {/* ===== Header Section ===== */}
+      {/* Confirm dialog */}
+      {showConfirm && (
+        <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Are you sure you want to proceed?</h3>
+            <p>This will place the order and charge you accordingly.</p>
+            <div className="confirm-actions">
+              <button className="btn cancel" onClick={() => setShowConfirm(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn confirm"
+                onClick={() => placeOrderConfirmed()}
+                disabled={isPlacingOrder}
+              >
+                {isPlacingOrder ? "Placing..." : "Yes, proceed"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success animation overlay (Option C: stroke-draw check) */}
+      {showSuccessAnim && (
+        <div className="success-overlay">
+          <div className="success-card" role="status" aria-live="polite">
+            <svg
+              className="check-svg"
+              viewBox="0 0 120 120"
+              width="120"
+              height="120"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="60"
+                cy="60"
+                r="54"
+                fill="none"
+                strokeWidth="4"
+                opacity="0.12"
+              />
+              <path
+                className="check-path"
+                d="M34 62 L52 80 L86 40"
+                fill="none"
+                stroke="#6c56ef"
+                strokeWidth="15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <div className="success-text">Order successfully placed!</div>
+          </div>
+        </div>
+      )}
+
+      {/* Page content */}
       <motion.div
         className="checkout-header"
         initial={{ opacity: 0, y: -20 }}
@@ -256,7 +343,6 @@ export default function Checkout() {
         </div>
       </motion.div>
 
-      {/* ===== Main Section ===== */}
       <motion.section
         className="checkout-content"
         initial={{ opacity: 0, y: 30 }}
@@ -265,17 +351,27 @@ export default function Checkout() {
         <div className="checkout-left">
           <h1>Checkout</h1>
 
-          {/*  Shipping Address Section */}
+          {/* Shipping */}
           {loading ? (
             <p>Loading shipping info...</p>
           ) : shippingLocation ? (
             <div className="address-box">
               <div>
-                <p><strong>Name: {shippingLocation.name}</strong></p>
-                <p><strong>House No:</strong> {shippingLocation.house}</p>
-                <p><strong>Full Address:</strong> {shippingLocation.fullAddress}</p>
-                <p><strong>Phone number:</strong> {shippingLocation.phone}</p>
-                <p><strong>Postal:</strong> {shippingLocation.postalCode}</p>
+                <p>
+                  <strong>Name: {shippingLocation.name}</strong>
+                </p>
+                <p>
+                  <strong>House No:</strong> {shippingLocation.house}
+                </p>
+                <p>
+                  <strong>Full Address:</strong> {shippingLocation.fullAddress}
+                </p>
+                <p>
+                  <strong>Phone number:</strong> {shippingLocation.phone}
+                </p>
+                <p>
+                  <strong>Postal:</strong> {shippingLocation.postalCode}
+                </p>
               </div>
               <button onClick={handleAddAddress} className="edit-btn">
                 Edit
@@ -296,20 +392,17 @@ export default function Checkout() {
 
           <p>Total items: {cartItems.length}</p>
 
-
-          {/* Product List */}
+          {/* Product list */}
           {cartItems.length === 0 ? (
             <p>No items selected.</p>
           ) : (
             cartItems.map((item) => (
               <div key={item.cartItemCode} className="product-card">
-               <img
+                <img
                   src={item.productImage || item.imageUrl || "https://via.placeholder.com/80"}
                   alt={item.productName}
                   className="product-image"
                 />
-
-
                 <div className="product-details">
                   <h4>{item.productName}</h4>
                   <p>Size: {item.size}</p>
@@ -320,7 +413,6 @@ export default function Checkout() {
             ))
           )}
 
-          {/* Shipping Option */}
           <div className="shipping-box">
             <h4>Shipping Option</h4>
             <div className="shipping-option">
@@ -332,13 +424,11 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Totals */}
           <div className="total-items">
             <p>Total {totalItems} item(s)</p>
             <p className="total">₱{totalPrice.toLocaleString()}</p>
           </div>
 
-          {/* Payment Card */}
           <div className="payment-card">
             <h3>Payment Details</h3>
             <div className="payment-row">
@@ -362,14 +452,13 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Place Order Button */}
           <div className="order-card">
             <div className="order-total">
               <p>
                 Total: <span>₱{(totalPrice + 58).toLocaleString()}</span>
               </p>
               <button
-                onClick={handlePlaceOrder}
+                onClick={handlePlaceOrderClick}
                 disabled={!shippingLocation || isPlacingOrder}
                 style={{
                   backgroundColor: !shippingLocation ? "#ccc" : "#6c56ef",
@@ -383,289 +472,354 @@ export default function Checkout() {
               >
                 {isPlacingOrder ? "Placing Order..." : "Place Order"}
               </button>
-
             </div>
           </div>
         </div>
       </motion.section>
 
-      <style>{`
-        .checkout-page {
-          font-family: 'Poppins', sans-serif;
-          background: linear-gradient(to bottom, #ece5ff, #f7f3ff);
-          min-height: 100vh;
-          padding: 150px 0 80px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
+<style>{`
+/* ------------------------------
+   GENERAL PAGE
+------------------------------ */
+.checkout-page {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to bottom, #ece5ff, #f7f3ff);
+  min-height: 100vh;
+  padding: 150px 0 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-        /* ===== Header ===== */
-        .checkout-header {
-          width: 100%;
-          display: flex;
-          justify-content: center;
-        }
+.edit-btn {
+  background: #6c56ef;
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  font-weight: 600;
+  border-radius: 8px;
+}
 
-        .checkout-header-inner {
-          width: 100%;
-          max-width: 1000px;
-          padding: 0 40px;
-          margin-bottom: 20px;
-        }
+/* ------------------------------
+   TOAST NOTIFICATION
+------------------------------ */
+.toast {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
 
-        .checkout-title-row {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
+.toast.info {
+  background: #fff8e6;
+  color: #6b4b00;
+  border-left: 6px solid #f5b800;
+}
 
-        .checkout-title-row h1 {
-          font-size: 2.5rem;
-          color: #1c143a;
-          font-weight: 700;
-          margin: 0;
-          white-space: nowrap;
-        }
+.toast.success {
+  background: #e9f8ec;
+  color: #1b6a32;
+  border-left: 6px solid #4CAF50;
+}
 
-        .header-line {
-          flex: none;
-          height: 20px;
-          width: 75%;
-          background: #6c56ef;
-          box-shadow: 0 2px 6px rgba(108, 86, 239, 0.3);
-        }
-        
-        .edit-btn {
-          background: #6c56ef;
-          border: none;
-          color: white;
-          padding: 10px 18px;
-          font-weight: 600;
-          border-radius: 8px;
-        }
+.toast.error {
+  background: #fdecea;
+  color: #8a1300;
+  border-left: 6px solid #f44336;
+}
 
-        /* ===== Main Content ===== */
-        .checkout-content {
-          display: flex;
-          gap: 30px;
-          width: 100%;
-          max-width: 1000px;
-          background: white;
-          border: 1px solid #bdb8f2;
-          border-radius: 10px;
-          padding: 40px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-          flex-wrap: wrap;
-        }
+.toast.warning {
+  background: #fff8e6;
+  color: #7a5600;
+  border-left: 6px solid #f5b800;
+}
 
-        /* ===== Left Column ===== */
-        .checkout-left {
-          flex: 1;
-          min-width: 350px;
-        }
+/* ------------------------------
+   CONFIRMATION MODAL
+------------------------------ */
+.modal-overlay {
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
+  background: rgba(0,0,0,0.45);
+  padding-bottom: 650px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+}
 
-        .address-box {
-          background: #f5f3fe;
-          border-radius: 10px;
-          padding: 20px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 25px;
-        }
+.confirm-modal {
+  background: white;
+  padding: 22px 24px;
+  width: 92%;
+  max-width: 420px;
+  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
 
-        .address-box h3 {
-          margin: 0;
-          font-weight: 600;
-          color: #222;
-        }
+.confirm-modal h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
 
-        .address-box p {
-          margin: 4px 0;
-          font-size: 0.9rem;
-          color: #555;
-        }
+.confirm-modal p {
+  margin: 0 0 16px;
+  color: #444;
+}
 
-        .arrow {
-          font-size: 1.3rem;
-          color: #8f7aec;
-          font-weight: bold;
-        }
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
 
-        .product-card {
-          background: #fff;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          padding: 15px;
-          margin-bottom: 20px;
-          gap: 15px;
-        }
+.btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
 
-        .product-image {
-          border-radius: 8px;
-          width: 80px;
-          height: 80px;
-          object-fit: cover;
-        }
+.btn.cancel {
+  background: #f1f1f1;
+  color: #333;
+  border: 1px solid #6c56ef;
+}
 
-        .product-details h4 {
-          font-size: 1rem;
-          color: #222;
-          margin: 0;
-        }
+.btn.confirm {
+  background: #6c56ef;
+  color: white;
+}
 
-        .product-details p {
-          font-size: 0.9rem;
-          margin: 4px 0;
-          color: #555;
-        }
+/* ------------------------------
+   SUCCESS OVERLAY
+------------------------------ */
+.success-overlay {
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  background: rgba(0, 0, 0, 0.25); /* slight dark tint */
+  backdrop-filter: blur(6px);      /
+}
 
-        .price {
-          color: #8f7aec;
-          font-weight: 600;
-        }
+.success-card {
+  background: transparent;
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
 
-        .qty {
-          color: #777;
-          font-size: 0.9rem;
-        }
+.check-svg {
+  display: block;
+}
 
-        .shipping-box {
-          background: #fff;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          padding: 15px;
-        }
+/* SVG Line Animation */
+.check-path {
+  stroke: #6c56ef;
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: draw 0.9s ease forwards;
+}
 
-        .shipping-box h4 {
-          margin-bottom: 10px;
-          font-weight: 600;
-        }
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
 
-        .shipping-option {
-          background: #efe9ff;
-          border-radius: 8px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 15px;
-        }
+.success-text {
+  font-weight: 700;
+  color: #222;
+  font-size: 1.5rem;
+  text-align: center;
+}
 
-        .method {
-          font-weight: 500;
-          margin-bottom: 3px;
-        }
+/* ------------------------------
+   CHECKOUT HEADER
+------------------------------ */
+.checkout-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 
-        .guarantee {
-          font-size: 0.85rem;
-          color: #34a853;
-        }
+.checkout-header-inner {
+  width: 100%;
+  max-width: 1000px;
+  padding: 0 40px;
+  margin-bottom: 20px;
+}
 
-        .ship-price {
-          font-weight: 600;
-          color: #333;
-        }
+.checkout-title-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
 
-        .total-items {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 20px;
-          font-size: 0.95rem;
-        }
+.checkout-title-row h1 {
+  font-size: 2.5rem;
+  color: #1c143a;
+  margin: 0;
+}
 
-        .total-items .total {
-          color: #8f7aec;
-          font-weight: 600;
-        }
+.header-line {
+  flex: none;
+  height: 20px;
+  width: 75%;
+  background: #6c56ef;
+  box-shadow: 0 2px 6px rgba(108,86,239,0.3);
+}
 
-        /* ===== Right Column ===== */
-        .checkout-right {
-          width: 270px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
+/* ------------------------------
+   CHECKOUT CONTENT
+------------------------------ */
+.checkout-content {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1000px;
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  border: 1px solid #bdb8f2;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
 
-        .payment-card {
-          background: #f9f9f9;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          padding: 20px;
-        }
+.checkout-left {
+  flex: 1;
+  min-width: 350px;
+}
 
-        .checkout-right h3 {
-          margin-bottom: 15px;
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #222;
-        }
+/* ADDRESS BOX */
+.address-box {
+  background: #f5f3fe;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
 
-        .payment-row {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 8px;
-          font-size: 0.95rem;
-          color: #333;
-        }
+/* PRODUCT CARD */
+.product-card {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
 
-       .total-row {
-        font-weight: 600;
-        display: flex;
-        justify-content: space-between;
-        align-items: center; 
-        font-size: 1rem;
-        margin-top: 10px;
-        }
+.product-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+}
 
-        hr {
-          margin: 15px 0;
-          border: none;
-          border-top: 1px solid #ddd;
-        }
+.product-details h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #222;
+}
 
-        /* ===== New Order Card ===== */
-        .order-card {
-          background: #f9f9f9;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          padding: 20px;
-        }
+.product-details p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  color: #555;
+}
 
-        .order-total {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
+.price {
+  font-weight: 600;
+  color: #8f7aec;
+}
 
-        .order-total p {
-          font-size: 1rem;
-          font-weight: 600;
-          margin: 0;
-        }
+.qty {
+  font-size: 0.9rem;
+  color: #777;
+}
 
-        .order-total span {
-          color: #8f7aec;
-        }
+/* SHIPPING BOX */
+.shipping-box {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 15px;
+}
 
-        .order-total button {
-          background: #6c56ef;
-          border: none;
-          color: white;
-          padding: 10px 18px;
-          font-weight: 600;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: 0.3s;
-        }
+.shipping-option {
+  background: #efe9ff;
+  padding: 12px 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-        .order-total button:hover {
-          background: #5a45d2;
-        }
+.method {
+  font-weight: 500;
+  margin-bottom: 3px;
+}
 
-      @media (max-width: 600px) {
+.guarantee {
+  font-size: 0.85rem;
+  color: #34a853;
+}
+
+.ship-price {
+  font-weight: 600;
+  color: #333;
+}
+
+/* TOTAL */
+.total-items {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.total-items .total {
+  font-weight: 600;
+  color: #8f7aec;
+}
+
+/* PAYMENT + ORDER SUMMARY */
+.payment-card,
+.order-card {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 20px;
+  margin-top: 18px;
+  border-radius: 10px;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+   @media (max-width: 600px) {
         .checkout-page {
           padding: 130px 10px 80px; 
         }
@@ -800,6 +954,35 @@ export default function Checkout() {
           padding: 10px;
           margin-top: 10px; 
         }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0; 
+          left: 0; 
+          right: 0; 
+          bottom: 0;
+          background: rgba(0,0,0,0.45);
+          padding-bottom: 550px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 5000;
+        }
+
+        .confirm-modal {
+          background: white;
+          padding: 22px 24px;
+          width: 70%;
+          max-width: 320px;
+          text-align: center;
+          border-radius: 10px;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+
+        .confirm-modal h3 {
+          margin: 0 0 8px;
+          font-size: 0.9rem;
+        }
       }
 
       /* Tablets (slightly bigger screens) */
@@ -809,7 +992,7 @@ export default function Checkout() {
           padding: 25px;
         }
       }
-      `}</style>
-    </div>
+`}</style>
+ </div>
   );
 }

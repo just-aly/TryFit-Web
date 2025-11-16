@@ -224,10 +224,12 @@ export default function Header() {
 
             <div className="nav-icon-wrapper" onClick={() => navigate("/myorders")}>
               <FaShoppingBag className="icon" />
+               <span className="tooltip">My Orders</span>
             </div>
 
             <div className="nav-icon-wrapper" onClick={() => navigate("/cart")}>
               <FaShoppingCart className="icon" />
+              <span className="tooltip">Cart</span>
             </div>
 
             <div
@@ -235,6 +237,7 @@ export default function Header() {
               onClick={() => toggleDropdown("profile")}
             >
               <FaUser className="icon" />
+                <span className="tooltip">Profile</span>
               {openDropdown === "profile" && (
                 <ul className="dropdown-menu profile-menu">
                   <li onClick={() => navigate("/profile")}>
@@ -505,10 +508,6 @@ export default function Header() {
           transition: background 0.3s;
         }
         .no-btn:hover { background-color: #e0e0e0; }
-
-        /* ============================= */
-/* 📱 RESPONSIVE DESIGN ADJUSTMENTS */
-/* ============================= */
 
    @media (max-width: 1024px) {
           .header {
