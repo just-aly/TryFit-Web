@@ -15,9 +15,12 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [animateExit, setAnimateExit] = useState(false);
 
-  // ✅ Popup state
+  // ✅ Popup state (for errors only)
   const [popup, setPopup] = useState({ type: "", title: "", message: "" });
   const [showPopupBox, setShowPopupBox] = useState(false);
+
+  // ✅ Success overlay state
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
   // ✅ Popup functions
   const showPopup = (type, title, message) => {
@@ -42,6 +45,17 @@ export default function SignUpPage() {
 
     if (!username.trim() || !email.trim() || !password.trim()) {
       showPopup("error", "Validation Error", "Please fill all fields before continuing.");
+      return;
+    }
+
+    // ✅ Password validation: at least 6 chars, 1 number, 1 special char
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{6,}$/;
+    if (!passwordRegex.test(password)) {
+      showPopup(
+        "error",
+        "Weak Password",
+        "Password must be at least 6 characters long and include at least 1 number and 1 special character."
+      );
       return;
     }
 
@@ -74,8 +88,10 @@ export default function SignUpPage() {
         createdAt: serverTimestamp(),
       });
 
-      showPopup("success", "Account Created!", "Welcome aboard, your account was successfully created!");
-      setTimeout(() => navigate("/landing"), 1500);
+      // ✅ Show success overlay instead of popup
+      setShowSuccessOverlay(true);
+      setTimeout(() => navigate("/landing"), 3000);
+
     } catch (error) {
       console.error("Firebase Sign Up Error:", error.code, error.message);
 
@@ -185,7 +201,7 @@ export default function SignUpPage() {
         </motion.div>
       </div>
 
-      {/* ✅ Popup Notification */}
+      {/* ✅ Error Popup Notification */}
       {popup.type && (
         <div
           className={`popup-container popup-${popup.type} ${showPopupBox ? "show" : "hide"}`}
@@ -193,6 +209,15 @@ export default function SignUpPage() {
           <button className="close-btn" onClick={closePopup}>×</button>
           <h3>{popup.title}</h3>
           <p>{popup.message}</p>
+        </div>
+      )}
+
+      {/* ✅ Full-screen Success Overlay */}
+      {showSuccessOverlay && (
+        <div className="success-overlay">
+          <div className="success-message">
+            Account Created Successfully!
+          </div>
         </div>
       )}
 
@@ -292,15 +317,16 @@ export default function SignUpPage() {
         .form-group input {
           width: 85%;
           padding: 13px 45px 13px 15px;
-          border: 1px solid #ccc;
+          border: 1px solid #0d0d0dff;
           border-radius: 30px;
           font-size: 1rem;
           color: #333;
           transition: border 0.2s ease;
         }
 
-        .form-group input:focus {
+          .form-group input:focus {
           border-color: #7C4DFF;
+          outline: none;
           box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.15);
         }
 
@@ -353,7 +379,7 @@ export default function SignUpPage() {
           text-decoration: underline;
         }
 
-        /* ✅ Popup Notification Styles */
+        /* ✅ Error Popup Notification Styles */
         .popup-container {
           position: fixed;
           top: 20px;
@@ -384,18 +410,6 @@ export default function SignUpPage() {
         .popup-error { border-left: 6px solid #d9534f; }
         .popup-warning { border-left: 6px solid #f0ad4e; }
 
-        .popup-container h3 {
-          margin: 0 0 6px 0;
-          font-size: 1.1rem;
-          color: #333;
-        }
-
-        .popup-container p {
-          margin: 0;
-          font-size: 0.95rem;
-          color: #555;
-        }
-
         .close-btn {
           position: absolute;
           top: 8px;
@@ -410,14 +424,47 @@ export default function SignUpPage() {
 
         .close-btn:hover { color: #000; }
 
-        /* Responsive */
-     @media (max-width: 900px) {
+        /* ✅ Full-screen success overlay */
+        .success-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start; 
+          padding-top: 20px;
+          background: rgba(255, 255, 255, 0.13); 
+          backdrop-filter: blur(8px);          
+          -webkit-backdrop-filter: blur(8px); 
+          z-index: 9999;
+          pointer-events: none;                 
+          animation: fadeIn 0.4s ease;
+        }
+
+        .success-message {
+          background: #transparent;         
+          padding: 16px 30px;
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #7C4DFF;
+          text-align: center;
+          border-radius: 12px;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 900px) {
           .signup-container {
             flex-direction: column-reverse;
             height: auto;
             border-radius: 16px;
           }
-
           .right-panel {
             width: 100%;
             border-radius: 16px 16px 0 0;
@@ -425,70 +472,45 @@ export default function SignUpPage() {
             align-items: center;
             padding: 25px 10px;
           }
-
-          .right-panel h1 {
-            font-size: 2rem;
+          .right-panel h1 { 
+            font-size: 2rem; 
           }
 
-          .right-panel p {
-            font-size: 0.95rem;
+          .right-panel p { 
+            font-size: 0.95rem; 
           }
 
-          .left-panel {
-            width: 100%;
-            padding: 30px 20px;
+          .left-panel { 
+            width: 100%; 
+            padding: 30px 20px; 
+          }
+          
+          .signup-box { 
+            max-width: 100%; 
+            padding: 10px; 
           }
 
-          .signup-box {
-            max-width: 100%;
-            padding: 10px;
+          .signup-title { 
+            font-size: 1.8rem; 
           }
 
-          .signup-title {
-            font-size: 1.8rem;
+          .form-group input { 
+            width: 75%; 
+            font-size: 0.85rem; 
           }
 
-          .form-group input {
-            width: 75%;
-            font-size: 0.85rem;
-          }
+          .password-toggle { left: 290px; }
 
-          .password-toggle {
-            left: 290px;
-          }
-
-          .signup-btn {
-            width: 92%;
-            padding: 12px;
-            font-size: 1rem;
-          }
+          .signup-btn { width: 92%; padding: 12px; font-size: 1rem; }
         }
 
         @media (max-width: 480px) {
-          .right-panel h1 {
-            font-size: 1.7rem;
-          }
-
-          .right-panel p {
-            font-size: 0.85rem;
-          }
-
-          .signup-title {
-            font-size: 1.6rem;
-          }
-
-          .password-toggle {
-            left: 250px;
-          }
-
-          .form-group input {
-            font-size: 0.9rem;
-          }
-
-          .login-text {
-            font-size: 0.85rem;
-          }
-        }
+          .right-panel h1 { font-size: 1.7rem; }
+          .right-panel p { font-size: 0.85rem; }
+          .signup-title { font-size: 1.6rem; }
+          .password-toggle { left: 250px; }
+          .form-group input { font-size: 0.9rem; }
+          .login-text { font-size: 0.85rem; }
         }
       `}</style>
     </div>

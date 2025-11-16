@@ -512,14 +512,15 @@ const handleSaveShipping = async () => {
     return;
   }
 
-  if (newPassword.length < 6) {
-    showPopup("New password should be at least 6 characters.", "warning");
+   const passwordRegex = /^(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+
+  if (!passwordRegex.test(newPassword)) {
+    showPopup(
+      "Password must be at least 6 characters and include at least 1 number and 1 special character.",
+      "error"
+    );
     return;
   }
-
-  // 🔥 Ask for confirmation
-  const confirmed = window.confirm("Are you sure you want to change your password?");
-  if (!confirmed) return; // user cancelled
 
   setSaving(true);
 
@@ -528,18 +529,13 @@ const handleSaveShipping = async () => {
     await reauthenticateWithCredential(user, cred);
     await updatePassword(user, newPassword);
 
-    showPopup("Password changed successfully.", "success");
+showPopup("Password changed successfully!", "success");
 
-    // Logout after password change
-    await signOut(auth);
+// Stay on the same page – no logout, no redirect
+setCurrentPassword("");
+setNewPassword("");
+setConfirmNewPassword("");
 
-    // Prevent navigating back
-    window.history.pushState(null, "", window.location.href);
-    window.onpopstate = function () {
-      window.history.go(1);
-    };
-
-    navigate("/login", { replace: true });
   } catch (e) {
     console.error("Change password error", e);
     const code = e?.code || "";
@@ -554,8 +550,6 @@ const handleSaveShipping = async () => {
     setSaving(false);
   }
 }
-
-
  
 async function handleDeleteAccount() {
   const user = auth.currentUser;
@@ -896,8 +890,7 @@ async function handleDeleteAccount() {
                         await handleSaveShipping();
                         setIsEditing(false);
                         setHasShipping(true);
-                        setNotification("Shipping address saved!");
-                        setTimeout(() => setNotification(""), 1500);
+                        showPopup("Shipping location saved successfully!", "success");
                       }
                     }}
                     disabled={saving}
