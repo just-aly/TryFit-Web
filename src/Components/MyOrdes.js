@@ -705,7 +705,7 @@ export default function MyOrders() {
                     }
                   });
 
-                  const avgRating = count > 0 ? totalRating / count : 0;
+                  const avgRating = count > 0 ? Math.round((totalRating / count) * 10) / 10 : 0;
 
                   // Update the products collection correctly
                   const productsQuery = query(

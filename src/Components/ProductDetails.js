@@ -151,6 +151,30 @@ export default function ProductDetails() {
     setQuantity(1);
   };
 
+
+  const renderStars = (rating) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.4 && rating % 1 <= 0.7; // adjust threshold
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    return (
+      <span className="stars">
+        {/* Full stars */}
+        {Array.from({ length: fullStars }).map((_, i) => (
+          <span key={"full" + i} className="star full">★</span>
+        ))}
+
+        {/* Half star */}
+        {hasHalfStar && <span className="star half">★</span>}
+
+        {/* Empty stars */}
+        {Array.from({ length: emptyStars }).map((_, i) => (
+          <span key={"empty" + i} className="star empty">☆</span>
+        ))}
+      </span>
+    );
+  };
+
   return (
     <div className="product-details-container">
       {popup.visible && (
@@ -187,7 +211,11 @@ export default function ProductDetails() {
         <div className="product-info-section">
           <h2 className="product-title">{product.productName}</h2>
           <p className="price">₱{Number(product.price).toLocaleString()}</p>
-          <p className="rating">⭐ {product.rating || "N/A"}</p>
+          <div className="rating-stars">
+            {renderStars(Number(product.rating || 0))}
+            <span className="rating-number"> {Number(product.rating).toFixed(1)} </span>
+          </div>
+
           <p className="sold">{product.sold || 0} Sold</p>
 
           <div className="note">Size recommendations and AR experience are available only on the mobile app.</div>
@@ -808,6 +836,42 @@ export default function ProductDetails() {
           font-size: 0.9rem;
           padding: 10px;
         }
+          .stars {
+          display: inline-flex;
+          align-items: center;
+        }
+
+        .star {
+          font-size: 20px;
+          margin-right: 2px;
+          color: #EFBF04;
+          position: relative;
+        }
+
+        /* ⭐ Full star */
+        .star.full {
+          color: #EFBF04;
+        }
+
+        /* ⭐ Empty star */
+        .star.empty {
+          color: #ccc;
+        }
+
+        /* ⭐ Half star effect */
+        .star.half {
+          color: #ccc; /* background star */
+        }
+
+        .star.half::before {
+          content: "★";
+          position: absolute;
+          left: 0;
+          width: 50%;
+          overflow: hidden;
+          color: #EFBF04;
+        }
+
       }
       `}</style>
     </div>
