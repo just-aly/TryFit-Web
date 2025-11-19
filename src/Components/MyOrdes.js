@@ -135,19 +135,10 @@ export default function MyOrders() {
           })
         );
 
-        // ✅ Replace array entirely to prevent duplicates
-        setOrdersWithProducts(prev => {
-          const existingOrders = prev[key] || [];
-          const ordersMap = new Map();
-
-          // Add existing orders
-          existingOrders.forEach(o => ordersMap.set(o.id, o));
-
-          // Add new orders, replacing duplicates
-          enrichedOrders.forEach(o => ordersMap.set(o.id, o));
-
-          return { ...prev, [key]: Array.from(ordersMap.values()) };
-        });
+        setOrdersWithProducts(prev => ({
+          ...prev,
+          [key]: enrichedOrders
+        }));
       })
     );
 
@@ -208,6 +199,8 @@ export default function MyOrders() {
       const orderRef = doc(db, 'orders', order.id);
       await deleteDoc(orderRef);
 
+      
+
       const notificationsRef = collection(db, "notifications");
       await addDoc(notificationsRef, {
         notifID: `NTC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -267,10 +260,29 @@ export default function MyOrders() {
       const completedRef = doc(collection(db, 'completed'));
       await setDoc(completedRef, completedOrder);
 
+      // 🔹 Update sold count for each product in the order
+      for (const item of order.items) {
+        const productRef = doc(db, "products", item.productId);
+        const productSnap = await getDoc(productRef);
+
+        if (productSnap.exists()) {
+          const productData = productSnap.data();
+          const currentSold = productData.sold || 0;
+          const newSold = currentSold + item.quantity;
+
+          await setDoc(
+            productRef,
+            { sold: newSold },
+            { merge: true }
+          );
+        }
+      }
+
       // Delete the original doc from 'toReceive'
       const toReceiveRef = doc(db, 'toReceive', order.id);
       await deleteDoc(toReceiveRef);
 
+      
       const notificationsRef = collection(db, "notifications");
 
       await addDoc(notificationsRef, {

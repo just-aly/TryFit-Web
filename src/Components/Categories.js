@@ -41,34 +41,49 @@ export default function Categories() {
   useEffect(() => {
     const fetchProductsByTab = async () => {
       try {
-        if (activeTab === "Latest") {
-          // Get products from last month using recentActivityLogs
-          const oneMonthAgo = new Date();
-          oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+       if (activeTab === "Latest") {
+          try {
+            const querySnapshot = await getDocs(collection(db, 'products'));
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setDate(oneMonthAgo.getDate() - 31); // 31 days ago
 
-          const logsSnapshot = await getDocs(collection(db, "recentActivityLogs"));
+            const latestProducts = [];
 
-          const productIdsSet = new Set();
-          logsSnapshot.forEach(doc => {
-            const data = doc.data();
-            const timestamp = data.timestamp?.toDate?.();
-            if (data.productId && timestamp && timestamp >= oneMonthAgo) {
-              productIdsSet.add(data.productId);
-            }
-          });
+            querySnapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+              if (!data.createdAt) return;
 
-          const productIds = Array.from(productIdsSet);
-          const latestProducts = [];
+              // Convert Firestore Timestamp to JS Date if needed
+              const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
 
-          for (const productId of productIds) {
-            const productDoc = await getDocs(collection(db, "products"));
-            const product = productDoc.docs.find(d => d.id === productId);
-            if (product) latestProducts.push({ id: product.id, ...product.data() });
+              if (createdAt >= oneMonthAgo) {
+                latestProducts.push({
+                  id: docSnap.id,
+                  productID: data.productID,
+                  productName: data.productName,
+                  price: data.price,
+                  rating: data.rating,
+                  sold: data.sold,
+                  delivery: data.delivery,
+                  categoryMain: data.categoryMain,
+                  categorySub: data.categorySub,
+                  sizes: data.sizes,
+                  stock: data.stock,
+                  colors: data.colors,
+                  imageUrl: data.imageUrl,
+                  description: data.description,
+                  createdAt: data.createdAt,
+                  arUrl: data.arUrl || null,
+                });
+              }
+            });
+
+            setCategoryProducts(latestProducts);
+          } catch (error) {
+            console.error('Error fetching latest products:', error);
           }
 
-          setCategoryProducts(latestProducts);
-
-        } else if (activeTab === "Popular") {
+}else if (activeTab === "Popular") {
           const snapshot = await getDocs(collection(db, "products"));
           const popularProducts = snapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))

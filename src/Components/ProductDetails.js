@@ -265,25 +265,42 @@ export default function ProductDetails() {
         <div className="modal-overlay" onClick={() => setModalVisible(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Select Size & Quantity</h3>
+            <div className="c_a-container">
+              <div className="product-image-section">
+                <img
+                  src={product.imageUrl || PLACEHOLDER_IMAGE}
+                  alt={product.productName}
+                  className="product-image-C_A"
+                />
+              </div>
 
-            <div className="sizes">
-              {product.sizes?.map((size) => (
-                <button
-                  key={size}
-                  disabled={getSizeStock(size) === 0}
-                  className={selectedSize === size ? "size-btn selected" : "size-btn"}
-                  onClick={() => { setSelectedSize(size); setQuantity(1); }}
-                >
-                  {size} ({getSizeStock(size)} pcs)
-                </button>
-              ))}
-            </div>
+              <div className="product-info-section">
+                <p style={{ fontWeight: "bold" }}>{product.productName}</p>
+                <div className="sizes">
+                  {product.sizes?.map((size) => (
+                    <button
+                      key={size}
+                      disabled={getSizeStock(size) === 0}
+                      className={selectedSize === size ? "size-btn selected" : "size-btn"}
+                      onClick={() => { setSelectedSize(size); setQuantity(1); }}
+                    >
+                      {size} ({getSizeStock(size)} pcs)
+                    </button>
+                  ))}
+                </div>
 
-            <div className="quantity">
-              <label className="quantity-label">Quantity:</label>
-              <button onClick={decrementQuantity} disabled={quantity <= 1}>−</button>
-              <span className="quantity-value">{quantity}</span>
-              <button onClick={incrementQuantity} disabled={selectedSize && quantity >= getSizeStock(selectedSize)}>＋</button>
+                <div className="quantity">
+                  <label className="quantity-label">Quantity:</label>
+                  <button onClick={decrementQuantity} disabled={quantity <= 1}>−</button>
+                  <span className="quantity-value">{quantity}</span>
+                  <button
+                    onClick={incrementQuantity}
+                    disabled={selectedSize && quantity >= getSizeStock(selectedSize)}
+                  >
+                    ＋
+                  </button>
+                </div>
+              </div>
             </div>
 
             <button className="confirm-btn" onClick={saveCartItem}>Add to Cart</button>
@@ -296,26 +313,44 @@ export default function ProductDetails() {
         <div className="modal-overlay" onClick={() => setDirectCheckoutModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Checkout Now</h3>
-            <p style={{ fontWeight: "bold" }}>{product.productName}</p>
+            
 
-            <div className="sizes">
-              {product.sizes?.map((size) => (
-                <button
-                  key={size}
-                  disabled={getSizeStock(size) === 0}
-                  className={selectedSize === size ? "size-btn selected" : "size-btn"}
-                  onClick={() => { setSelectedSize(size); setQuantity(1); }}
-                >
-                  {size} ({getSizeStock(size)} pcs)
-                </button>
-              ))}
-            </div>
+            <div className="c_a-container">
+              <div className="product-image-section">
+                <img
+                  src={product.imageUrl || PLACEHOLDER_IMAGE}
+                  alt={product.productName}
+                  className="product-image-C_A"
+                />
+              </div>
 
-            <div className="quantity">
-              <label className="quantity-label">Quantity:</label>
-              <button onClick={decrementQuantity}>−</button>
-              <span>{quantity}</span>
-              <button onClick={incrementQuantity}>＋</button>
+              <div className="product-info-section">
+                <p style={{ fontWeight: "bold" }}>{product.productName}</p>
+                <div className="sizes">
+                  {product.sizes?.map((size) => (
+                    <button
+                      key={size}
+                      disabled={getSizeStock(size) === 0}
+                      className={selectedSize === size ? "size-btn selected" : "size-btn"}
+                      onClick={() => { setSelectedSize(size); setQuantity(1); }}
+                    >
+                      {size} ({getSizeStock(size)} pcs)
+                    </button>
+                  ))}
+                </div>
+
+                <div className="quantity">
+                  <label className="quantity-label">Quantity:</label>
+                  <button onClick={decrementQuantity} disabled={quantity <= 1}>−</button>
+                  <span className="quantity-value">{quantity}</span>
+                  <button
+                    onClick={incrementQuantity}
+                    disabled={selectedSize && quantity >= getSizeStock(selectedSize)}
+                  >
+                    ＋
+                  </button>
+                </div>
+              </div>
             </div>
 
             <button className="confirm-btn" onClick={handleDirectCheckout}>Proceed to Checkout</button>
@@ -323,34 +358,34 @@ export default function ProductDetails() {
         </div>
       )}
 
-      {/* ✅ Purple Check Success Modal */}
+    
      {/* ✅ Purple Check Success Modal with animation */}
-{cartSuccessModal && (
-  <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
-    <div className="modal-content animated" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
-      <div className="checkmark-circle">
-        <span className="checkmark">✔</span>
-      </div>
-      <h3 style={{ marginBottom: "10px" }}>Order added to cart!</h3>
-      <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
-        <button
-          className="confirm-btn"
-          style={{ flex: 1, backgroundColor: "#7B5CD6" }}
-          onClick={() => navigate("/landing")}
-        >
-          Continue Shopping
-        </button>
-        <button
-          className="cart-btn"
-          style={{ flex: 1, border:  "1px solid #7B5CD6" }}
-          onClick={() => navigate("/cart")}
-        >
-          Go to Cart
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        {cartSuccessModal && (
+          <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
+            <div className="modal-content animated" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
+              <div className="checkmark-circle">
+                <span className="checkmark">✔</span>
+              </div>
+              <h3 style={{ marginBottom: "10px" }}>Order added to cart!</h3>
+              <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
+                <button
+                  className="confirm-btn"
+                  style={{ flex: 1, backgroundColor: "#7B5CD6" }}
+                  onClick={() => navigate("/landing")}
+                >
+                  Continue Shopping
+                </button>
+                <button
+                  className="cart-btn"
+                  style={{ flex: 1, border:  "1px solid #7B5CD6" }}
+                  onClick={() => navigate("/cart")}
+                >
+                  Go to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       <style>{`
         /* ✅ Popup Styles */
@@ -459,7 +494,30 @@ export default function ProductDetails() {
           background-color: #f9f9f9;
           padding: 10px;
         }
-        
+        .c_a-container {
+          display: flex;
+          gap: 20px;
+          align-items: flex-start;
+        }
+
+        .product-image-section {
+          flex: 1;
+        }
+
+        .product-image-C_A {
+          width: 100%;
+          max-width: 250px; 
+          border-radius: 10px;
+          object-fit: cover;
+        }
+
+        .product-info-section {
+          flex: 2;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
         .note {
           color: #9747FF;
         }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { collection, getDocs, getDoc, doc, query, where, Timestamp } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, query, where, Timestamp, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
@@ -24,7 +24,7 @@ export default function LandingPage() {
   const handleNewArrivalClick = () => {
     navigate("/categories", {
       state: {
-        activeTab: "Latest", // pass "Latest" as active tab
+        activeTab: "Latest", 
       },
     });
   };
@@ -36,81 +36,87 @@ export default function LandingPage() {
       },
     });
   };
+useEffect(() => {
+  // 🔹 Fetch all products in real-time
+  const unsubscribeProducts = onSnapshot(
+    collection(db, "products"),
+    (querySnapshot) => {
+      const fetched = [];
+      querySnapshot.forEach((docSnap) => {
+        const product = docSnap.data();
+        const normalized = {
+          id: docSnap.id,
+          ...product,
+          productName: product.productName || product.name || "",
+          name: product.name || product.productName || "",
+        };
 
-  // 🔹 Fetch Firestore Data (improved logic)
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "products"));
-        const fetched = [];
-
-        querySnapshot.forEach((docSnap) => {
-          const product = docSnap.data();
-          // normalize both name & productName so design can use product.productName
-          const normalized = {
-            id: docSnap.id,
-            ...product,
-            productName: product.productName || product.name || "",
-            name: product.name || product.productName || "",
-          };
-
-          if (normalized.price) {
-            const numericPrice =
-              typeof normalized.price === "string"
-                ? parseInt(normalized.price.replace(/[^\d]/g, ""))
-                : normalized.price;
-            if (numericPrice && numericPrice <= 250) {
-              fetched.push(normalized);
-            }
-          }
-        });
-        setProducts(fetched);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-
-    const fetchNewArrivals = async () => {
-      try {
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        const firestoreDate = Timestamp.fromDate(oneMonthAgo);
-
-        const logsSnapshot = await getDocs(
-          query(collection(db, "recentActivityLogs"), where("timestamp", ">=", firestoreDate))
-        );
-
-        const uniqueProductIds = new Set();
-        logsSnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          if (data?.productId) uniqueProductIds.add(data.productId);
-        });
-
-        const newProducts = [];
-        for (const id of uniqueProductIds) {
-          const prodRef = doc(db, "products", id);
-          const prodSnap = await getDoc(prodRef);
-          if (prodSnap.exists()) {
-            const data = prodSnap.data();
-            // normalize same as products
-            newProducts.push({
-              id,
-              ...data,
-              productName: data.productName || data.name || "",
-              name: data.name || data.productName || "",
-            });
+        if (normalized.price) {
+          const numericPrice =
+            typeof normalized.price === "string"
+              ? parseInt(normalized.price.replace(/[^\d]/g, ""))
+              : normalized.price;
+          if (numericPrice && numericPrice <= 250) {
+            fetched.push(normalized);
           }
         }
+      });
+      setProducts(fetched);
+    },
+    (error) => {
+      console.error("Error fetching products:", error);
+    }
+  );
 
-        setNewArrivals(newProducts);
-      } catch (error) {
-        console.error("Error fetching new arrivals:", error);
-      }
-    };
+  // 🔹 Fetch new arrivals in real-time
+  const unsubscribeNewArrivals = onSnapshot(
+    collection(db, "products"),
+    (querySnapshot) => {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setDate(oneMonthAgo.getDate() - 31);
 
-    fetchProducts();
-    fetchNewArrivals();
-  }, []);
+      const newProducts = [];
+
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (!data.createdAt) return;
+
+        const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+        if (createdAt >= oneMonthAgo) {
+          newProducts.push({
+            id: docSnap.id,
+            productID: data.productID,
+            productName: data.productName,
+            price: data.price,
+            rating: data.rating,
+            sold: data.sold,
+            delivery: data.delivery,
+            categoryMain: data.categoryMain,
+            categorySub: data.categorySub,
+            sizes: data.sizes,
+            stock: data.stock,
+            colors: data.colors,
+            imageUrl: data.imageUrl,
+            description: data.description,
+            createdAt: data.createdAt,
+            arUrl: data.arUrl || null,
+          });
+        }
+      });
+
+      setNewArrivals(newProducts);
+    },
+    (error) => {
+      console.error("Error fetching new arrivals:", error);
+    }
+  );
+
+  // 🔹 Cleanup listeners on unmount
+  return () => {
+    unsubscribeProducts();
+    unsubscribeNewArrivals();
+  };
+}, []);
 
   // Improved auto-scroll interval (smooth & loops)
   useEffect(() => {

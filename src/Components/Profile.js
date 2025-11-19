@@ -174,6 +174,7 @@ export default function Profile() {
   const [pickerStage, setPickerStage] = useState("municipality"); 
   const [isEditing, setIsEditing] = useState(false);
   const [hasShipping, setHasShipping] = useState(false);
+  const [fromCheckout, setFromCheckout] = useState(false);
 
 
   // Password fields used for Change Password
@@ -211,11 +212,15 @@ const showPopup = (msg, type = "success") => {
     "Delete Account": "Delete Account",
   };
 
-   useEffect(() => {
-      if (location.state?.openShippingLocations) {
-        setActiveOption("Shipping Location");
-      }
-    }, [location.state]);
+
+useEffect(() => {
+  if (location.state?.openShippingLocations) {
+    setActiveOption("Shipping Location");
+  }
+  if (location.state?.fromCheckout) {
+    setFromCheckout(true);
+  }
+}, [location.state]);
 
     
 useEffect(() => {
@@ -881,22 +886,48 @@ async function handleDeleteAccount() {
                   />
                 </label>
 
-                  <button
-                    className="save-btn"
-                    onClick={async () => {
-                      if (hasShipping && !isEditing) {
-                        setIsEditing(true);
-                      } else {
-                        await handleSaveShipping();
-                        setIsEditing(false);
-                        setHasShipping(true);
-                        showPopup("Shipping location saved successfully!", "success");
-                      }
-                    }}
-                    disabled={saving}
-                  >
-                    {saving ? "Saving..." : hasShipping && !isEditing ? "Edit" : "Save"}
-                  </button>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button
+                      className="save-btn"
+                      onClick={async () => {
+                        if (hasShipping && !isEditing) {
+                          setIsEditing(true);
+                        } else {
+                          await handleSaveShipping();
+                          setIsEditing(false);
+                          setHasShipping(true);
+                          showPopup("Shipping location saved successfully!", "success");
+                        }
+                      }}
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : hasShipping && !isEditing ? "Edit" : "Save"}
+                    </button>
+
+                    {fromCheckout && hasShipping && !isEditing && (
+                     <button
+                        className="go-back-btn"
+                        onClick={() => navigate("/checkout")}
+                        style={{
+                          marginTop: 10,
+                          marginLeft: "auto",
+                          padding: 12,
+                          background: "#6a5acd",
+                          color: "#fff",
+                          fontSize: "1rem",
+                          border: "none",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          width: 200,
+                          transition: "0.2s",
+                        }}
+                      >
+                        Go Back to Checkout
+                      </button>
+
+                    )}
+                  </div>
+
 
                 </>
               )}
