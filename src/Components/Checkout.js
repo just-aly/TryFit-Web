@@ -24,7 +24,9 @@ export default function Checkout() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const completedDocId = location.state?.completedDocId || null;
   const [cartItems, setCartItems] = useState([]);
-  const [orderInfo, setOrderInfo] = useState(null);
+  const [orderInfo, setOrderInfo] = useState(null); 
+  const [selectedItems, setSelectedItems] = useState([]);
+  
 
   // UI states
   const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
@@ -43,6 +45,12 @@ export default function Checkout() {
       transition: { duration: 0.8, ease: "easeOut" },
     });
   }, [controls]);
+
+  useEffect(() => {
+  if (location.state?.selectedCartItems) {
+    setSelectedItems(location.state.selectedCartItems);
+  }
+}, [location.state]);
 
   // Fetch shipping location
   useEffect(() => {
@@ -92,10 +100,15 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
-    if (!completedDocId && location.state?.cartItems) {
-      setCartItems(location.state.cartItems);
-    }
-  }, [completedDocId, location.state]);
+  if (location.state?.cartItems) {
+    setCartItems(location.state.cartItems);
+  }
+
+  if (location.state?.selectedCartItems) {
+    setSelectedItems(location.state.selectedCartItems);
+  }
+}, [location.state]);
+
 
   // Toast helper
   const showToast = (message, type = "info", ms = 2500) => {
@@ -243,7 +256,7 @@ export default function Checkout() {
       setShowSuccessAnim(true);
       setTimeout(() => {
         setShowSuccessAnim(false);
-        navigate("/landing", { replace: true });
+        navigate("/myorders", { replace: true });
       }, 2200); // animation duration + buffer
 
     } catch (err) {
@@ -260,6 +273,8 @@ export default function Checkout() {
       state: {
         openShippingLocations: true,
         fromCheckout: true,
+        cartItems: cartItems,
+        selectedCartItems: selectedItems
       },
     });
   };
@@ -418,7 +433,14 @@ export default function Checkout() {
             <div className="shipping-option">
               <div>
                 <p className="method">Standard Local</p>
-                <p className="guarantee">🚚 Guaranteed to get by 11 - 14 Apr</p>
+                 <div className="delivery-info" style={{ marginTop: "10px" }}>
+                  {cartItems.map((item) => (
+                    <p key={item.cartItemCode} style={{ margin: "4px 0" }}>
+                      <strong>{item.productName}:</strong>Expected delivery {item.delivery || "3-5 Days"}🚚
+                    </p>
+                  ))}
+                </div>
+
               </div>
               <p className="ship-price">₱58</p>
             </div>

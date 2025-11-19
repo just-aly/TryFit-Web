@@ -174,7 +174,10 @@ export default function Profile() {
   const [pickerStage, setPickerStage] = useState("municipality"); 
   const [isEditing, setIsEditing] = useState(false);
   const [hasShipping, setHasShipping] = useState(false);
-  const [fromCheckout, setFromCheckout] = useState(false);
+  const [fromCheckout, setFromCheckout] = useState(false); 
+  const [selectedCartItems, setSelectedCartItems] = useState([]);
+  const [fromRecheckout, setFromRecheckout] = useState(false);
+  const [reorderItems, setReorderItems] = useState([]);
 
 
   // Password fields used for Change Password
@@ -219,6 +222,12 @@ useEffect(() => {
   }
   if (location.state?.fromCheckout) {
     setFromCheckout(true);
+  }
+  if (location.state?.fromRecheckout) {
+    setFromRecheckout(true);
+  }
+  if (location.state?.reorderItems) {
+    setReorderItems(location.state.reorderItems);
   }
 }, [location.state]);
 
@@ -377,7 +386,11 @@ useEffect(() => {
       setSaving(false);
     }
   }
-
+  useEffect(() => {
+    if (location.state?.selectedCartItems) {
+      setSelectedCartItems(location.state.selectedCartItems);
+    }
+  }, [location.state]);
 
    // --- Shipping logic: municipality -> barangay -> final (matches mobile) ---
   function handleMunicipalitySelect(mun) {
@@ -904,10 +917,27 @@ async function handleDeleteAccount() {
                       {saving ? "Saving..." : hasShipping && !isEditing ? "Edit" : "Save"}
                     </button>
 
-                    {fromCheckout && hasShipping && !isEditing && (
-                     <button
+                    {(fromCheckout || fromRecheckout) && hasShipping && !isEditing && (
+                      <button
                         className="go-back-btn"
-                        onClick={() => navigate("/checkout")}
+                        onClick={() => {
+                          if (fromRecheckout) {
+                            // Go back to Recheckout page with the same items
+                            navigate("/recheckout", {
+                              state: {
+                                reorderItems: reorderItems
+                              },
+                            });
+                          } else {
+                            // Normal Checkout
+                            navigate("/checkout", {
+                              state: {
+                                cartItems: location.state?.cartItems || [],
+                                selectedCartItems: location.state?.selectedCartItems || []
+                              },
+                            });
+                          }
+                        }}
                         style={{
                           marginTop: 10,
                           marginLeft: "auto",
@@ -924,8 +954,8 @@ async function handleDeleteAccount() {
                       >
                         Go Back to Checkout
                       </button>
-
                     )}
+
                   </div>
 
 

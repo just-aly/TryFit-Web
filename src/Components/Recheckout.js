@@ -4,14 +4,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { db, auth } from "../firebase";
 import {
   collection,
+  addDoc,
+  getDoc,
+  doc,
   getDocs,
   query,
   where,
-  doc,
-  getDoc,
-  addDoc,
   setDoc,
   serverTimestamp,
+  deleteDoc,
 } from "firebase/firestore";
 
 export default function Recheckout() {
@@ -47,6 +48,12 @@ export default function Recheckout() {
     setToast({ visible: true, message, type });
     setTimeout(() => setToast({ visible: false, message: "", type: "info" }), ms);
   };
+
+  useEffect(() => {
+    if (location.state?.cartItems) {
+      setReorderItems(location.state.cartItems);
+    }
+  }, [location.state]);
 
   // Fetch shipping location
   useEffect(() => {
@@ -133,6 +140,7 @@ export default function Recheckout() {
 
     fetchOrder();
   }, [completedID, cancelledID]);
+  
 
   // Confirmation modal before placing order
   const handlePlaceOrderClick = () => {
@@ -217,6 +225,8 @@ export default function Recheckout() {
       state: {
         openShippingLocations: true,
         fromCheckout: true,
+         cartItems: reorderItems,  
+        selectedCartItems: reorderItems, 
       },
     });
   };
@@ -321,7 +331,13 @@ export default function Recheckout() {
             <div className="shipping-option">
               <div>
                 <p className="method">Standard Local</p>
-                <p className="guarantee">🚚 Guaranteed to get by 11 - 14 Apr</p>
+                <div className="delivery-info" style={{ marginTop: "10px" }}>
+                  {reorderItems.map((item) => (
+                    <p key={item.productId} style={{ margin: "4px 0" }}>
+                      <strong>{item.productName}:</strong> Expected delivery {item.delivery || "3-5 Days"}🚚
+                    </p>
+                  ))}
+                </div>
               </div>
               <p className="ship-price">₱58</p>
             </div>
@@ -330,6 +346,29 @@ export default function Recheckout() {
           <div className="total-items">
             <p>Total {totalItems} item(s)</p>
             <p className="total">₱{totalPrice.toLocaleString()}</p>
+          </div>
+
+          <div className="payment-card">
+            <h3>Payment Details</h3>
+            <div className="payment-row">
+              <p>Merchandise Subtotal</p>
+              <span>₱{totalPrice.toLocaleString()}</span>
+            </div>
+            <div className="payment-row">
+              <p>Shipping Subtotal</p>
+              <span>₱58</span>
+            </div>
+            <div className="payment-row">
+              <p>Shipping Discount Subtotal</p>
+              <span>₱0</span>
+            </div>
+
+            <hr />
+
+            <div className="payment-row total-row">
+              <p>Total Payment</p>
+              <span>₱{(totalPrice + 58).toLocaleString()}</span>
+            </div>
           </div>
 
           <div className="order-card">
