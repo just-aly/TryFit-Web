@@ -10,7 +10,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import { signOut } from "firebase/auth";
-import { auth } from "../firebase"; 
+import { auth, db } from "../firebase"; 
+import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 
 
 
@@ -23,6 +24,8 @@ export default function Header() {
   const [inputValue, setInputValue] = useState("");
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [uniqueUserId, setUniqueUserId] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const headerRef = useRef(null);
   const searchRef = useRef(null);
@@ -45,6 +48,41 @@ export default function Header() {
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
   };
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) return; // 🔥 Prevents crash
+
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+
+      if (snap.exists()) {
+        setUniqueUserId(snap.data().userId); // <-- CUSTOM UNIQUE USER ID
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
+  useEffect(() => {
+    if (!uniqueUserId) return;
+
+    const notifRef = collection(db, "notifications");
+
+    const q = query(
+      notifRef,
+      where("userId", "==", uniqueUserId),   
+      where("read", "==", false)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      setUnreadCount(snap.size);
+    });
+
+    return unsub;
+  }, [uniqueUserId]);
+
 
   // 🔹 Placeholder animation
   useEffect(() => {
@@ -231,27 +269,68 @@ export default function Header() {
               <FaShoppingCart className="icon" />
               <span className="tooltip">Cart</span>
             </div>
-
             <div
               className="dropdown nav-icon-wrapper"
               onClick={() => toggleDropdown("profile")}
+              style={{ position: "relative" }}
             >
               <FaUser className="icon" />
-                <span className="tooltip">Profile</span>
+
+              {/* 🔴 RED DOT ON THE HEADER ICON */}
+              {unreadCount > 0 && (
+                <span
+                  className="notif-badge-dot"
+                  style={{
+                    position: "absolute",
+                    top: "0px",
+                    right: "0px",
+                    width: "8px",
+                    height: "8px",
+                    backgroundColor: "red",
+                    borderRadius: "50%",
+                    border: "1px solid white", // optional, to make it more visible
+                  }}
+                ></span>
+              )}
+
+              <span className="tooltip">Profile</span>
+
               {openDropdown === "profile" && (
                 <ul className="dropdown-menu profile-menu">
                   <li onClick={() => navigate("/profile")}>
                     <FaUser className="dropdown-icon" /> My Profile
                   </li>
-                  <li onClick={() => navigate("/notification")}>
+
+                  <li
+                    onClick={() => navigate("/notification")}
+                    style={{ position: "relative", display: "flex", alignItems: "center" }}
+                  >
                     <FaBell className="dropdown-icon" /> Notifications
+
+                    {/* 🔴 RED DOT IN DROPDOWN */}
+                    {unreadCount > 0 && (
+                      <span
+                        className="notif-badge-dot"
+                        style={{
+                          position: "absolute",
+                          top: "5px",
+                          right: "5px",
+                          width: "8px",
+                          height: "8px",
+                          backgroundColor: "red",
+                          borderRadius: "50%",
+                        }}
+                      ></span>
+                    )}
                   </li>
+
                   <li onClick={handleLogoutClick}>
                     <FaSignOutAlt className="dropdown-icon" /> Logout
                   </li>
                 </ul>
               )}
             </div>
+
           </div>
         </div>
       </header>
@@ -617,38 +696,39 @@ export default function Header() {
           }
 
           .dropdown {
-  position: relative;
-}
+            position: relative;
+          }
 
-.dropdown-menu {
-  position: absolute;
-  top: 100%; /* directly below the parent */
-  left: 0;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  padding: 8px 0;
-  margin: 0;
-  z-index: 1000;
-  list-style: none;
-  min-width: 130px;
-}
+          .dropdown-menu {
+            position: absolute;
+            top: 100%; /* directly below the parent */
+            left: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 8px 0;
+            margin: 0;
+            z-index: 1000;
+            list-style: none;
+            min-width: 130px;
+          }
 
-.dropdown-menu li {
-  padding: 8px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-}
+          .dropdown-menu li {
+            padding: 8px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+          }
 
-.dropdown-menu li:hover {
-  background: #f2f2f2;
-}
+          .dropdown-menu li:hover {
+            background: #f2f2f2;
+          }
 
-.profile-menu {
-  right: 0;
-  left: auto; /* align profile dropdown to the right edge */
-}
+          .profile-menu {
+            right: 0;
+            left: auto; /* align profile dropdown to the right edge */
+          }
+
         }
 
       `}</style>

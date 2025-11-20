@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getFirestore, collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, orderBy, doc, updateDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const db = getFirestore();
@@ -47,12 +47,21 @@ export default function Notification() {
         const q = query(notifRef, where("userId", "==", userId), orderBy("timestamp", "desc"));
         const notifSnap = await getDocs(q);
 
-        const notifData = notifSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const notifData = notifSnap.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
         }));
 
         setNotifications(notifData);
+
+        // ✅ Mark all notifications as read
+        notifSnap.docs.forEach(async (docSnap) => {
+          const notifDocRef = doc(db, "notifications", docSnap.id);
+          if (!docSnap.data().read) { // only update if not already read
+            await updateDoc(notifDocRef, { read: true });
+          }
+        });
+
       } catch (error) {
         console.error("🔥 Error fetching notifications:", error);
       } finally {
@@ -63,6 +72,29 @@ export default function Notification() {
     fetchNotifications();
   }, [userId]);
 
+   const handleClearAll = async () => {
+    if (!userId) return;
+    const confirmClear = window.confirm("Are you sure you want to delete all notifications?");
+    if (!confirmClear) return;
+
+    try {
+      const notifRef = collection(db, "notifications");
+      const q = query(notifRef, where("userId", "==", userId));
+      const notifSnap = await getDocs(q);
+
+      // Delete each notification
+      const deletePromises = notifSnap.docs.map((docSnap) => {
+        const notifDocRef = doc(db, "notifications", docSnap.id);
+        return notifDocRef.delete ? notifDocRef.delete() : updateDoc(notifDocRef, { deleted: true });
+      });
+
+      await Promise.all(deletePromises);
+      setNotifications([]); // Update state immediately
+    } catch (error) {
+      console.error("🔥 Error clearing notifications:", error);
+    }
+  };
+
   if (loading)
     return <p style={{ textAlign: "center", marginTop: "200px" }}>Loading notifications...</p>;
 
@@ -71,15 +103,31 @@ export default function Notification() {
       {/* ===== Header Section ===== */}
       <div className="notif-header">
         <div className="notif-header-inner">
-          <div className="notif-title-row">
+          <div className="notif-title-row" style={{ justifyContent: "space-between", width: "100%" }}>
             <h1>Notifications</h1>
-            <div className="header-line"></div>
+            
           </div>
+          <div className="header-line"></div>
         </div>
       </div>
-
-      {/* ===== Notification Content ===== */}
+  
       <div className="notif-box">
+         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "15px" }}>
+          <button
+            onClick={handleClearAll}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#6c56ef",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Clear All
+          </button>
+        </div>
         {notifications.length === 0 ? (
           <p style={{ textAlign: "center", color: "#666" }}>No notifications yet.</p>
         ) : (
@@ -100,7 +148,7 @@ export default function Notification() {
               </p>
             </div>
           ))
-        )}
+        )}  
       </div>
 
       <style>{`
