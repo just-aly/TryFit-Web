@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getFirestore, collection, query, where, getDocs, orderBy, doc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const db = getFirestore();
@@ -82,14 +82,13 @@ export default function Notification() {
       const q = query(notifRef, where("userId", "==", userId));
       const notifSnap = await getDocs(q);
 
-      // Delete each notification
       const deletePromises = notifSnap.docs.map((docSnap) => {
-        const notifDocRef = doc(db, "notifications", docSnap.id);
-        return notifDocRef.delete ? notifDocRef.delete() : updateDoc(notifDocRef, { deleted: true });
-      });
+      const notifDocRef = doc(db, "notifications", docSnap.id);
+      return deleteDoc(notifDocRef); // actually deletes the document
+    });
 
-      await Promise.all(deletePromises);
-      setNotifications([]); // Update state immediately
+    await Promise.all(deletePromises);
+    setNotifications([]);  // Update state immediately
     } catch (error) {
       console.error("🔥 Error clearing notifications:", error);
     }
