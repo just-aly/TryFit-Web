@@ -1,196 +1,212 @@
-import { FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
+import { FaFacebook, FaInstagram } from "react-icons/fa";
+import { SiGmail } from "react-icons/si"; // Using Gmail icon from react-icons/si
 
 export default function ContactUs() {
   return (
-    <div className="contact-container">
-      {/* LEFT SECTION */}
-      <div className="contact-left">
+    <div className="contact-page">
+
+      {/* HEADER */}
+      <div className="contact-header">
+        <div className="floating-shapes"></div>
         <h1>Contact Us</h1>
+        <p>Connect with us — we’re here to help and happy to assist.</p>
+      </div>
 
-        <div className="contact-box">
-          <h2 className="section-title">Location</h2>
-          <p className="location">
-            <FaMapMarkerAlt className="icon" />
-            San Isidro Campus, Brgy. San Isidro.<br />
-            Tarlac City<br />
-            2300 Tarlac.
-          </p>
+      {/* CARDS */}
+      <div className="contact-card-container">
 
-          <h2 className="section-title">Contacts</h2>
-          <p className="contact-item">
-            <FaEnvelope className="icon" />
-            tryfitar@gmail.com
-          </p>
-          <p className="contact-item">
-            <FaPhone className="icon" />
-            09123456789
-          </p>
-
-          <div className="social-icons">
-            <FaFacebook className="fb" />
-            <FaInstagram className="ig" />
-            <FaXTwitter className="x" />
-          </div>
+        {/* FACEBOOK */}
+        <div className="contact-card fade-in" style={{ animationDelay: "0s" }}>
+          <FaFacebook className="contact-icon" style={{ color: "#1877F2" }} />
+          <h3>Facebook Page</h3>
+          <p>Message us on Facebook anytime.</p>
+          <a
+            href="https://www.facebook.com/profile.php?id=61584286040005"
+            className="contact-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Visit Facebook
+          </a>
         </div>
+
+        {/* EMAIL — CENTERED */}
+        <div className="contact-card fade-in" style={{ animationDelay: "0.15s" }}>
+          <SiGmail className="contact-icon gmail-icon" />
+          <h3>Email Us</h3>
+          <p>Reach us directly through our email address.</p>
+          <p className="gmail-address">tryfitar@gmail.com</p>
+        </div>
+
+        {/* INSTAGRAM */}
+        <div className="contact-card fade-in" style={{ animationDelay: "0.3s" }}>
+          <FaInstagram className="contact-icon" style={{ color: "#E4405F" }} />
+          <h3>Instagram</h3>
+          <p>Follow and reach out to us on Instagram.</p>
+          <a
+            href="https://www.instagram.com/try_fits/"
+            className="contact-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open Instagram
+          </a>
+        </div>
+
       </div>
 
-      {/* RIGHT SECTION */}
-      <div className="contact-form">
-        <h2 className="form-title">CONTACT FORM</h2>
-
-        <form>
-          <label htmlFor="name">Name:</label>
-          <input id="name" type="text" placeholder="Enter your name" />
-
-          <label htmlFor="email">Email Address:</label>
-          <input id="email" type="email" placeholder="Enter your email address" />
-
-          <label htmlFor="message">Message:</label>
-          <textarea id="message" rows="4" placeholder="Type your message..."></textarea>
-
-          <button type="submit">SEND MESSAGE</button>
-        </form>
-      </div>
-
+      {/* STYLES */}
       <style>{`
-        .contact-container {
+        .contact-page {
+          width: 100%;
+          min-height: 100vh;
+          background: #faf7ff;
+          font-family: Arial, sans-serif;
+          padding-bottom: 80px;
+          overflow-x: hidden;
+        }
+
+        .contact-header {
+          width: 100%;
+          text-align: center;
+          padding: 110px 20px 150px;
+          background: linear-gradient(135deg, #b084ff, #7a3bd1);
+          color: white;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .contact-header h1 {
+          font-size: 2.8rem;
+          font-weight: 700;
+          margin-bottom: 10px;
+          z-index: 2;
+          position: relative;
+        }
+
+        .contact-header p {
+          font-size: 1.15rem;
+          opacity: 0.9;
+          z-index: 2;
+          position: relative;
+        }
+
+        .floating-shapes {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-image:
+            radial-gradient(circle at 10% 20%, rgba(255,255,255,0.15) 6px, transparent 0),
+            radial-gradient(circle at 80% 70%, rgba(255,255,255,0.15) 8px, transparent 0),
+            radial-gradient(circle at 50% 40%, rgba(255,255,255,0.10) 10px, transparent 0),
+            radial-gradient(circle at 20% 80%, rgba(255,255,255,0.12) 7px, transparent 0);
+          background-size: 160px 160px;
+          animation: floatBg 18s infinite linear;
+          opacity: 0.45;
+        }
+
+        @keyframes floatBg {
+          0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+          100% { background-position: 300px 300px, -300px 200px, 200px -200px, -250px -250px; }
+        }
+
+        .contact-card-container {
           display: flex;
           justify-content: center;
-          align-items: flex-start;
-          gap: 60px;
-          padding: 200px 0;
-          min-height: 55vh;
-          background: linear-gradient(to bottom, #e5d9f2, #d8c7ef);
-          font-family: Arial, sans-serif;
-          color: #333;
+          flex-wrap: wrap;
+          gap: 32px;
+          margin-top: -90px;
+          padding: 0 20px;
+          z-index: 10;
+          position: relative;
         }
 
-        .contact-left {
-          flex: 1;
-          max-width: 400px;
+        .contact-card {
+          background: white;
+          width: 290px;
+          padding: 42px 24px;
+          border-radius: 18px;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+          text-align: center;
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
 
-        .contact-left h1 {
-          font-size: 2.2rem;
+        .contact-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+        }
+
+        .contact-icon {
+          font-size: 52px;
+          margin-bottom: 18px;
+          transition: transform 0.3s ease;
+        }
+
+        .gmail-icon {
+          color: #D44638; /* Gmail red */
+        }
+
+        .contact-card:hover .contact-icon {
+          transform: scale(1.12);
+        }
+
+        .contact-card h3 {
+          font-size: 1.25rem;
           font-weight: 700;
-          margin-bottom: 30px;
+          margin-bottom: 8px;
         }
 
-        .contact-box {
-          border-left: 4px solid #e9408b;
-          padding-left: 20px;
-        }
-
-        .section-title {
-          font-size: 1rem;
-          font-weight: 700;
-          color: #d63384;
-          margin-top: 20px;
-          margin-bottom: 10px;
-        }
-
-        .location, .contact-item {
+        .contact-card p {
           font-size: 0.95rem;
-          color: #333;
-          margin-bottom: 10px;
-          display: flex;
-          align-items: start;
-          gap: 10px;
-        }
-
-        .icon {
-          color: #d63384;
-          margin-top: 4px;
-        }
-
-        .social-icons {
-          display: flex;
-          gap: 15px;
-          margin-top: 25px;
-        }
-
-        .social-icons .fb { color: #1877F2; font-size: 28px; cursor: pointer; }
-        .social-icons .ig { color: #E4405F; font-size: 28px; cursor: pointer; }
-        .social-icons .x { color: #000; font-size: 28px; cursor: pointer; }
-        .social-icons svg:hover { opacity: 0.8; }
-
-        .contact-form {
-          flex: 1;
-          max-width: 400px;
-          background: #fff;
-          border-radius: 20px;
-          padding: 30px 35px;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        .form-title {
-          font-size: 1rem;
-          font-weight: 700;
-          letter-spacing: 1px;
+          color: #555;
           margin-bottom: 20px;
         }
 
-        .contact-form form {
-          display: flex;
-          flex-direction: column;
+        .gmail-address {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #333;
+          margin-top: 5px;
         }
 
-        .contact-form label {
-          font-size: 0.9rem;
-          font-weight: 700;
-          margin-bottom: 6px;
-        }
-
-        .contact-form input,
-        .contact-form textarea {
-          border: 1px solid #ccc;
-          border-radius: 6px;
-          padding: 8px 10px;
-          margin-bottom: 16px;
-          font-size: 0.9rem;
-          width: 100%;
-        }
-
-        .contact-form input:focus,
-        .contact-form textarea:focus {
-          outline: none;
-          border-color: #7B5CD6;
-          box-shadow: 0 0 0 2px rgba(123, 92, 214, 0.2);
-        }
-
-        .contact-form button {
-          background: #7B5CD6;
+        .contact-btn {
+          display: inline-block;
+          background: #7a3bd1;
           color: white;
+          padding: 10px 16px;
+          border-radius: 6px;
+          text-decoration: none;
           font-size: 0.9rem;
           font-weight: 600;
-          border: none;
-          border-radius: 6px;
-          padding: 10px;
-          cursor: pointer;
-          transition: background 0.2s ease-in-out;
+          transition: background 0.25s ease;
         }
 
-        .contact-form button:hover {
-          background: #6a49c4;
+        .contact-btn:hover {
+          background: #6932bb;
+        }
+
+        .fade-in {
+          opacity: 0;
+          transform: translateY(20px);
+          animation: fadeUp 0.7s ease forwards;
+        }
+
+        @keyframes fadeUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         @media (max-width: 900px) {
-          .contact-container {
+          .contact-card-container {
             flex-direction: column;
             align-items: center;
-            text-align: center;
           }
-
-          .contact-box {
-            border-left: none;
-            border-top: 4px solid #e9408b;
-            padding-left: 0;
-            padding-top: 15px;
-          }
-
-          .location, .contact-item {
-            justify-content: center;
+          .contact-header h1 {
+            font-size: 2.4rem;
           }
         }
       `}</style>

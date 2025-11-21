@@ -436,7 +436,7 @@ export default function Checkout() {
                  <div className="delivery-info" style={{ marginTop: "10px" }}>
                   {cartItems.map((item) => (
                     <p key={item.cartItemCode} style={{ margin: "4px 0" }}>
-                      <strong>{item.productName}:</strong> Expected delivery {item.delivery || "3-5 Days"}🚚
+                       Expected delivery {item.delivery || "3-5 Days"}🚚
                     </p>
                   ))}
                 </div>
@@ -520,6 +520,10 @@ export default function Checkout() {
   padding: 10px 18px;
   font-weight: 600;
   border-radius: 8px;
+}
+
+.delivery-info {
+  color: #228B22;
 }
 
 /* ------------------------------

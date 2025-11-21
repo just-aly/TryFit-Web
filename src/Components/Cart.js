@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc,  getDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const db = getFirestore();
@@ -12,91 +12,68 @@ export default function Cart() {
   const [products, setProducts] = useState([]);
   const [hideCheckout, setHideCheckout] = useState(false);
 
+  // Fetch Cart
   useEffect(() => {
-  if (!user) return;
+    if (!user) return;
 
-  // Fetch your Firestore user profile to get the custom userId (like U0055)
-  const fetchCart = async () => {
-    try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDocSnap = await getDoc(userDocRef);
+    const fetchCart = async () => {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
 
-      if (!userDocSnap.exists()) {
-        console.warn("User data not found in Firestore.");
-        return;
-      }
+      if (!userSnap.exists()) return;
 
-      const userData = userDocSnap.data();
-      const customUserId = userData.userId; // <-- This is your “U0055”
+      const { userId } = userSnap.data();
+      if (!userId) return;
 
-      if (!customUserId) {
-        console.warn("Custom userId missing in user data.");
-        return;
-      }
+      const q = query(collection(db, "cartItems"), where("userId", "==", userId));
 
-      // Now query cartItems using custom userId
-      const q = query(collection(db, "cartItems"), where("userId", "==", customUserId));
-
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const items = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-            selected: doc.data().selected || false,
-            quantity: doc.data().quantity || 1,
-          }));
-          setProducts(items);
-        },
-        (error) => console.error("Error fetching cart items:", error)
-      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          selected: doc.data().selected || false,
+          quantity: doc.data().quantity || 1,
+        }));
+        setProducts(items);
+      });
 
       return unsubscribe;
-    } catch (err) {
-      console.error("Error fetching custom userId:", err);
-    }
-  };
+    };
 
-  const unsubscribePromise = fetchCart();
+    const unsub = fetchCart();
+    return () => unsub && unsub instanceof Function && unsub();
+  }, [user]);
 
-  return () => {
-    unsubscribePromise && unsubscribePromise instanceof Function && unsubscribePromise();
-  };
-}, [user]);
-
-
+  // Toggle select
   const toggleSelect = async (id) => {
-    const product = products.find((p) => p.id === id);
-    if (!product) return;
     const docRef = doc(db, "cartItems", id);
-    await updateDoc(docRef, { selected: !product.selected });
+    const current = products.find((p) => p.id === id);
+    await updateDoc(docRef, { selected: !current.selected });
   };
 
+  // Change quantity
   const changeQuantity = async (id, delta) => {
-    const product = products.find((p) => p.id === id);
-    if (!product) return;
-    const newQty = Math.max(1, product.quantity + delta);
-    const docRef = doc(db, "cartItems", id);
-    await updateDoc(docRef, { quantity: newQty });
+    const current = products.find((p) => p.id === id);
+    if (!current) return;
+    const newQty = Math.max(1, current.quantity + delta);
+    await updateDoc(doc(db, "cartItems", id), { quantity: newQty });
   };
 
+  // Delete item
   const deleteProduct = async (id) => {
-    const docRef = doc(db, "cartItems", id);
-    await deleteDoc(docRef);
+    await deleteDoc(doc(db, "cartItems", id));
   };
 
   const selectedItems = products.filter((p) => p.selected);
   const total = selectedItems.reduce((sum, p) => sum + p.price * p.quantity, 0);
 
-  // Hide checkout when footer is visible
+  // Hide checkout when footer appears
   useEffect(() => {
     const footer = document.querySelector("footer");
     if (!footer) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => setHideCheckout(entry.isIntersecting));
-      },
+      (entries) => entries.forEach((e) => setHideCheckout(e.isIntersecting)),
       { threshold: 0.2 }
     );
 
@@ -107,83 +84,99 @@ export default function Cart() {
   return (
     <div className="cart-container">
       <div className="cart-items">
-        {products.map((product) => (
-          <div key={product.id} className="cart-card">
-            <input
-              type="checkbox"
-              checked={product.selected}
-              onChange={() => toggleSelect(product.id)}
-            />
-            <img src={product.imageUrl || "https://via.placeholder.com/80"} alt={product.productName} className="cart-img" />
-            <div className="cart-details">
-              <h3>{product.productName}</h3>
-              <p className="price">₱{Number(product.price).toLocaleString()}</p>
-              <p>Size: {product.size}</p>
+        {products.map((p) => (
+          <div key={p.id} className="cart-card">
+
+            {/* LEFT SIDE */}
+            <div className="cart-left">
+              <input type="checkbox" checked={p.selected} onChange={() => toggleSelect(p.id)} />
+
+              <img
+                src={p.imageUrl || "https://via.placeholder.com/80"}
+                alt={p.productName}
+                className="cart-img"
+              />
+
+              <div className="cart-details">
+                <h3>{p.productName}</h3>
+                <p className="price">₱{Number(p.price).toLocaleString()}</p>
+                <p>Size: {p.size}</p>
+              </div>
             </div>
+
+            {/* RIGHT SIDE ACTIONS */}
             <div className="quantity-actions">
               <div className="quantity">
-                <button onClick={() => changeQuantity(product.id, -1)}>-</button>
-                <span>{product.quantity}</span>
-                <button onClick={() => changeQuantity(product.id, 1)}>+</button>
+                <button onClick={() => changeQuantity(p.id, -1)}>-</button>
+                <span>{p.quantity}</span>
+                <button onClick={() => changeQuantity(p.id, 1)}>+</button>
               </div>
-              <span className="delete-btn" onClick={() => deleteProduct(product.id)}>Delete</span>
+
+              <span className="delete-btn" onClick={() => deleteProduct(p.id)}>Delete</span>
             </div>
           </div>
         ))}
       </div>
 
+      {/* CHECKOUT BAR */}
       <div className={`checkout ${hideCheckout ? "hidden" : ""}`}>
         <div className="checkout-content">
           <div className="checkout-info">
-            <p>Selected Item: {selectedItems.length}</p>
+            <p>Selected: {selectedItems.length}</p>
             <p>Total: ₱{total.toLocaleString()}</p>
           </div>
+
           <button
             className="checkout-btn"
             onClick={() => {
-              if (selectedItems.length === 0) {
-                alert("Please select at least one item to checkout.");
+              if (!selectedItems.length) {
+                alert("Please select at least one item.");
                 return;
               }
               navigate("/checkout", { state: { cartItems: selectedItems } });
-            }} >
+            }}
+          >
             CHECK OUT
           </button>
-
         </div>
       </div>
 
-
+      {/* CSS */}
       <style>{`
         .cart-container {
           min-height: 100vh;
           background: linear-gradient(to bottom, #e9d5ff, #ddd6fe);
           padding: 100px 20px 20px;
           display: flex;
-          flex-direction: column;
           align-items: center;
-          font-family: Arial, sans-serif;
+          flex-direction: column;
         }
 
         .cart-items {
-          margin: 20px 0;
-          flex: 1;
+          width: 92%;
+          max-width: 880px;
           display: flex;
           flex-direction: column;
           gap: 16px;
-          width: 92%;
-          max-width: 880px;
+          margin-top: 20px;
         }
 
         .cart-card {
+          background: white;
+          border-radius: 8px;
+          border-top: 6px solid #6a5acd;
+          padding: 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .cart-left {
           display: flex;
           align-items: center;
-          gap: 15px;
-          background: #fff;
-          border-radius: 8px;
-          padding: 12px;
-          border-top: 6px solid #6a5acd;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+          gap: 12px;
+          flex: 1;
         }
 
         .cart-img {
@@ -193,34 +186,24 @@ export default function Cart() {
           border-radius: 6px;
         }
 
-        .cart-details {
-          flex: 1;
-        }
-
         .cart-details h3 {
           font-size: 1rem;
           font-weight: 600;
         }
 
-        .color-dropdown {
-          margin: 5px 0;
-          padding: 4px 6px;
-          border-radius: 4px;
-          border: 1px solid #ccc;
-          font-size: 0.9rem;
-        }
-
-        .price {
-          font-size: 1rem;
+        .price { 
+          font-size: 1rem; 
+          color: #6a5acd; 
           font-weight: bold;
-          color: #6a5acd;
         }
 
+        /* RIGHT SIDE ACTIONS */
         .quantity-actions {
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 6px;
+          min-width: 70px;
         }
 
         .quantity {
@@ -238,26 +221,20 @@ export default function Cart() {
         }
 
         .delete-btn {
-          font-size: 0.9rem;
+          margin-top: 4px;
           color: #6a5acd;
           cursor: pointer;
-          transition: color 0.2s ease-in-out;
-          margin-top: 10px;
+          font-size: 0.9rem;
         }
 
-        .delete-btn:hover {
-          color: red;
-        }
+        .delete-btn:hover { color: red; }
 
-        /* Checkout bar */
+        /* CHECKOUT BAR */
         .checkout {
           position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
+          bottom: 0; left: 0; right: 0;
           display: flex;
           justify-content: center;
-          background: transparent;
           z-index: 999;
           transition: transform 0.3s ease-in-out;
         }
@@ -267,13 +244,12 @@ export default function Cart() {
         }
 
         .checkout-content {
-          background: #fff;
+          background: white;
           border-top: 4px solid #6a5acd;
-          box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
           width: 92%;
           max-width: 880px;
           padding: 20px;
-          border-radius: 0;
+          box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
         }
 
         .checkout-info {
@@ -287,20 +263,32 @@ export default function Cart() {
           width: 100%;
           background: #6a5acd;
           color: white;
-          font-size: 1rem;
-          font-weight: 600;
           padding: 12px;
           border: none;
           border-radius: 6px;
-          cursor: pointer;
-          transition: background 0.2s ease-in-out;
+          font-size: 1rem;
         }
 
         .checkout-btn:hover {
           background: #5b4bcc;
         }
+
+        @media (min-width: 769px) {
+          .cart-img {
+            width: 50px;
+            height: 50px;
+          }
+
+          .quantity-actions {
+            align-items: flex-end;
+            min-width: 60px;
+          }
+
+          .delete-btn {
+            font-size: 0.8rem;
+          }
+        }
       `}</style>
     </div>
   );
 }
-

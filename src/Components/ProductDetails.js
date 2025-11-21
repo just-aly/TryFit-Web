@@ -587,6 +587,39 @@ export default function ProductDetails() {
           color: gold;
         }
 
+        .stars {
+          display: inline-flex;
+          align-items: center;
+        }
+
+        .star {
+          font-size: 20px;
+          margin-right: 2px;
+          color: #EFBF04; 
+          position: relative;
+        }
+
+        .star.full {
+          color: #EFBF04;
+        }
+
+        .star.empty {
+          color: #ccc;
+        }
+
+        .star.half {
+          color: #ccc;
+        }
+
+        .star.half::before {
+          content: "★";
+          position: absolute;
+          left: 0;
+          width: 50%;
+          overflow: hidden;
+          color: #EFBF04;
+        }
+
         .toggle-reviews {
           color: #9747FF;
           text-align: center;
@@ -810,7 +843,7 @@ export default function ProductDetails() {
 
         .product-info-section {
           width: 100%;
-          text-align: center;
+          text-align: left;
         }
 
         .product-title {
@@ -831,6 +864,7 @@ export default function ProductDetails() {
           box-shadow: none;
           border: 1px solid #f0f0f0;
           max-height: 180px;
+          text-align: left;
         }
 
         .review-card {
@@ -906,17 +940,14 @@ export default function ProductDetails() {
           position: relative;
         }
 
-        /* ⭐ Full star */
         .star.full {
           color: #EFBF04;
         }
 
-        /* ⭐ Empty star */
         .star.empty {
           color: #ccc;
         }
 
-        /* ⭐ Half star effect */
         .star.half {
           color: #ccc; /* background star */
         }
@@ -929,7 +960,6 @@ export default function ProductDetails() {
           overflow: hidden;
           color: #EFBF04;
         }
-
       }
       `}</style>
     </div>

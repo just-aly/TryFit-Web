@@ -505,7 +505,7 @@ useEffect(() => {
           padding: 10px;
         }
 
-        /* 🔹 Circle Product Card */
+        /* Circle Product Card */
         .popular-card {
           flex: 0 0 auto;
           width: 220px;
@@ -525,7 +525,7 @@ useEffect(() => {
           box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
         }
 
-        /* 🔹 Product Image inside the circle */
+        /* Product Image inside the circle */
         .popular-image {
           width: 100%;
           height: 100%;
@@ -538,7 +538,7 @@ useEffect(() => {
           transform: scale(1.05);
         }
 
-        /* 🔹 Product Name below the circle */
+        /* Product Name below the circle */
         .popular-name {
           font-weight: 600;
           font-size: 1rem;
@@ -593,122 +593,121 @@ useEffect(() => {
         }
         
      /* ===== Responsive Layout + Smaller Gaps ===== */
-@media (max-width: 1280px) {
-  .section {
-    margin-bottom: 160px; 
-  }
+      @media (max-width: 1280px) {
+        .section {
+          margin-bottom: 160px; 
+        }
 
-  .arrivals-track,
-  .popular-track {
-    gap: 30px; 
-  }
+        .arrivals-track,
+        .popular-track {
+          gap: 30px; 
+        }
 
-  .card-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
-  }
-}
+        .card-container {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 25px;
+        }
+      }
 
-@media (max-width: 1024px) {
-  .landing-page {
-    padding: 50px 6%;
-  }
+      @media (max-width: 1024px) {
+        .landing-page {
+          padding: 50px 6%;
+        }
 
-  .section {
-    margin-bottom: 140px;
-  }
+        .section {
+          margin-bottom: 140px;
+        }
 
-  .section-title {
-    font-size: 1.8rem;
-  }
+        .section-title {
+          font-size: 1.8rem;
+        }
 
-  .arrivals-track,
-  .popular-track {
-    gap: 25px;
-  }
+        .arrivals-track,
+        .popular-track {
+          gap: 25px;
+        }
 
-  .card-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
-  }
-}
+        .card-container {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 25px;
+        }
+      }
 
-@media (max-width: 768px) {
-  .landing-page {
-    padding: 40px 5%;
-  }
+      @media (max-width: 768px) {
+        .landing-page {
+          padding: 40px 5%;
+        }
 
-  .section {
-    margin-bottom: 120px;
-  }
+        .section {
+          margin-bottom: 120px;
+        }
 
-  .section-title {
-    font-size: 1.6rem;
-  }
+        .section-title {
+          font-size: 1.6rem;
+        }
 
-  .arrivals-track,
-  .popular-track {
-    gap: 18px;
-  }
+        .arrivals-track,
+        .popular-track {
+          gap: 18px;
+        }
 
-  .arrival-item {
-    width: 200px;
-    height: 300px;
-  }
+        .arrival-item {
+          width: 200px;
+          height: 300px;
+        }
 
-  .popular-card {
-    width: 160px;
-    height: 160px;
-  }
+        .popular-card {
+          width: 160px;
+          height: 160px;
+        }
 
-  .card-container {
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 20px;
-  }
+        .card-container {
+          grid-template-columns: repeat(2, 1fr); 
+          gap: 20px;
+        }
 
-  .card-img {
-    height: 200px;
-  }
-}
+        .card-img {
+          height: 200px;
+        }
+      }
 
-@media (max-width: 480px) {
-  .landing-page {
-    padding: 30px 4%;
-  }
+      @media (max-width: 480px) {
+        .landing-page {
+          padding: 30px 4%;
+        }
 
-  .section {
-    margin-bottom: 100px;
-  }
+        .section {
+          margin-bottom: 100px;
+        }
 
-  .section-title {
-    font-size: 1.4rem;
-  }
+        .section-title {
+          font-size: 1.4rem;
+        }
 
-  .arrivals-track,
-  .popular-track {
-    gap: 15px;
-  }
+        .arrivals-track,
+        .popular-track {
+          gap: 15px;
+        }
 
-  .arrival-item {
-    width: 160px;
-    height: 260px;
-  }
+        .arrival-item {
+          width: 160px;
+          height: 260px;
+        }
 
-  .popular-card {
-    width: 130px;
-    height: 130px;
-  }
+        .popular-card {
+          width: 130px;
+          height: 130px;
+        }
 
-  .card-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-  }
+        .card-container {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 15px;
+        }
 
-  .card-img {
-    height: 180px;
-  }
-}
-
+        .card-img {
+          height: 180px;
+        }
+      }
       `}</style>
     </div>
   );

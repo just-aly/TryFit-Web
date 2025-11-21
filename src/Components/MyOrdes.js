@@ -1331,7 +1331,7 @@ export default function MyOrders() {
             font-size: 0.8rem;
             padding: 6px 10px;
           }
-                `}</style>
-              </div>
-            );
-          }
+      `}</style>
+  </div>
+   );
+}

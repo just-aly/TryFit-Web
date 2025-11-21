@@ -50,7 +50,7 @@ export default function SearchResults() {
         });
 
         if (filtered.length > 0) {
-          // 🔹 If user types only 1–3 letters, show partial match message
+          //  If user types only 1–3 letters, show partial match message
           if (query.length <= 3) {
             setMessage(`No exact results for "${query}". Search results.`);
           } else {
@@ -108,7 +108,7 @@ export default function SearchResults() {
     return matrix[a.length][b.length];
   };
 
-  // 🔹 Find the closest known keyword
+  // Find the closest known keyword
   const getClosestMatch = (input, list) => {
     let closest = list[0];
     let minDist = levenshteinDistance(input, list[0]);

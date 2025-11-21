@@ -420,27 +420,84 @@ export default function LoginPage() {
           font-weight: 600;
           background: transparent;
         }
-
+          
         @media (max-width: 900px) {
-          .login-container { flex-direction: column; height: auto; border-radius: 16px; }
-          .left-panel { width: 100%; border-radius: 16px 16px 0 0; text-align: center; align-items: center; padding: 25px 5px; }
-          .left-panel h1 { font-size: 2rem; }
-          .left-panel p { font-size: 0.95rem; }
-          .right-panel { width: 100%; padding: 30px 20px; }
-          .login-box { max-width: 100%; padding: 10px; }
-          .login-title { font-size: 1.8rem; }
-          .form-group input { width: 75%; font-size: 0.85rem; }
-          .password-toggle { left: 250px; }
-          .login-btn { width: 92%; padding: 12px; font-size: 1rem; }
+          .login-container {
+            flex-direction: column;
+            height: auto;
+            border-radius: 16px;
+          }
+
+          .left-panel {
+            width: 100%;
+            border-radius: 16px 16px 0 0;
+            text-align: center;
+            align-items: center;
+            padding: 25px 5px;
+          }
+
+          .left-panel h1 {
+            font-size: 2rem;
+          }
+
+          .left-panel p {
+            font-size: 0.95rem;
+          }
+
+          .right-panel {
+            width: 100%;
+            padding: 30px 20px;
+          }
+
+          .login-box {
+            max-width: 100%;
+            padding: 10px;
+          }
+
+          .login-title {
+            font-size: 1.8rem;
+          }
+
+          .form-group input {
+            width: 75%;
+            font-size: 0.85rem;
+          }
+
+          .password-toggle {
+            left: 250px;
+          }
+
+          .login-btn {
+            width: 92%;
+            padding: 12px;
+            font-size: 1rem;
+          }
         }
 
         @media (max-width: 480px) {
-          .left-panel h1 { font-size: 1.7rem; }
-          .left-panel p { font-size: 0.85rem; }
-          .login-title { font-size: 1.6rem; }
-          .form-group input { font-size: 0.9rem; }
-          .signup-text { font-size: 0.85rem; }
-          .success-text { font-size: 1rem; }
+          .left-panel h1 {
+            font-size: 1.7rem;
+          }
+
+          .left-panel p {
+            font-size: 0.85rem;
+          }
+
+          .login-title {
+            font-size: 1.6rem;
+          }
+
+          .form-group input {
+            font-size: 0.9rem;
+          }
+
+          .signup-text {
+            font-size: 0.85rem;
+          }
+
+          .success-text {
+            font-size: 1rem;
+          }
         }
       `}</style>
     </div>

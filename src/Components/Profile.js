@@ -1489,168 +1489,160 @@ async function handleDeleteAccount() {
           color: #666;
         }
 
-    @media (max-width: 480px) {
-  .profile-page {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    padding-top: 100px !important;
-    padding-bottom: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    overflow-x: hidden;
-  }
+        @media (max-width: 480px) {
+        .profile-page {
+          width: 100%;
+          max-width: 100%;
+          margin: 0 auto;
+          padding-top: 120px !important;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          overflow-x: hidden;
+        }
 
-  .profile-container {
-    width: 100%;
-    max-width: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    border: none;
-    box-shadow: none;
-  }
+        .profile-container {
+          width: 100%;
+          max-width: 100%;
+          display: flex;
+          flex-direction: row;
+          align-items: stretch;
+          border: none;
+          box-shadow: none;
+        }
 
-  /* ✅ Sidebar stays fixed width but not full height */
-  .sidebar {
-    flex: 0 0 110px !important;
-    background: #f8f6ff;
-    border-right: 1px solid #ddd;
-    padding: 6px;
-    align-self: flex-start;
-    height: auto;
-  }
+        .sidebar {
+          flex: 0 0 110px !important; 
+          background: #f8f6ff;
+          border-right: 1px solid #ddd;
+          padding: 6px;
+          align-self: flex-start;
+          height: 100vh;
+        }
 
-  .sidebar h3 {
-    font-size: 0.8rem;
-    margin-bottom: 6px;
-  }
 
-  .sidebar li {
-    font-size: 0.7rem;
-    padding: 4px 6px;
-    border-radius: 4px;
-    margin-bottom: 3px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-  }
+        .sidebar h3 {
+          font-size: 0.8rem;
+          margin-bottom: 6px;
+        }
 
-  .sidebar-menu li.active {
-    font-weight: bold;
-    color: #000;
-    background: #fff;
-    border-left: 4px solid #d220ff;
-    width: 92%;
-  }
+        .sidebar li {
+          font-size: 0.7rem;
+          padding: 4px 6px;
+          border-radius: 4px;
+          margin-bottom: 3px;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+        }
 
-  /* ✅ Prevent profile-content from resizing or moving header */
-  .profile-content {
-    flex: 1;
-    background: #fff;
-    overflow-y: auto;
-    min-height: 100%; /* Keeps stable height */
-    display: flex;
-    flex-direction: column;
-  }
+        .sidebar-menu li.active {
+          font-weight: bold;
+          color: #000;
+          background: #fff;
+          border-left: 4px solid #d220ff;
+          width: 92%;
+        }
 
-  /* ✅ Header stays in place — content switches below it */
-  .section-header {
-    margin-bottom: 8px;
-    flex-shrink: 0; /* Prevent from collapsing */
-  }
+        .profile-content {
+          flex: 1;
+          background: #fff;
+          overflow-y: auto;
+          min-height: 100%; /* Keeps stable height */
+          display: flex;
+          flex-direction: column;
+        }
 
-  .section-header h2 {
-    font-size: 0.9rem;
-    margin: 0;
-  }
+        .section-header {
+          margin-bottom: 8px;
+          flex-shrink: 0; /* Prevent from collapsing */
+        }
 
-  .profile-section {
-    flex-grow: 1;
-    margin-bottom: 10px;
-    padding: 6px;
-  }
+        .section-header h2 {
+          font-size: 0.9rem;
+          margin: 0;
+        }
 
-  /* ✅ Make labels smaller */
-  .profile-section label {
-    font-size: 0.6rem;
-    display: block;
-    margin-bottom: 3px;
-  }
+        .profile-section {
+          flex-grow: 1;
+          margin-bottom: 10px;
+          padding: 6px;
+        }
 
-  /* ✅ Inputs and placeholders */
-  input,
-  select {
-    font-size: 0.6rem;
-    padding: 4px 6px;
-    height: 26px;
-    border-radius: 4px;
-  }
+        .profile-section label {
+          font-size: 0.6rem;
+          display: block;
+          margin-bottom: 3px;
+        }
 
-  /* ✅ Make placeholder text smaller */
-  input::placeholder,
-  select::placeholder,
-  textarea::placeholder {
-    font-size: 0.8rem;
-    color: #999;
-  }
+        input,
+        select {
+          font-size: 0.6rem;
+          padding: 4px 6px;
+          height: 26px;
+          border-radius: 4px;
+        }
 
-  input[type="radio"] {
-    width: 14px;
-    height: 14px;
-    margin-right: 4px;
-    vertical-align: middle;
-  }
+        input::placeholder,
+        select::placeholder,
+        textarea::placeholder {
+          font-size: 0.8rem;
+          color: #999;
+        }
 
-  .radio-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
+        input[type="radio"] {
+          width: 14px;
+          height: 14px;
+          margin-right: 4px;
+          vertical-align: middle;
+        }
 
-  .radio-label {
-    font-size: 0.65rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
+        .radio-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
 
-  .save-btn {
-    width: 100%;
-    font-size: 0.8rem;
-    padding: 6px;
-    height: 32px;
-  }
+        .radio-label {
+          font-size: 0.65rem;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
 
-  .eye-icon {
-    font-size: 0.8rem;
-  }
+        .save-btn {
+          width: 100%;
+          font-size: 0.8rem;
+          padding: 6px;
+          height: 32px;
+        }
 
-  .profile-footer {
-    margin-top: 8px;
-    text-align: center;
-    font-size: 0.75rem;
-  }
+        .eye-icon {
+          font-size: 0.8rem;
+        }
 
-  p, span, h4, h5 {
-    font-size: 0.75rem;
-  }
-}
+        .profile-footer {
+          margin-top: 8px;
+          text-align: center;
+          font-size: 0.75rem;
+        }
 
-/* ✅ Eye icon styling (outside media query, for all screens) */
-.eye-icon {
-  font-size: 0.8rem;
-  background: #fff;            
-  border-radius: 50%;          
-  padding: 4px;                
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
+        p, span, h4, h5 {
+          font-size: 0.75rem;
+        }
+      }
 
+      .eye-icon {
+        font-size: 0.8rem;
+        background: #fff;            
+        border-radius: 50%;          
+        padding: 4px;                
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
       `}</style>
     </div>
   );

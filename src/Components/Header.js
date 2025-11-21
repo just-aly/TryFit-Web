@@ -30,12 +30,12 @@ export default function Header() {
   const headerRef = useRef(null);
   const searchRef = useRef(null);
 
-  // 🔹 Static base suggestions
+  //  Static base suggestions
   const BASE_SUGGESTIONS = ["T-shirt", "Longsleeves", "Pants", "Shorts"];
 
   const [searchSuggestions, setSearchSuggestions] = useState(BASE_SUGGESTIONS);
 
-  // ✅ Fuse for fuzzy search
+  //  Fuse for fuzzy search
   const fuse = useMemo(
     () =>
       new Fuse(searchSuggestions, {
@@ -51,13 +51,13 @@ export default function Header() {
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) return; // 🔥 Prevents crash
+      if (!user) return; 
 
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
-        setUniqueUserId(snap.data().userId); // <-- CUSTOM UNIQUE USER ID
+        setUniqueUserId(snap.data().userId); 
       }
     });
 
@@ -84,7 +84,7 @@ export default function Header() {
   }, [uniqueUserId]);
 
 
-  // 🔹 Placeholder animation
+  //  Placeholder animation
   useEffect(() => {
     const items = ["T-shirt", "Longsleeve", "Shorts", "Pants"];
     let index = 0;
@@ -103,7 +103,7 @@ export default function Header() {
     return () => clearInterval(interval);
   }, [inputValue]);
 
-  // 🔹 Fetch product names from backend (optional)
+  //  Fetch product names from backend (optional)
   useEffect(() => {
     const fetchProductNames = async () => {
       try {
@@ -118,7 +118,7 @@ export default function Header() {
     fetchProductNames();
   }, []);
 
-  // ✅ Search handler
+  // Search handler
   const handleSearchChange = (e) => {
     const text = e.target.value;
     setInputValue(text);
@@ -131,14 +131,14 @@ export default function Header() {
     }
   };
 
-  // ✅ Handle suggestion click
+  //  Handle suggestion click
   const handleSuggestionClick = (item) => {
     setInputValue("");
     setFilteredSuggestions([]);
     navigate(`/searchresults?query=${encodeURIComponent(item)}`);
   };
 
-  // ✅ Submit search manually
+  //  Submit search manually
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (inputValue.trim() !== "") {
@@ -148,7 +148,7 @@ export default function Header() {
     }
   };
 
-  // ✅ Outside click closes dropdowns & suggestions
+  //  Outside click closes dropdowns & suggestions
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -164,7 +164,7 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ Logout confirmation handlers
+  //  Logout confirmation handlers
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
     setOpenDropdown(null);
@@ -197,7 +197,7 @@ export default function Header() {
         </div>
 
         <div className="center-area">
-          {/* 🔍 Search bar */}
+          {/*  Search bar */}
           <form className="search-wrapper" ref={searchRef} onSubmit={handleSearchSubmit}>
             <div className="placeholder-wrapper">
               <input
@@ -218,7 +218,7 @@ export default function Header() {
               <FaSearch className="search-icon" />
             </button>
 
-            {/* 💡 Suggestions dropdown */}
+            {/*  Suggestions dropdown */}
             {filteredSuggestions.length > 0 && (
               <div className="suggestions-container">
                 {filteredSuggestions.map((item, index) => (
@@ -276,7 +276,7 @@ export default function Header() {
             >
               <FaUser className="icon" />
 
-              {/* 🔴 RED DOT ON THE HEADER ICON */}
+              {/*  RED DOT ON THE HEADER ICON */}
               {unreadCount > 0 && (
                 <span
                   className="notif-badge-dot"
@@ -288,7 +288,7 @@ export default function Header() {
                     height: "8px",
                     backgroundColor: "red",
                     borderRadius: "50%",
-                    border: "1px solid white", // optional, to make it more visible
+                    border: "1px solid white",
                   }}
                 ></span>
               )}
@@ -307,13 +307,13 @@ export default function Header() {
                   >
                     <FaBell className="dropdown-icon" /> Notifications
 
-                    {/* 🔴 RED DOT IN DROPDOWN */}
+                    {/*  RED DOT IN DROPDOWN */}
                     {unreadCount > 0 && (
                       <span
                         className="notif-badge-dot"
                         style={{
                           position: "absolute",
-                          top: "5px",
+                          top: "12px",
                           right: "5px",
                           width: "8px",
                           height: "8px",
@@ -335,7 +335,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ✅ Logout Modal */}
+      {/* Logout Modal */}
       {showLogoutModal && (
         <div className="modal-overlay">
           <div className="logout-modal">
@@ -352,7 +352,6 @@ export default function Header() {
         </div>
       )}
 
-      {/* ---------- CSS ---------- */}
       <style>{`
         .header {
           display: flex;
@@ -530,7 +529,7 @@ export default function Header() {
         }
         .icon:hover + .tooltip { visibility: visible; opacity: 1; }
 
-        /* ✅ Logout Modal */
+        /*  Logout Modal */
         .modal-overlay {
           position: fixed;
           font-family: Arial, sans-serif;
@@ -588,7 +587,7 @@ export default function Header() {
         }
         .no-btn:hover { background-color: #e0e0e0; }
 
-   @media (max-width: 1024px) {
+        @media (max-width: 1024px) {
           .header {
             flex-direction: column;
             align-items: center;
@@ -701,7 +700,7 @@ export default function Header() {
 
           .dropdown-menu {
             position: absolute;
-            top: 100%; /* directly below the parent */
+            top: 100%;
             left: 0;
             background: white;
             border: 1px solid #ddd;
@@ -726,11 +725,9 @@ export default function Header() {
 
           .profile-menu {
             right: 0;
-            left: auto; /* align profile dropdown to the right edge */
+            left: auto; 
           }
-
         }
-
       `}</style>
     </>
   );

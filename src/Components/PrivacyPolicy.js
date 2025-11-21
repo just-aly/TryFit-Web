@@ -48,7 +48,7 @@ export default function PrivacyAndPolicy() {
           <p>
             If you have questions about these Privacy Controls, please contact
             us at{" "}
-            <a href="mailto:tryfit@gmail.com">tryfit@gmail.com</a>.
+            <a href="mailto:tryfit@gmail.com">tryfitar@gmail.com</a>.
           </p>
         </section>
 

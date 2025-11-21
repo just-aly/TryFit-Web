@@ -1,23 +1,64 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { IoMdChatboxes } from "react-icons/io";
 
 export default function ChatSupport({ showChat, setShowChat }) {
+  const [visible, setVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   const toggleChat = () => setShowChat(!showChat);
+
+  useEffect(() => {
+    const isMobile = window.innerWidth <= 768;
+
+    let footerObserver = null;
+
+    if (isMobile) {
+      //  MOBILE — hide on scroll
+      const handleScroll = () => {
+        const currentScrollY = window.scrollY;
+
+        if (currentScrollY > lastScrollY && currentScrollY > 100) {
+          setVisible(false); // scrolling down → hide
+        } else {
+          setVisible(true); // scrolling up → show
+        }
+
+        setLastScrollY(currentScrollY);
+      };
+
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+
+    } else {
+      const footer = document.querySelector("footer");
+      if (!footer) return;
+
+      footerObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            setVisible(!entry.isIntersecting); 
+          });
+        },
+        { threshold: 0.2 }
+      );
+
+      footerObserver.observe(footer);
+
+      return () => footerObserver.disconnect();
+    }
+  }, [lastScrollY]);
 
   return (
     <>
-      {/* Chat Button */}
       <div
-        className={`chat-support ${showChat ? "active" : ""}`}
+        className={`chat-support ${showChat ? "active" : ""} ${visible ? "show" : "hide"}`}
         onClick={toggleChat}
       >
         <IoMdChatboxes className="icon" />
         <span className="label">Chat</span>
       </div>
 
-
       <style>{`
-        /* --- CHAT BUTTON --- */
         .chat-support {
           position: fixed;
           bottom: 20px;
@@ -35,7 +76,19 @@ export default function ChatSupport({ showChat, setShowChat }) {
           box-shadow: 0 6px 12px rgba(0,0,0,0.25);
           z-index: 1000;
           gap: 8px;
-          transition: all 0.3s ease;
+          transition: all 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .chat-support.show {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
+        .chat-support.hide {
+          opacity: 0;
+          transform: translateY(100px);
+          pointer-events: none;
         }
 
         .chat-support:hover {
@@ -70,8 +123,7 @@ export default function ChatSupport({ showChat, setShowChat }) {
           font-weight: 600;
           letter-spacing: 1px;
         }
-          
-        /* --- MOBILE VIEW: circular icon-only button --- */
+
         @media (max-width: 768px) {
           .chat-support {
             width: 60px;
@@ -87,12 +139,6 @@ export default function ChatSupport({ showChat, setShowChat }) {
 
           .chat-support .icon {
             font-size: 28px;
-          }
-
-          .chat-window {
-            right: 10px;
-            width: calc(100% - 20px);
-            height: 70%;
           }
         }
       `}</style>

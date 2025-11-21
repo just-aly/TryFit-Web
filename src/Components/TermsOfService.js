@@ -66,7 +66,7 @@ export default function TermsOfService() {
           <h2>6. Contact Us</h2>
           <p>
             If you have questions about these Terms, please contact us at{" "}
-            <a href="mailto:tryfit@gmail.com">tryfit@gmail.com</a>.
+            <a href="mailto:tryfit@gmail.com">tryfitar@gmail.com</a>.
           </p>
         </section>
 

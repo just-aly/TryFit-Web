@@ -334,7 +334,7 @@ export default function Recheckout() {
                 <div className="delivery-info" style={{ marginTop: "10px" }}>
                   {reorderItems.map((item) => (
                     <p key={item.productId} style={{ margin: "4px 0" }}>
-                      <strong>{item.productName}:</strong> Expected delivery {item.delivery || "3-5 Days"}🚚
+                      Expected delivery {item.delivery || "3-5 Days"}🚚
                     </p>
                   ))}
                 </div>
@@ -394,7 +394,6 @@ export default function Recheckout() {
         </div>
       </motion.section>
 
-      {/* Styles */}
       <style>{`
            .checkout-page {
           font-family: 'Poppins', sans-serif;
@@ -451,68 +450,72 @@ export default function Recheckout() {
           border-radius: 8px;
         }
 
-        /* ------------------------------
-   CONFIRMATION MODAL
------------------------------- */
-.modal-overlay {
-  position: fixed;
-  top: 0; 
-  left: 0; 
-  right: 0; 
-  bottom: 0;
-  background: rgba(0,0,0,0.45);
-  padding-bottom: 650px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5000;
-}
+        .delivery-info {
+          color: #228B22;
+        }
 
-.confirm-modal {
-  background: white;
-  padding: 22px 24px;
-  width: 92%;
-  max-width: 420px;
-  text-align: center;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-}
+      /* ---------------------
+        CONFIRMATION MODAL
+      ----------------------- */
+      .modal-overlay {
+        position: fixed;
+        top: 0; 
+        left: 0; 
+        right: 0; 
+        bottom: 0;
+        background: rgba(0,0,0,0.45);
+        padding-bottom: 650px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5000;
+      }
 
-.confirm-modal h3 {
-  margin: 0 0 8px;
-  font-size: 1.1rem;
-}
+      .confirm-modal {
+        background: white;
+        padding: 22px 24px;
+        width: 92%;
+        max-width: 420px;
+        text-align: center;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      }
 
-.confirm-modal p {
-  margin: 0 0 16px;
-  color: #444;
-}
+      .confirm-modal h3 {
+        margin: 0 0 8px;
+        font-size: 1.1rem;
+      }
 
-.confirm-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
+      .confirm-modal p {
+        margin: 0 0 16px;
+        color: #444;
+      }
 
-.btn {
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-}
+      .confirm-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
 
-.btn.cancel {
-  background: #f1f1f1;
-  color: #333;
-  border: 1px solid #6c56ef;
-}
+      .btn {
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+      }
 
-.btn.confirm {
-  background: #6c56ef;
-  color: white;
-}
-	
+      .btn.cancel {
+        background: #f1f1f1;
+        color: #333;
+        border: 1px solid #6c56ef;
+      }
+
+      .btn.confirm {
+        background: #6c56ef;
+        color: white;
+      }
+        
   .success-overlay {
           position: fixed;
           top: 0; 

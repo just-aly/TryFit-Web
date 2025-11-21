@@ -15,14 +15,10 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [animateExit, setAnimateExit] = useState(false);
 
-  // ✅ Popup state (for errors only)
+  //  Popup state (for errors only)
   const [popup, setPopup] = useState({ type: "", title: "", message: "" });
   const [showPopupBox, setShowPopupBox] = useState(false);
-
-  // ✅ Success overlay state
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
-
-  // ✅ Popup functions
   const showPopup = (type, title, message) => {
     setPopup({ type, title, message });
     setShowPopupBox(true);
@@ -39,7 +35,7 @@ export default function SignUpPage() {
     setTimeout(() => setPopup({ type: "", title: "", message: "" }), 400);
   };
 
-  // ✅ Sign Up Logic
+  //  Sign Up Logic
   const handleSignUp = async (e) => {
     e.preventDefault();
 
@@ -48,7 +44,7 @@ export default function SignUpPage() {
       return;
     }
 
-    // ✅ Password validation: at least 6 chars, 1 number, 1 special char
+    //  Password validation: at least 6 chars, 1 number, 1 special char
     const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{6,}$/;
     if (!passwordRegex.test(password)) {
       showPopup(
@@ -88,7 +84,7 @@ export default function SignUpPage() {
         createdAt: serverTimestamp(),
       });
 
-      // ✅ Show success overlay instead of popup
+      //  Show success overlay instead of popup
       setShowSuccessOverlay(true);
       setTimeout(() => navigate("/landing"), 3000);
 
@@ -379,7 +375,7 @@ export default function SignUpPage() {
           text-decoration: underline;
         }
 
-        /* ✅ Error Popup Notification Styles */
+        /*  Error Popup Notification Styles */
         .popup-container {
           position: fixed;
           top: 20px;
@@ -424,7 +420,6 @@ export default function SignUpPage() {
 
         .close-btn:hover { color: #000; }
 
-        /* ✅ Full-screen success overlay */
         .success-overlay {
           position: fixed;
           top: 0;

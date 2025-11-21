@@ -8,10 +8,10 @@ const auth = getAuth();
 export default function Notification() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState(null); // custom userId like "U0056"
+  const [userId, setUserId] = useState(null); 
 
   useEffect(() => {
-    // 🔍 Get the currently logged-in user's custom userId
+    // Get the currently logged-in user's custom userId
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -21,7 +21,7 @@ export default function Notification() {
 
           if (!userSnap.empty) {
             const userData = userSnap.docs[0].data();
-            setUserId(userData.userId); // set custom userId (e.g. "U0056")
+            setUserId(userData.userId); 
           } else {
             console.warn("⚠️ No user found in 'users' collection for this account.");
           }
@@ -37,7 +37,7 @@ export default function Notification() {
     return () => unsubscribe();
   }, []);
 
-  // 🧩 Fetch notifications from Firestore after getting userId
+  //  Fetch notifications from Firestore after getting userId
   useEffect(() => {
     if (!userId) return;
 
@@ -54,10 +54,10 @@ export default function Notification() {
 
         setNotifications(notifData);
 
-        // ✅ Mark all notifications as read
+        //  Mark all notifications as read
         notifSnap.docs.forEach(async (docSnap) => {
           const notifDocRef = doc(db, "notifications", docSnap.id);
-          if (!docSnap.data().read) { // only update if not already read
+          if (!docSnap.data().read) { 
             await updateDoc(notifDocRef, { read: true });
           }
         });
@@ -84,11 +84,11 @@ export default function Notification() {
 
       const deletePromises = notifSnap.docs.map((docSnap) => {
       const notifDocRef = doc(db, "notifications", docSnap.id);
-      return deleteDoc(notifDocRef); // actually deletes the document
+      return deleteDoc(notifDocRef); 
     });
 
     await Promise.all(deletePromises);
-    setNotifications([]);  // Update state immediately
+    setNotifications([]);  
     } catch (error) {
       console.error("🔥 Error clearing notifications:", error);
     }
@@ -192,7 +192,7 @@ export default function Notification() {
         .header-line {
           flex: none;
           height: 20px;
-          width: 65%;
+          width: 100%;
           background: #6c56ef;
           box-shadow: 0 2px 6px rgba(108, 86, 239, 0.3);
         }
