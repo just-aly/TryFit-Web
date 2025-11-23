@@ -10,9 +10,11 @@ import {
   doc,
   getDoc,
   serverTimestamp,
+  deleteDoc,
+  getDocs, 
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { FaPaperPlane } from "react-icons/fa";
+import { FaPaperPlane, FaTrash } from "react-icons/fa"; 
 
 const db = getFirestore();
 const auth = getAuth();
@@ -20,6 +22,9 @@ const auth = getAuth();
 export default function ChatComponent({ onClose }) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false); 
+  const [customUserId, setCustomUserId] = useState(null);
+
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -31,11 +36,12 @@ export default function ChatComponent({ onClose }) {
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) return;
 
-      const customUserId = userDocSnap.data().userId;
+      const uid = userDocSnap.data().userId;
+      setCustomUserId(uid);
 
       const q = query(
         collection(db, "chatMessages"),
-        where("userId", "==", customUserId),
+        where("userId", "==", uid),
         orderBy("timestamp", "asc")
       );
 
@@ -63,7 +69,7 @@ export default function ChatComponent({ onClose }) {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (message.trim() === "") return;
+    if (message.trim() === "" || !customUserId) return;
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) return;
 
@@ -72,7 +78,6 @@ export default function ChatComponent({ onClose }) {
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) return;
 
-      const customUserId = userDocSnap.data().userId;
       const username = userDocSnap.data().username || "Anonymous";
       const messageId = `MS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -124,12 +129,42 @@ export default function ChatComponent({ onClose }) {
 
   let lastTimestamp = 0;
 
+  // DELETE ALL MESSAGES FUNCTION
+  const deleteAllMessages = async () => {
+    if (!customUserId) return;
+    try {
+      const q = query(
+        collection(db, "chatMessages"),
+        where("userId", "==", customUserId)
+      );
+      const snapshot = await getDocs(q);
+      const batchDeletes = snapshot.docs.map((docSnap) =>
+        deleteDoc(doc(db, "chatMessages", docSnap.id))
+      );
+      await Promise.all(batchDeletes);
+      setShowDeleteModal(false);
+    } catch (err) {
+      console.error("Error deleting messages:", err);
+    }
+  };
+
   return (
     <div style={styles.chatContainer} className="chatContainer">
       {/* Header */}
       <div style={styles.header}>
         <h4 style={{ margin: 0, color: "white" }}>Chat Support</h4>
-        <button onClick={onClose} style={styles.closeBtn}>✕</button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            style={styles.deleteBtn}
+            title="Delete all messages"
+          >
+            <FaTrash />
+          </button>
+          <button onClick={onClose} style={styles.closeBtn}>
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -150,8 +185,7 @@ export default function ChatComponent({ onClose }) {
                 className="messageWrapper"
                 style={{
                   ...styles.messageWrapper,
-                  alignItems:
-                    msg.sender === "user" ? "flex-end" : "flex-start",
+                  alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
                 }}
               >
                 <div
@@ -170,8 +204,7 @@ export default function ChatComponent({ onClose }) {
                 <div
                   className="timestamp"
                   style={{
-                    textAlign:
-                      msg.sender === "user" ? "right" : "left",
+                    textAlign: msg.sender === "user" ? "right" : "left",
                   }}
                 >
                   {formatDate(msg.timestamp)} • {formatTime(msg.timestamp)}
@@ -201,7 +234,6 @@ export default function ChatComponent({ onClose }) {
         </button>
       </div>
 
-      {/* Timestamp hover effect + MOBILE RESPONSIVENESS */}
       <style>
         {`
           .messageWrapper {
@@ -224,7 +256,6 @@ export default function ChatComponent({ onClose }) {
             transform: translateY(3px);
           }
 
-          /* ✅ MOBILE RESPONSIVE STYLES */
           @media (max-width: 768px) {
             .chatContainer {
               width: 100% !important;
@@ -263,6 +294,26 @@ export default function ChatComponent({ onClose }) {
           }
         `}
       </style>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteModal && (
+        <div style={modalStyles.overlay}>
+          <div style={modalStyles.modal}>
+            <h3>Are you sure you want to delete all messages?</h3>
+            <div style={modalStyles.buttons}>
+              <button style={modalStyles.yesBtn} onClick={deleteAllMessages}>
+                Yes
+              </button>
+              <button
+                style={modalStyles.noBtn}
+                onClick={() => setShowDeleteModal(false)}
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -298,6 +349,13 @@ const styles = {
     background: "transparent",
     color: "white",
     fontSize: "1.3rem",
+    border: "none",
+    cursor: "pointer",
+  },
+  deleteBtn: {
+    background: "transparent",
+    color: "white",
+    fontSize: "1.2rem",
     border: "none",
     cursor: "pointer",
   },
@@ -362,5 +420,51 @@ const styles = {
     fontWeight: "600",
     fontSize: "0.9rem",
     transition: "background 0.2s ease",
+  },
+};
+
+const modalStyles = {
+  overlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(0,0,0,0.4)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2000,
+  },
+  modal: {
+    background: "white",
+    padding: "30px 40px",
+    borderRadius: "10px",
+    textAlign: "center",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+    maxWidth: "90%",
+    width: "400px",
+  },
+  buttons: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "20px",
+    marginTop: "20px",
+  },
+  yesBtn: {
+    padding: "10px 25px",
+    background: "#a166ff",
+    color: "white",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+  },
+  noBtn: {
+    padding: "10px 25px",
+    background: "#f1f1f1",
+    color: "#333",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
   },
 };

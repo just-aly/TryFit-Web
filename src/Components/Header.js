@@ -538,7 +538,7 @@ export default function Header() {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 5000;
+          z-index: 9999;
         }
 
         .logout-modal {
@@ -549,6 +549,7 @@ export default function Header() {
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
           width: 420px;
           max-width: 90%;
+          margin-bottom: 600px;
         }
 
         .logout-modal h3 {

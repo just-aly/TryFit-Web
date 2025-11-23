@@ -4,7 +4,7 @@ import { db } from "../firebase";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/130x180.png?text=No+Image";
-const KNOWN_LABELS = ["t-shirt", "tshirt", "shirt", "longsleeve", "pants", "shorts"];
+const KNOWN_LABELS = ["tshirt", "t-shirt", "shirt", "longsleeve", "pants", "shorts"];
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -33,10 +33,62 @@ export default function SearchResults() {
           return;
         }
 
-        // Normalize for variations like "Tshirt" or "t shirt"
+        // Normalize variations like "T shirt", "t-shirt", etc.
         const normalizedQuery = query.replace(/[-\s]/g, "").replace(/s$/, "");
 
-        // Match product name or category using fuzzy similarity
+        // -----------------------------------------
+        // ⭐ PRIORITY FIX: EXACT CATEGORY MATCH FIRST
+        // -----------------------------------------
+        const normalizedKnown = KNOWN_LABELS.map((k) =>
+          k.toLowerCase().replace(/[-\s]/g, "")
+        );
+
+        const matchIndex = normalizedKnown.indexOf(normalizedQuery);
+
+        if (matchIndex !== -1) {
+          const matchedLabel = normalizedKnown[matchIndex];
+
+          // Show ONLY products whose category matches exactly
+          const exactCategoryProducts = allProducts.filter(
+            (p) =>
+              p.categorySub?.toLowerCase().replace(/[-\s]/g, "") === matchedLabel
+          );
+
+          if (exactCategoryProducts.length > 0) {
+            setResults(exactCategoryProducts);
+            setMessage("");
+            setDisplayTerm(queryParam);
+            return;
+          }
+        }
+        // -----------------------------------------
+
+
+        // Levenshtein distance for fuzzy comparison
+        const levenshteinDistance = (a, b) => {
+          const matrix = Array.from({ length: a.length + 1 }, () =>
+            Array(b.length + 1).fill(0)
+          );
+
+          for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+          for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+          for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+              matrix[i][j] =
+                a[i - 1] === b[j - 1]
+                  ? matrix[i - 1][j - 1]
+                  : Math.min(
+                      matrix[i - 1][j - 1] + 1,
+                      matrix[i][j - 1] + 1,
+                      matrix[i - 1][j] + 1
+                    );
+            }
+          }
+
+          return matrix[a.length][b.length];
+        };
+
         const filtered = allProducts.filter((p) => {
           const name = p.productName?.toLowerCase().replace(/[-\s]/g, "") || "";
           const category = p.categorySub?.toLowerCase().replace(/[-\s]/g, "") || "";
@@ -44,36 +96,18 @@ export default function SearchResults() {
 
           return (
             keywords.includes(normalizedQuery) ||
-            levenshteinDistance(normalizedQuery, name) <= 2 ||
-            levenshteinDistance(normalizedQuery, category) <= 2
+            levenshteinDistance(normalizedQuery, name) <= 1 ||   // tightened fuzzy
+            levenshteinDistance(normalizedQuery, category) <= 1
           );
         });
 
         if (filtered.length > 0) {
-          //  If user types only 1–3 letters, show partial match message
-          if (query.length <= 3) {
-            setMessage(`No exact results for "${query}". Search results.`);
-          } else {
-            setMessage("");
-          }
           setResults(filtered);
+          setMessage("");
           setDisplayTerm(queryParam);
         } else {
-          // Try to find similar known keywords (like "shirt" -> "t-shirt")
-          const similar = getClosestMatch(normalizedQuery, KNOWN_LABELS);
-          const related = allProducts.filter(
-            (p) =>
-              p.productName?.toLowerCase().includes(similar) ||
-              p.categorySub?.toLowerCase().includes(similar)
-          );
-
-          if (related.length > 0) {
-            setResults(related);
-            setMessage(`No exact results for "${queryParam}". Showing results related to "${similar}".`);
-          } else {
-            setResults([]);
-            setMessage(`No results found for "${queryParam}".`);
-          }
+          setResults([]);
+          setMessage(`No results found for "${queryParam}".`);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -82,45 +116,6 @@ export default function SearchResults() {
 
     fetchProducts();
   }, [queryParam]);
-
-  // 🔹 Levenshtein distance for fuzzy comparison
-  const levenshteinDistance = (a, b) => {
-    const matrix = Array.from({ length: a.length + 1 }, () =>
-      Array(b.length + 1).fill(0)
-    );
-
-    for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
-    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-
-    for (let i = 1; i <= a.length; i++) {
-      for (let j = 1; j <= b.length; j++) {
-        matrix[i][j] =
-          a[i - 1] === b[j - 1]
-            ? matrix[i - 1][j - 1]
-            : Math.min(
-                matrix[i - 1][j - 1] + 1,
-                matrix[i][j - 1] + 1,
-                matrix[i - 1][j] + 1
-              );
-      }
-    }
-
-    return matrix[a.length][b.length];
-  };
-
-  // Find the closest known keyword
-  const getClosestMatch = (input, list) => {
-    let closest = list[0];
-    let minDist = levenshteinDistance(input, list[0]);
-    for (let i = 1; i < list.length; i++) {
-      const dist = levenshteinDistance(input, list[i]);
-      if (dist < minDist) {
-        closest = list[i];
-        minDist = dist;
-      }
-    }
-    return closest;
-  };
 
   return (
     <div style={styles.pageContainer}>
@@ -163,87 +158,87 @@ export default function SearchResults() {
 }
 
 const styles = {
-  pageContainer: { 
-    padding: "30px 50px", 
-    backgroundColor: "#f7f7f7", 
+  pageContainer: {
+    padding: "30px 50px",
+    backgroundColor: "#f7f7f7",
     minHeight: "100vh",
     fontStyle: "Poppins",
   },
 
-  header: { 
-    display: "flex", 
-    alignItems: "center", 
-    marginBottom: "20px" 
+  header: {
+    display: "flex",
+    alignItems: "center",
+    marginBottom: "20px",
   },
 
-  headerTitle: { 
-    fontSize: "20px", 
-    fontWeight: "bold" 
+  headerTitle: {
+    fontSize: "20px",
+    fontWeight: "bold",
   },
 
-  resultsContainer: { 
-    backgroundColor: "#fff", 
-    padding: "20px", 
-    borderRadius: "12px" 
-  },
-  
-  title: { 
-    fontSize: "18px", 
-    fontWeight: "600", 
-    marginBottom: "10px" 
+  resultsContainer: {
+    backgroundColor: "#fff",
+    padding: "20px",
+    borderRadius: "12px",
   },
 
-  message: { 
-    color: "#666", 
-    fontStyle: "italic", 
-    marginBottom: "20px" 
-  },
-  
-  grid: { 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", 
-    gap: "20px" 
+  title: {
+    fontSize: "18px",
+    fontWeight: "600",
+    marginBottom: "10px",
   },
 
-  card: { 
-    backgroundColor: "#fafafa", 
-    borderRadius: "10px", 
-    padding: "10px", 
-    cursor: "pointer" 
+  message: {
+    color: "#666",
+    fontStyle: "italic",
+    marginBottom: "20px",
   },
 
-  image: { 
-    width: "100%", 
-    height: "200px", 
-    objectFit: "cover", 
-    borderRadius: "8px" 
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+    gap: "20px",
   },
 
-  name: { 
-    fontSize: "14px", 
-    fontWeight: "bold", 
-    marginTop: "10px" 
+  card: {
+    backgroundColor: "#fafafa",
+    borderRadius: "10px",
+    padding: "10px",
+    cursor: "pointer",
   },
 
-  price: { 
-    color: "#9747FF", 
-    fontWeight: "600", 
-    marginTop: "4px" 
+  image: {
+    width: "100%",
+    height: "200px",
+    objectFit: "cover",
+    borderRadius: "8px",
   },
 
-  meta: { 
-    fontSize: "12px", 
-    color: "#555" 
+  name: {
+    fontSize: "14px",
+    fontWeight: "bold",
+    marginTop: "10px",
   },
-  
-  delivery: { 
+
+  price: {
+    color: "#9747FF",
+    fontWeight: "600",
+    marginTop: "4px",
+  },
+
+  meta: {
     fontSize: "12px",
-    color: "green" 
+    color: "#555",
   },
 
-  noResults: { 
-    textAlign: "center", 
-    color: "#555", 
-    marginTop: "50px" 
+  delivery: {
+    fontSize: "12px",
+    color: "green",
+  },
+
+  noResults: {
+    textAlign: "center",
+    color: "#555",
+    marginTop: "50px",
   },
 };

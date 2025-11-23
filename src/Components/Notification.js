@@ -10,6 +10,8 @@ export default function Notification() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null); 
 
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
+
   useEffect(() => {
     // Get the currently logged-in user's custom userId
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -37,7 +39,7 @@ export default function Notification() {
     return () => unsubscribe();
   }, []);
 
-  //  Fetch notifications from Firestore after getting userId
+  // Fetch notifications from Firestore after getting userId
   useEffect(() => {
     if (!userId) return;
 
@@ -54,7 +56,7 @@ export default function Notification() {
 
         setNotifications(notifData);
 
-        //  Mark all notifications as read
+        // Mark all notifications as read
         notifSnap.docs.forEach(async (docSnap) => {
           const notifDocRef = doc(db, "notifications", docSnap.id);
           if (!docSnap.data().read) { 
@@ -72,25 +74,25 @@ export default function Notification() {
     fetchNotifications();
   }, [userId]);
 
-   const handleClearAll = async () => {
-    if (!userId) return;
-    const confirmClear = window.confirm("Are you sure you want to delete all notifications?");
-    if (!confirmClear) return;
-
+  // Clear all notifications
+  const confirmClearAll = async () => {
     try {
       const notifRef = collection(db, "notifications");
       const q = query(notifRef, where("userId", "==", userId));
       const notifSnap = await getDocs(q);
 
       const deletePromises = notifSnap.docs.map((docSnap) => {
-      const notifDocRef = doc(db, "notifications", docSnap.id);
-      return deleteDoc(notifDocRef); 
-    });
+        const notifDocRef = doc(db, "notifications", docSnap.id);
+        return deleteDoc(notifDocRef);
+      });
 
-    await Promise.all(deletePromises);
-    setNotifications([]);  
+      await Promise.all(deletePromises);
+      setNotifications([]);
+
     } catch (error) {
       console.error("🔥 Error clearing notifications:", error);
+    } finally {
+      setShowConfirmClear(false);
     }
   };
 
@@ -104,29 +106,29 @@ export default function Notification() {
         <div className="notif-header-inner">
           <div className="notif-title-row" style={{ justifyContent: "space-between", width: "100%" }}>
             <h1>Notifications</h1>
-            
           </div>
           <div className="header-line"></div>
         </div>
       </div>
   
       <div className="notif-box">
-         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "15px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "15px" }}>
           <button
-            onClick={handleClearAll}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#6c56ef",
-              color: "#fff",
-              cursor: "pointer",
-              fontWeight: "bold"
-            }}
-          >
-            Clear All
-          </button>
+          onClick={() => setShowConfirmClear(true)}
+          style={{
+            padding: "6px 12px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "#6c56ef",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Clear All
+        </button>
         </div>
+
         {notifications.length === 0 ? (
           <p style={{ textAlign: "center", color: "#666" }}>No notifications yet.</p>
         ) : (
@@ -150,6 +152,27 @@ export default function Notification() {
         )}  
       </div>
 
+      {/* Confirm Modal */}
+      {showConfirmClear && (
+        <div className="modal-overlay" onClick={() => setShowConfirmClear(false)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Clear All Notifications?</h3>
+            <p>This action cannot be undone.</p>
+
+            <div className="confirm-actions">
+              <button className="btn cancel" onClick={() => setShowConfirmClear(false)}>
+                Cancel
+              </button>
+
+              <button className="btn confirm" onClick={confirmClearAll}>
+                Yes, clear all
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styles */}
       <style>{`
         .notif-page {
           background: linear-gradient(to bottom, #f8f2ffff, #e7d6fcff);
@@ -231,9 +254,66 @@ export default function Notification() {
           color: #333;
           line-height: 1.4;
         }
+      
+        .modal-overlay {
+          position: fixed;
+          top: 0; 
+          left: 0; 
+          right: 0; 
+          bottom: 0;
+          background: rgba(0,0,0,0.45);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 5000;
+        }
 
-        
-        /* ---------- Mobile View ---------- */
+        .confirm-modal {
+          background: white;
+          padding: 22px 0px;
+          width: 92%;
+          max-width: 420px;
+          text-align: center;
+          border-radius: 12px;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+          margin-bottom: 650px;
+        }
+
+        .confirm-modal h3 {
+          margin: 0 0 8px;
+          font-size: 1.1rem;
+        }
+
+        .confirm-modal p {
+          margin: 0 0 16px;
+          color: #444;
+        }
+
+        .confirm-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+        }
+
+        .btn {
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: none;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .btn.cancel {
+          background: #f1f1f1;
+          color: #333;
+          border: 1px solid #6c56ef;
+        }
+
+        .btn.confirm {
+          background: #6c56ef;
+          color: white;
+        }
+
         @media (max-width: 480px) {
           .notif-page {
             padding: 120px 0 60px;
@@ -276,6 +356,10 @@ export default function Notification() {
           .notif-text {
             font-size: 0.85rem;
           }
+
+        .confirm-modal {
+          margin-bottom: 580px;
+        }
         }
       `}</style>
     </div>

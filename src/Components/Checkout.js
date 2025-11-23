@@ -257,7 +257,7 @@ export default function Checkout() {
       setTimeout(() => {
         setShowSuccessAnim(false);
         navigate("/myorders", { replace: true });
-      }, 2200); // animation duration + buffer
+      }, 2200); 
 
     } catch (err) {
       console.error("Error placing order:", err);
@@ -845,6 +845,12 @@ export default function Checkout() {
   justify-content: space-between;
   align-items: center;
 }
+
+.order-total span {
+  color: #8f7aec;
+  font-weight: bold;
+}
+
    @media (max-width: 600px) {
         .checkout-page {
           padding: 130px 10px 80px; 

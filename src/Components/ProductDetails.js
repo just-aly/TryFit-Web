@@ -42,7 +42,7 @@ export default function ProductDetails() {
   }, [productId]);
 
   useEffect(() => {
-    if (!product?.productID) return; // wait until product is loaded
+    if (!product?.productID) return;
     const fetchReviews = async () => {
       try {
         const q = query(
@@ -154,7 +154,7 @@ export default function ProductDetails() {
 
   const renderStars = (rating) => {
     const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.4 && rating % 1 <= 0.7; // adjust threshold
+    const hasHalfStar = rating % 1 >= 0.4 && rating % 1 <= 0.7; 
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
     return (
@@ -359,7 +359,6 @@ export default function ProductDetails() {
       )}
 
     
-     {/* ✅ Purple Check Success Modal with animation */}
         {cartSuccessModal && (
           <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
             <div className="modal-content animated" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>

@@ -753,11 +753,14 @@ export default function MyOrders() {
           justify-content: center;
           font-family: Arial, sans-serif;
           background: linear-gradient(to right, #e5dcff, #f3f0ff);
-          min-height: 100vh;
           padding-top: 160px;
           padding-bottom: 60px;
           overflow-x: hidden;
           margin: 0 auto;
+          width: 100%;
+          height: 100vh; 
+          overflow-y: auto;
+          justify-content: center;
         }
 
         .orders-container {
@@ -772,13 +775,24 @@ export default function MyOrders() {
           margin: 0 auto;
           box-sizing: border-box;
           flex-wrap: nowrap;
+          width: 100%;
+          height: 100%;
+          display: flex;
         }
 
         .sidebar {
           flex: 0 0 270px;
-          background: #f3f0ff;
+          background: #f3f0ff;          
           padding: 20px;
           box-sizing: border-box;
+          width: 250px;
+          border-right: 1px solid #ddd;
+          padding: 20px;
+          position: sticky;
+          top: 0;
+          height: auto;      /* Full height */
+          overflow-y: auto;   /* Scroll only if needed */
+          min-height: 100%;
         }
 
         .sidebar-title {
@@ -823,21 +837,35 @@ export default function MyOrders() {
           display: flex;
           flex-direction: column;
           background: #fff;
+          flex: 1;
+          overflow-y: auto; 
+          padding: 0px;
+          position: relative;
+           min-height: 100vh;
+           max-height: calc(100vh - 160px);
         }
 
         .section-header {
-          width: 90%;
+          width: 100%;
           padding: 20px 40px 15px;
           border-bottom: 1px solid #ccc;
           box-sizing: border-box;
           display: flex;
           align-items: center;
+          position: sticky;
+          top: 0;
+          background: white;
+          padding: 20px 0;
+          z-index: 100;
+          border-bottom: 1px solid #eee;
+          height: auto;
         }
 
         .section-header h2 {
           font-size: 1.4rem;
           margin: 0;
           margin-top: 20px;
+          margin-left: 20px;
           color: #222;
         }
 
@@ -1128,7 +1156,6 @@ export default function MyOrders() {
           .orders-page {
             padding-top: 120px !important; 
             padding-bottom: 40px;
-            overflow-x: hidden;
             background: linear-gradient(to right, #e5dcff, #f3f0ff);
           }
 
@@ -1165,7 +1192,6 @@ export default function MyOrders() {
             margin-top: 6px;
           }
 
-          @media (max-width: 480px) {
             .delivery-box {
               display: flex;
               flex-direction: column;
@@ -1201,7 +1227,7 @@ export default function MyOrders() {
             flex: 0 0 120px !important; 
             padding: 8px 6px;
             top: 100px; 
-            background: #f8f6ff;
+            background: #f3f0ff;
             border-right: 1px solid #ddd;
           }
 
@@ -1226,7 +1252,6 @@ export default function MyOrders() {
             flex: 1;
             background: #fff;
             padding: 0;
-            overflow-y: auto;
           }
 
           .section-header {
@@ -1331,6 +1356,7 @@ export default function MyOrders() {
             font-size: 0.8rem;
             padding: 6px 10px;
           }
+        }
       `}</style>
   </div>
    );

@@ -158,7 +158,7 @@ export default function Categories() {
 
         {/* Main Content */}
         <main className="categories-content">
-          <div className="section-header">
+          <div className="section-header sticky-header">
             <h2>
               {activeTab === "Latest"
                 ? "Shop the Latest"
@@ -198,7 +198,7 @@ export default function Categories() {
                   />
                 </div>
                 <div className="product-info">
-                  <h3>{item.name}</h3>
+                  <h3>{item.productName}</h3>
                   <p className="price">₱{item.price}</p>
                   <div className="meta">
                     <span>⭐ {item.rating}</span>
@@ -224,7 +224,7 @@ export default function Categories() {
           padding-top: 160px;
           padding-bottom: 60px;
           overflow-x: hidden;
-          overflow-y: auto;
+          overflow-y: visible; 
           margin: 0 auto;
           align-items: center;
         }
@@ -244,11 +244,21 @@ export default function Categories() {
         }
 
         /* Sidebar */
-        .sidebar {
+       .sidebar {
           flex: 0 0 270px;
           background: #f3f0ff;
           padding: 20px;
           box-sizing: border-box;
+          height: 100vh;
+          position: sticky;
+          top: 0;
+        }
+
+        .sticky-header {
+          position: sticky;
+          top: 0;
+          background: #fff;
+          z-index: 20;
         }
 
         .sidebar-title {
@@ -303,7 +313,8 @@ export default function Categories() {
           flex: 1;
           display: flex;
           flex-direction: column;
-          background: #fff;
+          overflow-y: auto;
+           max-height: calc(100vh - 1px);
         }
 
         /* Section Header */
@@ -425,113 +436,110 @@ export default function Categories() {
           color: #777;
           padding: 40px;
         }
+          
+@media (max-width: 480px) {
 
-    @media (max-width: 480px) {
-      .categories-container {
-        width: 100%;
-        max-width: 100%;
-        margin: 0 auto;
-        flex-direction: row;
-        align-items: stretch;
-        border: none;
-        box-shadow: none;
-        overflow: hidden;
-      }
+  .categories-container {
+    flex-direction: row; /* keep sidebar + content side by side */
+    width: 100%;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+  }
 
-      .sidebar {
-        flex: 0 0 140px !important; 
-        padding: 8px;
-        background: #f8f6ff;
-        border-right: 1px solid #ddd;
-      }
+  .sidebar {
+    flex: 0 0 110px; /* narrower but still visible */
+    padding: 8px;
+    background: #f8f6ff;
+    border-right: 1px solid #ddd;
+    height: auto;
+  }
 
-      .sidebar-title {
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-      }
+  .sidebar-title {
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+  }
 
-      .category-group {
-        margin-bottom: 12px;
-      }
+  .category-group h4 {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+  }
 
-      .categories-page {
-          padding-top: 120px !important; 
-      }
+  .category-group li {
+    font-size: 0.7rem;
+    padding: 4px 6px;
+  }
 
-      .category-group h4 {
-        font-size: 0.8rem;
-        margin-bottom: 4px;
-      }
+  .category-group li.active {
+    width: 90%;
+  }
 
-      .category-group li {
-        font-size: 0.8rem;
-        padding: 5px 6px;
-        margin-bottom: 3px;
-        border-radius: 4px;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        white-space: nowrap;
-      }
 
-      .categories-content {
-        flex: 1;
-        background: #fff;
-        padding: 0;
-        overflow-y: auto;
-      }
+  .categories-content {
+    flex: 1;
+    padding: 5px;
+    overflow-y: auto;
+  }
 
-      .section-header {
-        padding: 10px 12px;
-        border-bottom: 1px solid #6a5acd;
-      }
+  .section-header {
+    padding: 8px 10px;
+    border-bottom: 1px solid #6a5acd;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    height: auto;
+  }
 
-      .section-header h2 {
-        font-size: 1rem;
-      }
+  .section-header h2 {
+    font-size: 1rem;
+  }
 
-      .tabs {
-        gap: 8px;
-      }
+  .tabs .tab {
+    font-size: 0.7rem;
+    padding: 10px 5px;
+  }
 
-      .tab {
-        font-size: 0.8rem;
-        padding: 3px 6px;
-      }
+  /* PRODUCT GRID: keep 2 columns */
+  .content-wrapper {
+    padding: 0;
+    gap: 13px;
+    grid-template-columns: repeat(1, 1fr);
+  }
 
-      .content-wrapper {
-        padding: 10px;
-        gap: 10px;
-        grid-template-columns: 1fr; 
-      }
+  .product-card {
+    height: 260px; /* smaller than desktop but same layout */
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+  }
 
-      .product-card {
-        height: auto;
-        padding: 8px;
-      }
+  .image-placeholder {
+    height: 60%; /* scale proportionally */
+    width: 100%;
+  }
 
-      .product-info {
-        padding: 8px;
-      }
+  .product-info {
+    padding: 6px 0;
+  }
 
-      .product-info h3 {
-        font-size: 0.85rem;
-      }
+  .product-info h3 {
+    font-size: 0.85rem;
+  }
 
-      .price {
-        font-size: 0.85rem;
-      }
+  .price {
+    font-size: 0.8rem;
+  }
 
-      .meta,
-      .delivery {
-        font-size: 0.75rem;
-      }
+  .meta,
+  .delivery {
+    font-size: 0.7rem;
+  }
 
-      .categories-page {
-        padding-top: 100px;
-        padding-bottom: 30px;
-        overflow-x: hidden;
-      }
-    }
+  .categories-page {
+    padding-top: 110px;
+    padding-bottom: 40px;
+  }
+}
       `}</style>
     </div>
   );

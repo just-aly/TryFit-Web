@@ -1,52 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { IoMdChatboxes } from "react-icons/io";
 
 export default function ChatSupport({ showChat, setShowChat }) {
   const [visible, setVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
+  const scrollThreshold = 30; // minimum scroll to trigger hide/show
 
   const toggleChat = () => setShowChat(!showChat);
 
   useEffect(() => {
     const isMobile = window.innerWidth <= 768;
 
-    let footerObserver = null;
-
-    if (isMobile) {
-      //  MOBILE — hide on scroll
-      const handleScroll = () => {
-        const currentScrollY = window.scrollY;
-
-        if (currentScrollY > lastScrollY && currentScrollY > 100) {
-          setVisible(false); // scrolling down → hide
-        } else {
-          setVisible(true); // scrolling up → show
-        }
-
-        setLastScrollY(currentScrollY);
-      };
-
-      window.addEventListener("scroll", handleScroll);
-      return () => window.removeEventListener("scroll", handleScroll);
-
-    } else {
-      const footer = document.querySelector("footer");
-      if (!footer) return;
-
-      footerObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            setVisible(!entry.isIntersecting); 
-          });
-        },
-        { threshold: 0.2 }
-      );
-
-      footerObserver.observe(footer);
-
-      return () => footerObserver.disconnect();
+    if (!isMobile) {
+      setVisible(true); // desktop always visible
+      return;
     }
-  }, [lastScrollY]);
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDiff = currentScrollY - lastScrollY.current;
+
+      if (scrollDiff > scrollThreshold && currentScrollY > 100) {
+        setVisible(false); // scrolling down → hide
+      } else if (scrollDiff < -scrollThreshold) {
+        setVisible(true); // scrolling up → show
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <>

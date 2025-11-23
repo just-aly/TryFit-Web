@@ -1613,7 +1613,7 @@ async function handleDeleteAccount() {
 
         .save-btn {
           width: 100%;
-          font-size: 0.8rem;
+          font-size: 0.6rem;
           padding: 6px;
           height: 32px;
         }

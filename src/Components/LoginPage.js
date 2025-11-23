@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -15,22 +15,27 @@ export default function LoginPage() {
   const [animateExit, setAnimateExit] = useState(false);
 
   const [popup, setPopup] = useState({ type: "", title: "", message: "" });
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showPopupBox, setShowPopupBox] = useState(false);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
   const showPopup = (type, title, message) => {
     setPopup({ type, title, message });
-    setTimeout(() => setPopup({ type: "", title: "", message: "" }), 5000);
+    setShowPopupBox(true);
+    setTimeout(() => {
+      setShowPopupBox(false);
+      setTimeout(() => setPopup({ type: "", title: "", message: "" }), 400);
+    }, 3000);
   };
 
-  const closePopup = () => setPopup({ type: "", title: "", message: "" });
+  const closePopup = () => {
+    setShowPopupBox(false);
+    setTimeout(() => setPopup({ type: "", title: "", message: "" }), 400);
+  };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        navigate("/landing"); // redirect to landing page
-      }
+      if (user) navigate("/landing");
     });
-
     return unsubscribe;
   }, [navigate]);
 
@@ -59,9 +64,9 @@ export default function LoginPage() {
           return;
         }
 
-        // Show success message
-        setShowSuccessMessage(true);
-        setTimeout(() => navigate("/landing"), 3000);
+        // ✅ Show success overlay like SignupPage
+        setShowSuccessOverlay(true);
+        setTimeout(() => navigate("/landing"), 2000);
       }
     } catch (err) {
       let message = "Login Failed. Please try again.";
@@ -98,7 +103,8 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className={`login-container ${showSuccessMessage ? "blur-background" : ""}`}>
+      {/* Blur the background if login is successful */}
+      <div className={`login-container ${showSuccessOverlay ? "blur-background" : ""}`}>
         <motion.div
           className="left-panel"
           animate={animateExit ? { x: "100%" } : { x: 0 }}
@@ -144,7 +150,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <button type="submit" className="login-btn" disabled={isLoading}>
+              <button type="submit" className="login-btn" disabled={isLoading || showSuccessOverlay}>
                 {isLoading ? "Signing In..." : "Login"}
               </button>
             </form>
@@ -159,40 +165,28 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {isLoading && (
+      {/* Error Popup */}
+      {popup.type && showPopupBox && (
+        <div className={`popup-container popup-${popup.type}`}>
+          <button className="close-btn" onClick={closePopup}>×</button>
+          <h3>{popup.title}</h3>
+          <p>{popup.message}</p>
+        </div>
+      )}
+
+      {/* Full-screen Success Overlay */}
+      {showSuccessOverlay && (
+        <div className="success-overlay">
+          <div className="success-message">Login Successful!</div>
+        </div>
+      )}
+
+      {/* Loading Spinner */}
+      {isLoading && !showSuccessOverlay && (
         <div className="loading-overlay">
           <div className="spinner" />
         </div>
       )}
-
-      {/* 🟣 Error Popups */}
-      {popup.message && (
-        <div className="popup-overlay top">
-          <motion.div
-            className={`popup-box popup-${popup.type}`}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <button className="popup-close" onClick={closePopup}>
-              &times;
-            </button>
-            <h3>{popup.title}</h3>
-            <p>{popup.message}</p>
-          </motion.div>
-        </div>
-      )}
-
-    {showSuccessMessage && (
-      <motion.div
-        className="success-overlay"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-      >
-        <div className="success-text">Login Successful!</div>
-      </motion.div>
-    )}
 
       <style>{`
         .login-page {
@@ -209,6 +203,8 @@ export default function LoginPage() {
         .blur-background {
           filter: blur(4px);
           transition: filter 0.3s ease;
+          position: relative;
+          z-index: 1;
         }
 
         .login-container {
@@ -407,18 +403,41 @@ export default function LoginPage() {
         /* Success message overlay */
         .success-overlay {
           position: fixed;
-          top: 20px;          
-          left: 40%;         
-          transform: translateX(-50%);
-          z-index: 10000;
-          pointer-events: none;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start; 
+          padding-top: 20px;
+          background: rgba(255, 255, 255, 0.13); 
+          backdrop-filter: blur(8px);          
+          -webkit-backdrop-filter: blur(8px); 
+          z-index: 9999;
+          animation: fadeIn 0.4s ease;
+          pointer-events: auto;
+
         }
 
-        .success-text {
-          color: #7C4DFF;
-          font-size: 1.6rem;
+        .success-message {
+          background: transparent;         
+          padding: 16px 30px;
+          font-size: 1.2rem;
           font-weight: 600;
-          background: transparent;
+          color: #7C4DFF;
+          text-align: center;
+          border-radius: 12px;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
           
         @media (max-width: 900px) {
@@ -426,6 +445,8 @@ export default function LoginPage() {
             flex-direction: column;
             height: auto;
             border-radius: 16px;
+            position: relative;
+            z-index: 1;
           }
 
           .left-panel {
