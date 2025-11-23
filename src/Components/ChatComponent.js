@@ -1,20 +1,21 @@
-import React, { useEffect, useState, useRef } from "react";
+import { getAuth } from "firebase/auth";
 import {
-  getFirestore,
-  collection,
   addDoc,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
+  collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  getFirestore,
+  onSnapshot,
+  orderBy,
+  query,
   serverTimestamp,
-  deleteDoc,
-  getDocs, 
+  updateDoc,
+  where,
 } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { FaPaperPlane, FaTrash } from "react-icons/fa"; 
+import React, { useEffect, useRef, useState } from "react";
+import { FaPaperPlane, FaTrash } from "react-icons/fa";
 
 const db = getFirestore();
 const auth = getAuth();
@@ -22,10 +23,10 @@ const auth = getAuth();
 export default function ChatComponent({ onClose }) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [showDeleteModal, setShowDeleteModal] = useState(false); 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [customUserId, setCustomUserId] = useState(null);
-
   const messagesEndRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -65,8 +66,45 @@ export default function ChatComponent({ onClose }) {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!customUserId) return;
+
+    const markAdminMessagesAsRead = async () => {
+      try {
+        const q = query(
+          collection(db, "chatMessages"),
+          where("userId", "==", customUserId),
+          where("sender", "==", "admin"),
+          where("read", "==", false)
+        );
+
+        const snapshot = await getDocs(q);
+        snapshot.docs.forEach(async (docSnap) => {
+          await updateDoc(doc(db, "chatMessages", docSnap.id), { read: true });
+        });
+      } catch (err) {
+        console.error("Error marking admin messages as read:", err);
+      }
+    };
+
+    markAdminMessagesAsRead();
+  }, [customUserId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
 
   const sendMessage = async () => {
     if (message.trim() === "" || !customUserId) return;
@@ -88,6 +126,7 @@ export default function ChatComponent({ onClose }) {
         sender: "user",
         userId: customUserId,
         username,
+        read: false,
         timestamp: serverTimestamp(),
       });
 
@@ -125,11 +164,13 @@ export default function ChatComponent({ onClose }) {
     });
 
   const formatTime = (date) =>
-    new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    new Date(date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   let lastTimestamp = 0;
- 
-  // 🔥 UPDATED FUNCTION — closes modal AND chat window
+
   const deleteAllMessages = async () => {
     if (!customUserId) return;
     try {
@@ -143,17 +184,19 @@ export default function ChatComponent({ onClose }) {
       );
       await Promise.all(batchDeletes);
 
-      setShowDeleteModal(false); // Close modal
-      onClose(); // 🔥 Close chat support window
-
+      setShowDeleteModal(false);
+      onClose();
     } catch (err) {
       console.error("Error deleting messages:", err);
     }
   };
 
   return (
-    <div style={styles.chatContainer} className="chatContainer">
-    
+    <div
+      ref={containerRef}
+      style={styles.chatContainer}
+      className="chatContainer"
+    >
       <div style={styles.header}>
         <h4 style={{ margin: 0, color: "white" }}>Chat Support</h4>
         <div style={{ display: "flex", gap: "10px" }}>
@@ -169,7 +212,7 @@ export default function ChatComponent({ onClose }) {
           </button>
         </div>
       </div>
- 
+
       <div style={styles.messagesContainer} className="messagesContainer">
         {messages.map((msg, index) => {
           const currentTimestamp = new Date(msg.timestamp).getTime();
@@ -180,7 +223,9 @@ export default function ChatComponent({ onClose }) {
           return (
             <React.Fragment key={msg.id}>
               {showDate && (
-                <div style={styles.dateDivider}>{formatDate(msg.timestamp)}</div>
+                <div style={styles.dateDivider}>
+                  {formatDate(msg.timestamp)}
+                </div>
               )}
 
               <div
@@ -201,7 +246,7 @@ export default function ChatComponent({ onClose }) {
                 >
                   {msg.text}
                 </div>
- 
+
                 <div
                   className="timestamp"
                   style={{
@@ -216,7 +261,7 @@ export default function ChatComponent({ onClose }) {
         })}
         <div ref={messagesEndRef} />
       </div>
- 
+
       <div style={styles.inputArea} className="inputArea">
         <input
           type="text"
@@ -229,7 +274,11 @@ export default function ChatComponent({ onClose }) {
           onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
           className="input"
         />
-        <button onClick={sendMessage} style={styles.sendBtn} className="sendBtn">
+        <button
+          onClick={sendMessage}
+          style={styles.sendBtn}
+          className="sendBtn"
+        >
           <FaPaperPlane style={{ marginRight: "5px" }} /> Send
         </button>
       </div>
@@ -294,13 +343,12 @@ export default function ChatComponent({ onClose }) {
           }
         `}
       </style>
- 
+
       {showDeleteModal && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.modal}>
             <h3>Are you sure you want to delete all messages?</h3>
             <div style={modalStyles.buttons}>
-              
               <button style={modalStyles.yesBtn} onClick={deleteAllMessages}>
                 Yes
               </button>
@@ -311,7 +359,6 @@ export default function ChatComponent({ onClose }) {
               >
                 No
               </button>
-
             </div>
           </div>
         </div>

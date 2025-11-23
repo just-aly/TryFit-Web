@@ -1,8 +1,20 @@
 import React, { useEffect, useState, useRef } from "react";
 import { IoMdChatboxes } from "react-icons/io";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDoc,
+  doc,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getApp } from "firebase/app";
 
 export default function ChatSupport({ showChat, setShowChat }) {
   const [visible, setVisible] = useState(true);
+  const [hasUnreadAdmin, setHasUnreadAdmin] = useState(false); // red dot state
   const lastScrollY = useRef(0);
   const scrollThreshold = 30; // minimum scroll to trigger hide/show
 
@@ -12,7 +24,7 @@ export default function ChatSupport({ showChat, setShowChat }) {
     const isMobile = window.innerWidth <= 768;
 
     if (!isMobile) {
-      setVisible(true); // desktop always visible
+      setVisible(true);
       return;
     }
 
@@ -21,9 +33,9 @@ export default function ChatSupport({ showChat, setShowChat }) {
       const scrollDiff = currentScrollY - lastScrollY.current;
 
       if (scrollDiff > scrollThreshold && currentScrollY > 100) {
-        setVisible(false); // scrolling down → hide
+        setVisible(false);
       } else if (scrollDiff < -scrollThreshold) {
-        setVisible(true); // scrolling up → show
+        setVisible(true);
       }
 
       lastScrollY.current = currentScrollY;
@@ -33,13 +45,54 @@ export default function ChatSupport({ showChat, setShowChat }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // --- Firebase logic for unread admin messages ---
+  useEffect(() => {
+    const auth = getAuth(getApp());
+    const db = getFirestore(getApp());
+
+    const fetchUnreadAdminMessages = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        // fetch userId from users collection
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (!userDoc.exists()) return;
+
+        const customUserId = userDoc.data().userId; // <-- use this field
+
+        const chatCollection = collection(db, "chatMessages");
+
+        const q = query(
+          chatCollection,
+          where("userId", "==", customUserId),
+          where("sender", "==", "admin"),
+          where("read", "==", false)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          setHasUnreadAdmin(!snapshot.empty);
+        });
+
+        return unsubscribe;
+      } catch (error) {
+        console.error("Error fetching unread admin messages:", error);
+      }
+    };
+
+    fetchUnreadAdminMessages();
+  }, []);
+
   return (
     <>
       <div
-        className={`chat-support ${showChat ? "active" : ""} ${visible ? "show" : "hide"}`}
+        className={`chat-support ${showChat ? "active" : ""} ${
+          visible ? "show" : "hide"
+        }`}
         onClick={toggleChat}
       >
         <IoMdChatboxes className="icon" />
+        {hasUnreadAdmin && <span className="red-dot" />}
         <span className="label">Chat</span>
       </div>
 
@@ -62,6 +115,17 @@ export default function ChatSupport({ showChat, setShowChat }) {
           z-index: 1000;
           gap: 8px;
           transition: all 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .red-dot {
+          position: absolute;
+          top: 10px;
+          left: 15px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background-color: red;
+          z-index: 1001;
         }
 
         .chat-support.show {

@@ -1,4 +1,4 @@
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import {
   addDoc,
   collection,
@@ -11,21 +11,21 @@ import {
   query,
   setDoc,
   updateDoc,
-  where
-} from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+  where,
+} from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const fetchProductDetails = async (productId) => {
   try {
-    const productRef = doc(db, 'products', productId);
+    const productRef = doc(db, "products", productId);
     const productSnap = await getDoc(productRef);
     if (productSnap.exists()) {
       return productSnap.data();
     }
     return null;
   } catch (err) {
-    console.error('Error fetching product:', err);
+    console.error("Error fetching product:", err);
     return null;
   }
 };
@@ -45,8 +45,8 @@ export default function MyOrders() {
 
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [customUserId, setCustomUserId] = useState(null);
-  const [activeTab, setActiveTab] = useState('Orders');
-  const tabs = ['Orders', 'ToShip', 'ToReceive', 'Completed', 'Cancelled'];
+  const [activeTab, setActiveTab] = useState("Orders");
+  const tabs = ["Orders", "ToShip", "ToReceive", "Completed", "Cancelled"];
   const location = useLocation();
   const navigate = useNavigate();
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
@@ -70,46 +70,49 @@ export default function MyOrders() {
 
   useEffect(() => {
     if (location.state?.fromCheckout && location.state?.orderId) {
-      showPopup(`Your order ${location.state?.orderId} has been placed successfully!`, "success");
- 
+      showPopup(
+        `Your order ${location.state?.orderId} has been placed successfully!`,
+        "success"
+      );
+
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate]);
- 
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user || null);
     });
     return unsubscribe;
   }, []);
- 
+
   useEffect(() => {
     const fetchCustomUserId = async () => {
       if (!firebaseUser) return;
 
       try {
-        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userRef = doc(db, "users", firebaseUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const data = userSnap.data();
           if (data.userId) setCustomUserId(data.userId);
         }
       } catch (err) {
-        console.error('Error fetching custom userId:', err);
+        console.error("Error fetching custom userId:", err);
       }
     };
     fetchCustomUserId();
   }, [firebaseUser]);
- 
+
   useEffect(() => {
     if (!customUserId) return;
 
     const collections = [
-      { name: 'orders', key: 'Orders' },
-      { name: 'toShip', key: 'ToShip' },
-      { name: 'toReceive', key: 'ToReceive' },
-      { name: 'completed', key: 'Completed' },
-      { name: 'cancelled', key: 'Cancelled' },
+      { name: "orders", key: "Orders" },
+      { name: "toShip", key: "ToShip" },
+      { name: "toReceive", key: "ToReceive" },
+      { name: "completed", key: "Completed" },
+      { name: "cancelled", key: "Cancelled" },
     ];
 
     const unsubscribes = collections.map(({ name, key }) =>
@@ -117,27 +120,27 @@ export default function MyOrders() {
         const filteredOrders = snapshot.docs
           .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
           .filter((order) => order.userId === customUserId);
- 
+
         const enrichedOrders = await Promise.all(
           filteredOrders.map(async (order) => {
             const itemsWithDetails = await Promise.all(
               order.items.map(async (item) => {
                 const productData = await fetchProductDetails(item.productId);
-                return { ...item, ...productData }; 
+                return { ...item, ...productData };
               })
             );
-            return { ...order, items: itemsWithDetails }; 
+            return { ...order, items: itemsWithDetails };
           })
         );
 
-        setOrdersWithProducts(prev => ({
+        setOrdersWithProducts((prev) => ({
           ...prev,
-          [key]: enrichedOrders
+          [key]: enrichedOrders,
         }));
       })
     );
 
-    return () => unsubscribes.forEach(unsub => unsub());
+    return () => unsubscribes.forEach((unsub) => unsub());
   }, [customUserId]);
 
   const handleCancelOrder = (order) => {
@@ -145,7 +148,6 @@ export default function MyOrders() {
     setConfirmCancelModalOpen(true);
   };
 
-  //Cancelled Button
   const confirmCancelOrder = async () => {
     if (!orderToCancel) return;
     try {
@@ -158,7 +160,7 @@ export default function MyOrders() {
         productID: order.productID,
         deliveryFee: order.deliveryFee,
         delivery: order.delivery,
-        items: order.items.map(item => ({
+        items: order.items.map((item) => ({
           imageUrl: item.imageUrl,
           productId: item.productId,
           productName: item.productName,
@@ -168,17 +170,17 @@ export default function MyOrders() {
         })),
         name: order.name,
         orderId: order.orderId,
-        status: 'Cancelled',
+        status: "Cancelled",
         total: order.total,
         userId: order.userId,
         cancelledAt: new Date(),
       };
 
-      const cancelledRef = doc(collection(db, 'cancelled'));
+      const cancelledRef = doc(collection(db, "cancelled"));
       await setDoc(cancelledRef, cancelledOrder);
 
       for (const item of order.items) {
-        const productRef = doc(db, 'products', item.productId);
+        const productRef = doc(db, "products", item.productId);
         const productSnap = await getDoc(productRef);
         if (!productSnap.exists()) continue;
 
@@ -187,15 +189,20 @@ export default function MyOrders() {
           ...productData.stock,
           [item.size]: (productData.stock?.[item.size] || 0) + item.quantity,
         };
-        const totalStock = Object.values(updatedStock).reduce((sum, val) => sum + val, 0);
+        const totalStock = Object.values(updatedStock).reduce(
+          (sum, val) => sum + val,
+          0
+        );
 
-        await setDoc(productRef, { ...productData, stock: updatedStock, totalStock }, { merge: true });
+        await setDoc(
+          productRef,
+          { ...productData, stock: updatedStock, totalStock },
+          { merge: true }
+        );
       }
 
-      const orderRef = doc(db, 'orders', order.id);
+      const orderRef = doc(db, "orders", order.id);
       await deleteDoc(orderRef);
-
-      
 
       const notificationsRef = collection(db, "notifications");
       await addDoc(notificationsRef, {
@@ -208,11 +215,11 @@ export default function MyOrders() {
         read: false,
       });
 
-      setActiveTab('Cancelled');
+      setActiveTab("Cancelled");
       setConfirmCancelModalOpen(false);
       showPopup("Order cancelled successfully and stock updated.", "success");
     } catch (err) {
-      console.error('Failed to cancel order:', err);
+      console.error("Failed to cancel order:", err);
       showPopup("Failed to cancel order.", "error");
       setConfirmCancelModalOpen(false);
     }
@@ -223,11 +230,10 @@ export default function MyOrders() {
     setConfirmCancelModalOpen(false);
   };
 
-  //Recieve Button
   const handleOrderReceived = async (order) => {
-    try { 
+    try {
       const completedOrder = {
-        toshipID: order.toshipID,         
+        toshipID: order.toshipID,
         toreceiveID: order.toreceiveID,
         productID: order.productID,
         completedID: `CP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -235,26 +241,26 @@ export default function MyOrders() {
         createdAt: order.createdAt,
         deliveryFee: order.deliveryFee,
         delivery: order.delivery,
-        items: order.items.map(item => ({
+        items: order.items.map((item) => ({
           imageUrl: item.imageUrl,
           productId: item.productId,
           productName: item.productName,
           quantity: item.quantity,
           size: item.size,
-          price: item.price,     
+          price: item.price,
         })),
         name: order.name,
         orderId: order.orderId,
         packedAt: order.packedAt,
         shippedAt: order.shippedAt,
-        receivedAt: new Date(), 
-        status: 'Completed',
+        receivedAt: new Date(),
+        status: "Completed",
         total: order.total,
         userId: order.userId,
       };
 
-      const completedRef = doc(collection(db, 'completed'));
-      await setDoc(completedRef, completedOrder); 
+      const completedRef = doc(collection(db, "completed"));
+      await setDoc(completedRef, completedOrder);
       for (const item of order.items) {
         const productRef = doc(db, "products", item.productId);
         const productSnap = await getDoc(productRef);
@@ -264,18 +270,13 @@ export default function MyOrders() {
           const currentSold = productData.sold || 0;
           const newSold = currentSold + item.quantity;
 
-          await setDoc(
-            productRef,
-            { sold: newSold },
-            { merge: true }
-          );
+          await setDoc(productRef, { sold: newSold }, { merge: true });
         }
       }
- 
-      const toReceiveRef = doc(db, 'toReceive', order.id);
+
+      const toReceiveRef = doc(db, "toReceive", order.id);
       await deleteDoc(toReceiveRef);
 
-      
       const notificationsRef = collection(db, "notifications");
 
       await addDoc(notificationsRef, {
@@ -287,18 +288,18 @@ export default function MyOrders() {
         timestamp: new Date(),
         read: false,
       });
- 
-      setActiveTab('Completed');
+
+      setActiveTab("Completed");
 
       showPopup("Order is confirm received", "success");
     } catch (err) {
-      console.error('Error marking order as received:', err);
+      console.error("Error marking order as received:", err);
       showPopup("Failed to mark order as received. Try again.", "error");
     }
   };
 
   const handleViewShippingDetails = async (order) => {
-    try { 
+    try {
       const itemsWithDelivery = await Promise.all(
         order.items.map(async (item) => {
           const productData = await fetchProductDetails(item.productId);
@@ -322,15 +323,15 @@ export default function MyOrders() {
   };
 
   const handleViewCancellationDetails = async (order) => {
-    try { 
+    try {
       setCancellationDetails({
         ...order,
-        name: order.name || 'N/A',
+        name: order.name || "N/A",
       });
 
       setCancellationModalOpen(true);
     } catch (err) {
-      console.error('Error fetching cancellation details:', err);
+      console.error("Error fetching cancellation details:", err);
       showPopup("Failed to fetch cancellation details.", "error");
     }
   };
@@ -339,47 +340,81 @@ export default function MyOrders() {
     setRateOrderDetails(order);
     setRateModalOpen(true);
   };
- 
+
   const renderOrders = () => {
     const orders = ordersWithProducts[activeTab] || [];
 
     if (!orders || orders.length === 0) {
       const emptyMessages = {
-        Orders: 'No orders yet.',
-        ToShip: 'No orders to ship.',
-        ToReceive: 'No orders to receive.',
-        Completed: 'No completed orders.',
-        Cancelled: 'No cancelled orders.',
+        Orders: "No orders yet.",
+        ToShip: "No orders to ship.",
+        ToReceive: "No orders to receive.",
+        Completed: "No completed orders.",
+        Cancelled: "No cancelled orders.",
       };
       return <p>{emptyMessages[activeTab]}</p>;
     }
 
     return orders.map((order) => (
-      
       <div key={order.id} className="order-card">
         <img
-            src={order.items?.[0]?.imageUrl || 'https://via.placeholder.com/120x120?text=No+Image'}
-            alt={order.items?.[0]?.name || 'Order Item'}
-            className="order-image"
-          />
+          src={
+            order.items?.[0]?.imageUrl ||
+            "https://via.placeholder.com/120x120?text=No+Image"
+          }
+          alt={order.items?.[0]?.name || "Order Item"}
+          className="order-image"
+        />
 
         <div className="order-info">
-           <h4>{order.items?.[0]?.productName || 'No Item Name'}</h4>
-            <p className="variant">{order.items?.[0]?.categorySub || 'N/A'}</p>
-            <p className="total">
-              Total {order.items?.[0]?.quantity || 1} item(s):{' '}
-              <span className="price">₱{order.total || '0'}</span>
-            </p>
+          <h4>{order.items?.[0]?.productName || "No Item Name"}</h4>
+          <p className="variant">{order.items?.[0]?.categorySub || "N/A"}</p>
+          <p className="total">
+            Total {order.items?.[0]?.quantity || 1} item(s):{" "}
+            <span className="price">₱{order.total || "0"}</span>
+          </p>
 
-          {activeTab === 'ToReceive' && (
+          {activeTab === "ToReceive" && (
             <div className="delivery-box">
-              <p>Expected delivery: {order.expectedDelivery || 'Today'}</p>
-              <p>Rider: {order.rider || 'Riguel Jameson Alleje'}</p>
+              <p>Expected delivery: {order.expectedDelivery || "Today"}</p>
+              <p>Rider: {order.rider || "Riguel Jameson Alleje"}</p>
             </div>
           )}
-          {activeTab === 'ToShip' && (
-              <div className="button-group" style={{ alignItems: 'center', gap: '10px' }}>
-                <p style={{ margin: 0, fontWeight: 'bold' }}>Order ID: {order.orderId}</p>
+          {activeTab === "ToShip" && (
+            <div
+              className="button-group"
+              style={{ alignItems: "center", gap: "10px" }}
+            >
+              <p style={{ margin: 0, fontWeight: "bold" }}>
+                Order ID: {order.orderId}
+              </p>
+              <button
+                className="copy-btn"
+                onClick={() => {
+                  navigator.clipboard.writeText(order.orderId);
+                  showPopup(`Order ID ${order.orderId} copied!`, "success");
+                }}
+              >
+                COPY
+              </button>
+              <button
+                className="view-btn"
+                onClick={() => handleViewShippingDetails(order)}
+              >
+                View Shipping Details
+              </button>
+            </div>
+          )}
+
+          <div className="order-footer">
+            {activeTab === "Orders" && (
+              <div
+                className="button-group"
+                style={{ alignItems: "center", gap: "10px" }}
+              >
+                <p style={{ margin: 0, fontWeight: "bold" }}>
+                  Order ID: {order.orderId}
+                </p>
                 <button
                   className="copy-btn"
                   onClick={() => {
@@ -389,33 +424,16 @@ export default function MyOrders() {
                 >
                   COPY
                 </button>
-                <button className="view-btn" onClick={() => handleViewShippingDetails(order)}>
-                  View Shipping Details
+                <button
+                  className="view-btn"
+                  onClick={() => handleCancelOrder(order)}
+                >
+                  Cancel
                 </button>
-
               </div>
             )}
 
-          <div className="order-footer">
-              {activeTab === 'Orders' && (
-                <div className="button-group" style={{ alignItems: 'center', gap: '10px' }}>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>Order ID: {order.orderId}</p>
-                  <button
-                    className="copy-btn"
-                    onClick={() => {
-                      navigator.clipboard.writeText(order.orderId);
-                      showPopup(`Order ID ${order.orderId} copied!`, "success");
-                    }}
-                  >
-                    COPY
-                  </button>
-                  <button className="view-btn" onClick={() => handleCancelOrder(order)}>
-                    Cancel
-                  </button>
-                </div>
-              )}
- 
-            {activeTab === 'ToReceive' && (
+            {activeTab === "ToReceive" && (
               <button
                 className="order-btn"
                 onClick={() => handleOrderReceived(order)}
@@ -424,42 +442,49 @@ export default function MyOrders() {
               </button>
             )}
 
-              {activeTab === 'Completed' && (
-                <div className="button-group">
-                  <button className="rate-btn" onClick={() => handleRateOrder(order)}>
-                    Rate
-                  </button>
+            {activeTab === "Completed" && (
+              <div className="button-group">
+                <button
+                  className="rate-btn"
+                  onClick={() => handleRateOrder(order)}
+                >
+                  Rate
+                </button>
 
-                  <button className="buy-again-btn"
-                    onClick={() => navigate('/recheckout', { state: { completedID: order.completedID } })} >
-                    Buy Again
-                  </button>
+                <button
+                  className="buy-again-btn"
+                  onClick={() =>
+                    navigate("/recheckout", {
+                      state: { completedID: order.completedID },
+                    })
+                  }
+                >
+                  Buy Again
+                </button>
+              </div>
+            )}
 
-                </div>
-              )}
+            {activeTab === "Cancelled" && (
+              <div className="button-group">
+                <button
+                  className="view-btn"
+                  onClick={() => handleViewCancellationDetails(order)}
+                >
+                  Cancellation Details
+                </button>
 
-                {activeTab === 'Cancelled' && (
-                  <div className="button-group">
-                    <button
-                      className="view-btn"
-                      onClick={() => handleViewCancellationDetails(order)}
-                    >
-                      Cancellation Details
-                    </button>
-
-                    <button
-                      className="buy-again-btn"
-                      onClick={() =>
-                        navigate('/recheckout', { state: { cancelledID: order.cancelledID } })
-                      }
-                    >
-                      Buy Again
-                    </button>
-
-                  
-                  </div>
-                )}
-
+                <button
+                  className="buy-again-btn"
+                  onClick={() =>
+                    navigate("/recheckout", {
+                      state: { cancelledID: order.cancelledID },
+                    })
+                  }
+                >
+                  Buy Again
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -469,14 +494,13 @@ export default function MyOrders() {
   return (
     <div className="orders-page">
       <div className="orders-container">
-        // Sidebar 
         <aside className="sidebar">
           <h3 className="sidebar-title">My Orders</h3>
           <ul className="sidebar-menu">
             {tabs.map((tab) => (
               <li
                 key={tab}
-                className={activeTab === tab ? 'active' : ''}
+                className={activeTab === tab ? "active" : ""}
                 onClick={() => setActiveTab(tab)}
               >
                 {tab}
@@ -485,7 +509,6 @@ export default function MyOrders() {
           </ul>
         </aside>
 
-        // Main Content 
         <main className="orders-content">
           <div className="section-header">
             <h2>{activeTab}</h2>
@@ -494,8 +517,8 @@ export default function MyOrders() {
         </main>
       </div>
 
-          {popup.visible && (
-       <div className={`popup ${popup.type}`}>
+      {popup.visible && (
+        <div className={`popup ${popup.type}`}>
           <div className="popup-icon">
             {popup.type === "success" && "✅"}
             {popup.type === "warning" && "⚠️"}
@@ -513,39 +536,61 @@ export default function MyOrders() {
             <p className="popup-message">{popup.message}</p>
           </div>
 
-          <button className="popup-close" onClick={closePopup}>×</button>
+          <button className="popup-close" onClick={closePopup}>
+            ×
+          </button>
         </div>
       )}
 
-      //Shipping
       {shippingModalOpen && shippingDetails && (
-        <div className="modal-overlay" onClick={() => setShippingModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShippingModalOpen(false)}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Shipping Details:</h2>
 
-            <p><strong>User:</strong> {shippingDetails.name || 'N/A'}</p>
-            <p><strong>Order ID:</strong> {shippingDetails.orderId}</p><br></br>
-            
-          
+            <p>
+              <strong>User:</strong> {shippingDetails.name || "N/A"}
+            </p>
+            <p>
+              <strong>Order ID:</strong> {shippingDetails.orderId}
+            </p>
+            <br></br>
+
             <h3>Items Info.</h3>
             {shippingDetails.items.map((item, idx) => (
               <div key={idx} className="modal-item">
-                <p><strong>Status:</strong> {shippingDetails.status}</p>
-                <p><strong>Product:</strong> {item.productName}</p>
-                <p><strong>Quantity:</strong> {item.quantity}</p>
-                <p><strong>Size:</strong> {item.size}</p>
-                <p><strong>Expected Delivery:</strong> {item.expectedDelivery}</p>
+                <p>
+                  <strong>Status:</strong> {shippingDetails.status}
+                </p>
+                <p>
+                  <strong>Product:</strong> {item.productName}
+                </p>
+                <p>
+                  <strong>Quantity:</strong> {item.quantity}
+                </p>
+                <p>
+                  <strong>Size:</strong> {item.size}
+                </p>
+                <p>
+                  <strong>Expected Delivery:</strong> {item.expectedDelivery}
+                </p>
                 <p>Status: Waiting to be shipped...</p>
                 <hr />
               </div>
             ))}
 
-            <button className="order-btn" onClick={() => setShippingModalOpen(false)}>Close</button>
+            <button
+              className="order-btn"
+              onClick={() => setShippingModalOpen(false)}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
 
-    //Cancel
       {confirmCancelModalOpen && orderToCancel && (
         <div className="modal-overlay" onClick={cancelCancelOrder}>
           <div
@@ -554,18 +599,29 @@ export default function MyOrders() {
           >
             <h2>Confirm Cancellation</h2>
             <p>Are you sure you want to cancel this item?</p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '20px' }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "15px",
+                marginTop: "20px",
+              }}
+            >
               <button
                 className="order-btn"
                 onClick={cancelCancelOrder}
-                style={{ background: '#ffffffff', borderColor: '#6a5acd', color: '#6a5acd' }}
+                style={{
+                  background: "#ffffffff",
+                  borderColor: "#6a5acd",
+                  color: "#6a5acd",
+                }}
               >
                 No
               </button>
               <button
                 className="order-btn"
                 onClick={confirmCancelOrder}
-                style={{ background: '#6a5acd', color: '#ffffffff' }}
+                style={{ background: "#6a5acd", color: "#ffffffff" }}
               >
                 Yes, Cancel Order
               </button>
@@ -574,67 +630,106 @@ export default function MyOrders() {
         </div>
       )}
 
-      //Cancel Details
       {cancellationModalOpen && cancellationDetails && (
-        <div className="modal-overlay" onClick={() => setCancellationModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setCancellationModalOpen(false)}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Cancellation Details</h2>
-            <p><strong>Order ID:</strong> {cancellationDetails.orderId}</p>
-            <p><strong>Status:</strong> {cancellationDetails.status}</p>
-            <p><strong>User:</strong> {cancellationDetails.name}</p>
-            <p><strong>Cancelled At:</strong> {cancellationDetails.cancelledAt?.toDate ? cancellationDetails.cancelledAt.toDate().toLocaleString() : cancellationDetails.cancelledAt}</p>
-            
+            <p>
+              <strong>Order ID:</strong> {cancellationDetails.orderId}
+            </p>
+            <p>
+              <strong>Status:</strong> {cancellationDetails.status}
+            </p>
+            <p>
+              <strong>User:</strong> {cancellationDetails.name}
+            </p>
+            <p>
+              <strong>Cancelled At:</strong>{" "}
+              {cancellationDetails.cancelledAt?.toDate
+                ? cancellationDetails.cancelledAt.toDate().toLocaleString()
+                : cancellationDetails.cancelledAt}
+            </p>
+
             <h3>Items</h3>
             {cancellationDetails.items.map((item, idx) => (
               <div key={idx} className="modal-item">
-                <p><strong>Product:</strong> {item.productName}</p>
-                <p><strong>Quantity:</strong> {item.quantity}</p>
-                <p><strong>Size:</strong> {item.size}</p>
-                <p><strong>Price:</strong> ₱{item.price}</p>
+                <p>
+                  <strong>Product:</strong> {item.productName}
+                </p>
+                <p>
+                  <strong>Quantity:</strong> {item.quantity}
+                </p>
+                <p>
+                  <strong>Size:</strong> {item.size}
+                </p>
+                <p>
+                  <strong>Price:</strong> ₱{item.price}
+                </p>
                 <hr />
               </div>
             ))}
 
-            <p><strong>Total:</strong> ₱{cancellationDetails.total}</p>
+            <p>
+              <strong>Total:</strong> ₱{cancellationDetails.total}
+            </p>
 
-            <button className="order-btn" onClick={() => setCancellationModalOpen(false)}>Close</button>
+            <button
+              className="order-btn"
+              onClick={() => setCancellationModalOpen(false)}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
 
-      //Rate 
       {rateModalOpen && rateOrderDetails && (
         <div className="modal-overlay" onClick={() => setRateModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Rate Your Order</h2>
-            <p><strong>Order ID:</strong> {rateOrderDetails.orderId}</p>
-            <p><strong>User:</strong> {rateOrderDetails.name}</p>
+            <p>
+              <strong>Order ID:</strong> {rateOrderDetails.orderId}
+            </p>
+            <p>
+              <strong>User:</strong> {rateOrderDetails.name}
+            </p>
             <hr />
 
             {rateOrderDetails.items.map((item, idx) => (
               <div key={idx} className="modal-item">
-                <p><strong>Product:</strong> {item.productName}</p>
-                <p><strong>Size:</strong> {item.size}</p>
-                <p><strong>Quantity:</strong> {item.quantity}</p>
-                <p><strong>Price:</strong> ₱{item.price}</p>
+                <p>
+                  <strong>Product:</strong> {item.productName}
+                </p>
+                <p>
+                  <strong>Size:</strong> {item.size}
+                </p>
+                <p>
+                  <strong>Quantity:</strong> {item.quantity}
+                </p>
+                <p>
+                  <strong>Price:</strong> ₱{item.price}
+                </p>
 
                 <div style={{ margin: "5px 0" }}>
                   <label>Rating: </label>
-                  {[1,2,3,4,5].map((star) => (
+                  {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
                       style={{
                         cursor: "pointer",
                         color: "#9747FF",
                         fontSize: "1.2rem",
-                        marginRight: "3px"
+                        marginRight: "3px",
                       }}
                       onClick={() => {
-                        setRateOrderDetails(prev => ({
+                        setRateOrderDetails((prev) => ({
                           ...prev,
                           items: prev.items.map((i, iIdx) =>
                             iIdx === idx ? { ...i, rating: star } : i
-                          )
+                          ),
                         }));
                       }}
                     >
@@ -645,15 +740,21 @@ export default function MyOrders() {
 
                 <textarea
                   placeholder="Write feedback (optional)..."
-                  style={{ width: "100%", padding: "8px", marginTop: "5px", borderRadius: "5px", border: "1px solid #ccc" }}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    marginTop: "5px",
+                    borderRadius: "5px",
+                    border: "1px solid #ccc",
+                  }}
                   value={item.comment || ""}
                   onChange={(e) => {
                     const comment = e.target.value;
-                    setRateOrderDetails(prev => ({
+                    setRateOrderDetails((prev) => ({
                       ...prev,
                       items: prev.items.map((i, iIdx) =>
                         iIdx === idx ? { ...i, comment } : i
-                      )
+                      ),
                     }));
                   }}
                 />
@@ -661,7 +762,14 @@ export default function MyOrders() {
               </div>
             ))}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "15px",
+              }}
+            >
               <label>
                 <input
                   type="checkbox"
@@ -672,63 +780,72 @@ export default function MyOrders() {
               </label>
             </div>
 
-
             <button
-            className="order-btn"
-            onClick={async () => {
-              try {
-                const reviewsCollection = collection(db, 'productReviews');
+              className="order-btn"
+              onClick={async () => {
+                try {
+                  const reviewsCollection = collection(db, "productReviews");
 
-                for (const item of rateOrderDetails.items) {
-                  await addDoc(reviewsCollection, {
-                    reviewID: `RV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                    productID: item.productID,
-                    productName: item.productName,
-                    size: item.size,
-                    rating: item.rating || 0,
-                    comment: item.comment || "",
-                    userName: isAnonymous ? "Anonymous" : rateOrderDetails.name || "Anonymous",
-                    createdAt: new Date()
-                  });
- 
-                  const reviewsQuery = query(reviewsCollection, where("productID", "==", item.productID));
-                  const reviewSnap = await getDocs(reviewsQuery);
+                  for (const item of rateOrderDetails.items) {
+                    await addDoc(reviewsCollection, {
+                      reviewID: `RV-${Date.now()}-${Math.floor(
+                        Math.random() * 1000
+                      )}`,
+                      productID: item.productID,
+                      productName: item.productName,
+                      size: item.size,
+                      rating: item.rating || 0,
+                      comment: item.comment || "",
+                      userName: isAnonymous
+                        ? "Anonymous"
+                        : rateOrderDetails.name || "Anonymous",
+                      createdAt: new Date(),
+                    });
 
-                  let totalRating = 0;
-                  let count = 0;
+                    const reviewsQuery = query(
+                      reviewsCollection,
+                      where("productID", "==", item.productID)
+                    );
+                    const reviewSnap = await getDocs(reviewsQuery);
 
-                  reviewSnap.forEach((doc) => {
-                    const data = doc.data();
-                    if (data.rating !== undefined) {
-                      totalRating += data.rating;
-                      count++;
-                    }
-                  });
+                    let totalRating = 0;
+                    let count = 0;
 
-                  const avgRating = count > 0 ? Math.round((totalRating / count) * 10) / 10 : 0;
- 
-                  const productsQuery = query(
-                    collection(db, "products"),
-                    where("productID", "==", item.productID)
-                  );
-                  const productSnap = await getDocs(productsQuery);
+                    reviewSnap.forEach((doc) => {
+                      const data = doc.data();
+                      if (data.rating !== undefined) {
+                        totalRating += data.rating;
+                        count++;
+                      }
+                    });
 
-                  productSnap.forEach(async (productDoc) => {
-                    const productRef = doc(db, "products", productDoc.id);
-                    await updateDoc(productRef, { rating: avgRating });
-                  });
+                    const avgRating =
+                      count > 0
+                        ? Math.round((totalRating / count) * 10) / 10
+                        : 0;
+
+                    const productsQuery = query(
+                      collection(db, "products"),
+                      where("productID", "==", item.productID)
+                    );
+                    const productSnap = await getDocs(productsQuery);
+
+                    productSnap.forEach(async (productDoc) => {
+                      const productRef = doc(db, "products", productDoc.id);
+                      await updateDoc(productRef, { rating: avgRating });
+                    });
+                  }
+
+                  showPopup("Ratings submitted successfully!", "success");
+                  setRateModalOpen(false);
+                } catch (err) {
+                  console.error("Error submitting ratings:", err);
+                  showPopup("Failed to submit ratings. Try again.", "error");
                 }
-
-                showPopup("Ratings submitted successfully!", "success");
-                setRateModalOpen(false);
-              } catch (err) {
-                console.error("Error submitting ratings:", err);
-                showPopup("Failed to submit ratings. Try again.", "error");
-              }
-            }}
-          >
-            Submit Ratings
-          </button>
+              }}
+            >
+              Submit Ratings
+            </button>
           </div>
         </div>
       )}
@@ -1336,6 +1453,6 @@ export default function MyOrders() {
           }
         }
       `}</style>
-  </div>
-   );
+    </div>
+  );
 }

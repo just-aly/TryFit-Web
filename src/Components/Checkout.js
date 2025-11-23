@@ -24,15 +24,22 @@ export default function Checkout() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const completedDocId = location.state?.completedDocId || null;
   const [cartItems, setCartItems] = useState([]);
-  const [orderInfo, setOrderInfo] = useState(null); 
+  const [orderInfo, setOrderInfo] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
- 
-  const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
+
+  const [toast, setToast] = useState({
+    visible: false,
+    message: "",
+    type: "info",
+  });
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   const controls = useAnimation();
 
@@ -45,11 +52,11 @@ export default function Checkout() {
   }, [controls]);
 
   useEffect(() => {
-  if (location.state?.selectedCartItems) {
-    setSelectedItems(location.state.selectedCartItems);
-  }
-}, [location.state]);
- 
+    if (location.state?.selectedCartItems) {
+      setSelectedItems(location.state.selectedCartItems);
+    }
+  }, [location.state]);
+
   useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
@@ -69,7 +76,10 @@ export default function Checkout() {
 
         const customUserId = userSnap.data().userId;
 
-        const q = query(collection(db, "shippingLocations"), where("userId", "==", customUserId));
+        const q = query(
+          collection(db, "shippingLocations"),
+          where("userId", "==", customUserId)
+        );
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
@@ -97,29 +107,33 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
-  if (location.state?.cartItems) {
-    setCartItems(location.state.cartItems);
-  }
+    if (location.state?.cartItems) {
+      setCartItems(location.state.cartItems);
+    }
 
-  if (location.state?.selectedCartItems) {
-    setSelectedItems(location.state.selectedCartItems);
-  }
-}, [location.state]);
+    if (location.state?.selectedCartItems) {
+      setSelectedItems(location.state.selectedCartItems);
+    }
+  }, [location.state]);
 
- 
   const showToast = (message, type = "info", ms = 2500) => {
     setToast({ visible: true, message, type });
-    setTimeout(() => setToast({ visible: false, message: "", type: "info" }), ms);
+    setTimeout(
+      () => setToast({ visible: false, message: "", type: "info" }),
+      ms
+    );
   };
 
-  
   const handlePlaceOrderClick = () => {
     if (!auth.currentUser) {
       showToast("You must be logged in to place an order.", "error");
       return;
     }
     if (!shippingLocation) {
-      showToast("Please add a shipping address before placing an order.", "warning");
+      showToast(
+        "Please add a shipping address before placing an order.",
+        "warning"
+      );
       return;
     }
     if (!cartItems || cartItems.length === 0) {
@@ -128,12 +142,12 @@ export default function Checkout() {
     }
     setShowConfirm(true);
   };
- 
+
   const placeOrderConfirmed = async () => {
     setShowConfirm(false);
     setIsPlacingOrder(true);
 
-    try { 
+    try {
       const user = auth.currentUser;
       if (!user) {
         showToast("Login required.", "error");
@@ -151,7 +165,7 @@ export default function Checkout() {
       const customUserId = userSnap.data().userId;
 
       const deliveryFee = 58;
- 
+
       const groupedItemsMap = new Map();
       cartItems.forEach((item) => {
         const key = `${item.productId}_${item.size}`;
@@ -207,7 +221,7 @@ export default function Checkout() {
           timestamp: serverTimestamp(),
           read: false,
         });
-  
+
         const productRef = doc(db, "products", groupedItem.productId);
         const productSnap = await getDoc(productRef);
         if (productSnap.exists()) {
@@ -228,7 +242,7 @@ export default function Checkout() {
           );
         }
       }
- 
+
       const cartRef = collection(db, "cartItems");
       const q = query(cartRef, where("userId", "==", userSnap.data().userId));
       const cartSnap = await getDocs(q);
@@ -236,19 +250,19 @@ export default function Checkout() {
       const deletePromises = cartSnap.docs.map(async (docSnap) => {
         const cartData = docSnap.data();
         const isOrdered = cartItems.some(
-          (item) => item.productId === cartData.productId && item.size === cartData.size
+          (item) =>
+            item.productId === cartData.productId && item.size === cartData.size
         );
         if (isOrdered) await deleteDoc(docSnap.ref);
       });
 
       await Promise.all(deletePromises);
- 
+
       setShowSuccessAnim(true);
       setTimeout(() => {
         setShowSuccessAnim(false);
         navigate("/myorders", { replace: true });
-      }, 2200); 
-
+      }, 2200);
     } catch (err) {
       console.error("Error placing order:", err);
       showToast("Failed to place order. Please try again.", "error");
@@ -256,34 +270,36 @@ export default function Checkout() {
       setIsPlacingOrder(false);
     }
   };
- 
+
   const handleAddAddress = () => {
     navigate("/profile", {
       state: {
         openShippingLocations: true,
         fromCheckout: true,
         cartItems: cartItems,
-        selectedCartItems: selectedItems
+        selectedCartItems: selectedItems,
       },
     });
   };
 
   return (
     <div className="checkout-page">
- 
       {toast.visible && (
         <div className={`toast ${toast.type}`}>
           <div className="toast-message">{toast.message}</div>
         </div>
       )}
- 
+
       {showConfirm && (
         <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Are you sure you want to proceed?</h3>
             <p>This will place the order and charge you accordingly.</p>
             <div className="confirm-actions">
-              <button className="btn cancel" onClick={() => setShowConfirm(false)}>
+              <button
+                className="btn cancel"
+                onClick={() => setShowConfirm(false)}
+              >
                 Cancel
               </button>
               <button
@@ -297,7 +313,7 @@ export default function Checkout() {
           </div>
         </div>
       )}
- 
+
       {showSuccessAnim && (
         <div className="success-overlay">
           <div className="success-card" role="status" aria-live="polite">
@@ -401,7 +417,11 @@ export default function Checkout() {
             cartItems.map((item) => (
               <div key={item.cartItemCode} className="product-card">
                 <img
-                  src={item.productImage || item.imageUrl || "https://via.placeholder.com/80"}
+                  src={
+                    item.productImage ||
+                    item.imageUrl ||
+                    "https://via.placeholder.com/80"
+                  }
                   alt={item.productName}
                   className="product-image"
                 />
@@ -420,14 +440,13 @@ export default function Checkout() {
             <div className="shipping-option">
               <div>
                 <p className="method">Standard Local</p>
-                 <div className="delivery-info" style={{ marginTop: "10px" }}>
+                <div className="delivery-info" style={{ marginTop: "10px" }}>
                   {cartItems.map((item) => (
                     <p key={item.cartItemCode} style={{ margin: "4px 0" }}>
-                       Expected delivery {item.delivery || "3-5 Days"}🚚
+                      Expected delivery {item.delivery || "3-5 Days"}🚚
                     </p>
                   ))}
                 </div>
-
               </div>
               <p className="ship-price">₱58</p>
             </div>
@@ -486,7 +505,7 @@ export default function Checkout() {
         </div>
       </motion.section>
 
-<style>{`
+      <style>{`
 /* ------------------------------
    GENERAL PAGE
 ------------------------------ */
@@ -1005,6 +1024,6 @@ export default function Checkout() {
         }
       }
 `}</style>
- </div>
+    </div>
   );
 }
