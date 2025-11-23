@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
-import image1 from '../images/step1.jpg';
-import image2 from '../images/step2.jpg';
-import image3 from '../images/step3.jpg';
-import image4 from '../images/measurement.jpg';
-import image5 from '../images/tracking.jpg';
+import { useEffect, useRef, useState } from "react";
+import image4 from "../images/measurement.jpg";
+import image1 from "../images/step1.jpg";
+import image2 from "../images/step2.jpg";
+import image3 from "../images/step3.jpg";
+import image5 from "../images/tracking.jpg";
 
 export default function AboutUs() {
   const [index, setIndex] = useState(1);
@@ -12,14 +12,8 @@ export default function AboutUs() {
 
   const images = [image1, image2, image3, image4, image5];
 
-  // Prepare slides with clones
-  const slides = [
-    images[images.length - 1], // clone last at start
-    ...images,
-    images[0], // clone first at end
-  ];
+  const slides = [images[images.length - 1], ...images, images[0]];
 
-  // Auto slide every 4s
   useEffect(() => {
     const interval = setInterval(() => slideTo(index + 1), 4000);
     return () => clearInterval(interval);
@@ -40,7 +34,9 @@ export default function AboutUs() {
     } else if (index === 0) {
       trackRef.current.style.transition = "none";
       setIndex(slides.length - 2);
-      trackRef.current.style.transform = `translateX(-${(slides.length - 2) * 20}%)`;
+      trackRef.current.style.transform = `translateX(-${
+        (slides.length - 2) * 20
+      }%)`;
     }
   };
 
@@ -124,14 +120,14 @@ export default function AboutUs() {
       </section>
 
       <style>{`
-        /* ===== GLOBAL ===== */
+        
         .page {
           font-family: "Poppins", sans-serif;
           color: #1c143a;
           overflow-x: hidden;
         }
 
-        /* ===== WELCOME SECTION ===== */
+        
         .welcome {
           display: flex;
           justify-content: space-between;
@@ -176,7 +172,7 @@ export default function AboutUs() {
         .track {
           display: flex;
           width: 100%;
-          gap: 15px; /* fixed gap between images */
+          gap: 15px; 
         }
 
         .item {
@@ -188,7 +184,7 @@ export default function AboutUs() {
 
         .item img {
           width: 250px;
-          height: 400px; /* same height */
+          height: 400px; 
           border-radius: 16px;
           box-shadow: 0 15px 35px rgba(28, 20, 58, 0.2);
           object-fit: cover;
@@ -222,7 +218,7 @@ export default function AboutUs() {
           50% { transform: translate(-50%, 6px); }
         }
 
-        /* ===== ABOUT / MISSION ===== */
+        
         .about, .mission {
           background: linear-gradient(135deg, #6a5acd 0%, #8e80ff 100%);
           color: #fff;
@@ -249,7 +245,7 @@ export default function AboutUs() {
           line-height: 1.5;
         }
 
-        /* ===== JOIN SECTION ===== */
+        
         .join {
           background: #ffffff;
           color: #222;
@@ -268,7 +264,7 @@ export default function AboutUs() {
           font-weight: 600;
         }
 
-        /* ===== MEDIA QUERIES ===== */
+        
         @media (max-width: 900px) {
           .cols {
             grid-template-columns: 1fr;

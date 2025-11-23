@@ -1,8 +1,6 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
-import { FaFacebook, FaInstagram } from "react-icons/fa";
+import { FaEnvelope, FaFacebook, FaInstagram, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
 
 export default function Footer() {
   const navigate = useNavigate(); 
@@ -107,7 +105,7 @@ export default function Footer() {
 
     .quick-links li:hover {
       color: #fff;
-      transform: translateX(5px); /* small slide effect */
+      transform: translateX(5px);  
     }
 
     .icon {

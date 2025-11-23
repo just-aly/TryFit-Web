@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { db } from "../firebase";
 
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/130x180.png?text=No+Image";
 const KNOWN_LABELS = ["tshirt", "t-shirt", "shirt", "longsleeve", "pants", "shorts"];
@@ -31,14 +31,9 @@ export default function SearchResults() {
           setResults([]);
           setMessage("Please enter a search term.");
           return;
-        }
-
-        // Normalize variations like "T shirt", "t-shirt", etc.
+        } 
         const normalizedQuery = query.replace(/[-\s]/g, "").replace(/s$/, "");
-
-        // -----------------------------------------
-        // ⭐ PRIORITY FIX: EXACT CATEGORY MATCH FIRST
-        // -----------------------------------------
+ 
         const normalizedKnown = KNOWN_LABELS.map((k) =>
           k.toLowerCase().replace(/[-\s]/g, "")
         );
@@ -46,9 +41,7 @@ export default function SearchResults() {
         const matchIndex = normalizedKnown.indexOf(normalizedQuery);
 
         if (matchIndex !== -1) {
-          const matchedLabel = normalizedKnown[matchIndex];
-
-          // Show ONLY products whose category matches exactly
+          const matchedLabel = normalizedKnown[matchIndex]; 
           const exactCategoryProducts = allProducts.filter(
             (p) =>
               p.categorySub?.toLowerCase().replace(/[-\s]/g, "") === matchedLabel
@@ -60,11 +53,7 @@ export default function SearchResults() {
             setDisplayTerm(queryParam);
             return;
           }
-        }
-        // -----------------------------------------
-
-
-        // Levenshtein distance for fuzzy comparison
+        } 
         const levenshteinDistance = (a, b) => {
           const matrix = Array.from({ length: a.length + 1 }, () =>
             Array(b.length + 1).fill(0)
@@ -96,7 +85,7 @@ export default function SearchResults() {
 
           return (
             keywords.includes(normalizedQuery) ||
-            levenshteinDistance(normalizedQuery, name) <= 1 ||   // tightened fuzzy
+            levenshteinDistance(normalizedQuery, name) <= 1 ||  
             levenshteinDistance(normalizedQuery, category) <= 1
           );
         });

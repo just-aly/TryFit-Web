@@ -128,8 +128,8 @@ export default function ChatComponent({ onClose }) {
     new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   let lastTimestamp = 0;
-
-  // DELETE ALL MESSAGES FUNCTION
+ 
+  // 🔥 UPDATED FUNCTION — closes modal AND chat window
   const deleteAllMessages = async () => {
     if (!customUserId) return;
     try {
@@ -142,7 +142,10 @@ export default function ChatComponent({ onClose }) {
         deleteDoc(doc(db, "chatMessages", docSnap.id))
       );
       await Promise.all(batchDeletes);
-      setShowDeleteModal(false);
+
+      setShowDeleteModal(false); // Close modal
+      onClose(); // 🔥 Close chat support window
+
     } catch (err) {
       console.error("Error deleting messages:", err);
     }
@@ -150,7 +153,7 @@ export default function ChatComponent({ onClose }) {
 
   return (
     <div style={styles.chatContainer} className="chatContainer">
-      {/* Header */}
+    
       <div style={styles.header}>
         <h4 style={{ margin: 0, color: "white" }}>Chat Support</h4>
         <div style={{ display: "flex", gap: "10px" }}>
@@ -166,8 +169,7 @@ export default function ChatComponent({ onClose }) {
           </button>
         </div>
       </div>
-
-      {/* Messages */}
+ 
       <div style={styles.messagesContainer} className="messagesContainer">
         {messages.map((msg, index) => {
           const currentTimestamp = new Date(msg.timestamp).getTime();
@@ -199,8 +201,7 @@ export default function ChatComponent({ onClose }) {
                 >
                   {msg.text}
                 </div>
-
-                {/* Timestamp under the chat bubble */}
+ 
                 <div
                   className="timestamp"
                   style={{
@@ -215,8 +216,7 @@ export default function ChatComponent({ onClose }) {
         })}
         <div ref={messagesEndRef} />
       </div>
-
-      {/* Input */}
+ 
       <div style={styles.inputArea} className="inputArea">
         <input
           type="text"
@@ -294,22 +294,24 @@ export default function ChatComponent({ onClose }) {
           }
         `}
       </style>
-
-      {/* DELETE CONFIRMATION MODAL */}
+ 
       {showDeleteModal && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.modal}>
             <h3>Are you sure you want to delete all messages?</h3>
             <div style={modalStyles.buttons}>
+              
               <button style={modalStyles.yesBtn} onClick={deleteAllMessages}>
                 Yes
               </button>
+
               <button
                 style={modalStyles.noBtn}
                 onClick={() => setShowDeleteModal(false)}
               >
                 No
               </button>
+
             </div>
           </div>
         </div>

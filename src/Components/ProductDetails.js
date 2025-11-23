@@ -158,16 +158,12 @@ export default function ProductDetails() {
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
     return (
-      <span className="stars">
-        {/* Full stars */}
+      <span className="stars"> 
         {Array.from({ length: fullStars }).map((_, i) => (
           <span key={"full" + i} className="star full">★</span>
-        ))}
-
-        {/* Half star */}
+        ))} 
         {hasHalfStar && <span className="star half">★</span>}
-
-        {/* Empty stars */}
+ 
         {Array.from({ length: emptyStars }).map((_, i) => (
           <span key={"empty" + i} className="star empty">☆</span>
         ))}
@@ -219,8 +215,7 @@ export default function ProductDetails() {
           <p className="sold">{product.sold || 0} Sold</p>
 
           <div className="note">Size recommendations and AR experience are available only on the mobile app.</div>
-
-          {/* Reviews Section */}
+ 
           <div className="reviews-section">
             <h3> Reviews</h3>
             {showReviews && (
@@ -260,7 +255,7 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* Add to Cart Modal */}
+     
       {modalVisible && (
         <div className="modal-overlay" onClick={() => setModalVisible(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -308,7 +303,6 @@ export default function ProductDetails() {
         </div>
       )}
 
-      {/* Direct Checkout Modal */}
       {directCheckoutModal && (
         <div className="modal-overlay" onClick={() => setDirectCheckoutModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -386,8 +380,7 @@ export default function ProductDetails() {
           </div>
         )}
 
-      <style>{`
-        /* ✅ Popup Styles */
+      <style>{` 
         .popup {
           position: fixed;
           top: 40px;
@@ -453,8 +446,7 @@ export default function ProductDetails() {
           border-left: 6px solid #f44336; 
           color: #a30000;
         }
-
-        /* Animation */
+ 
         @keyframes fadeIn {
           from { opacity: 0; transform: translate(-50%, -10px); }
           to { opacity: 1; transform: translate(-50%, 0); }
@@ -468,7 +460,7 @@ export default function ProductDetails() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 150px 20px;
+          padding: 150px 10px;
           font-family: Arial, sans-serif;
         }
 
@@ -480,7 +472,7 @@ export default function ProductDetails() {
           background: #fff;
           border-radius: 20px;
           box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-          padding: 30px;
+          padding: 10px;
           max-width: 900px;
           width: 100%;
         }
@@ -514,7 +506,6 @@ export default function ProductDetails() {
           flex: 2;
           display: flex;
           flex-direction: column;
-          gap: 20px;
         }
 
         .note {
@@ -634,7 +625,7 @@ export default function ProductDetails() {
         .button-group {
           display: flex;
           gap: 15px;
-          margin-top: 60px;
+          margin-top: 20px;
         }
 
         .add-to-cart-btn {
@@ -811,8 +802,7 @@ export default function ProductDetails() {
           40% { transform: translateY(-15px); }
           60% { transform: translateY(-7px); }
         }
-
-        /* Mobile Responsive Design */
+ 
         @media (max-width: 768px) {
         .product-details-container {
           padding: 100px 10px 80px; 
@@ -948,7 +938,7 @@ export default function ProductDetails() {
         }
 
         .star.half {
-          color: #ccc; /* background star */
+          color: #ccc;  
         }
 
         .star.half::before {

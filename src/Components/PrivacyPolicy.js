@@ -1,4 +1,3 @@
-import React from "react";
 
 export default function PrivacyAndPolicy() {
   return (
@@ -77,8 +76,7 @@ export default function PrivacyAndPolicy() {
           color: #1a1a1a;
           font-family: 'Poppins', sans-serif;
         }
-
-        /* Title with centered black lines */
+ 
         .title-wrapper {
           display: flex;
           align-items: center;

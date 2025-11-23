@@ -1,32 +1,30 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { auth, db } from "../firebase"; 
 import {
+  addDoc,
+  collection,
+  deleteDoc,
   doc,
   getDoc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-  collection,
-  addDoc,
-  deleteDoc,
-  query,
-  where,
   getDocs,
   getFirestore,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
 } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 import {
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  updatePassword,
-  updateEmail,
   deleteUser,
-  signOut,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateEmail,
+  updatePassword
 } from "firebase/auth";
-// import { v4 as uuidv4 } from "uuid";
 
 const MUNICIPALITIES = {
   Bamban: [
@@ -142,28 +140,20 @@ export default function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
   const [notification, setNotification] = useState("");
-  const [activeOption, setActiveOption] = useState("Edit Profile");
-
-  // password visibility states
+  const [activeOption, setActiveOption] = useState("Edit Profile"); 
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showDeletePassword, setShowDeletePassword] = useState(false);
-
-  // loading / saving states
+  const [showDeletePassword, setShowDeletePassword] = useState(false); 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  // Profile fields (controlled)
+  const [deleting, setDeleting] = useState(false); 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("");
-  const [userId, setUserId] = useState("");
-
-  // Shipping fields (matching mobile model)
+  const [userId, setUserId] = useState(""); 
   const [shipName, setShipName] = useState("");
   const [shipPhone, setShipPhone] = useState("");
   const [shipHouse, setShipHouse] = useState("");
@@ -179,21 +169,14 @@ export default function Profile() {
   const [fromRecheckout, setFromRecheckout] = useState(false);
   const [reorderItems, setReorderItems] = useState([]);
 
-
-  // Password fields used for Change Password
+ 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-
-  // Delete account input - only password (per your request)
-  const [deletePasswordInput, setDeletePasswordInput] = useState("");
- // const [confirmingDelete, setConfirmingDelete] = useState(false);
- 
- const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-
-  //  Popup system
-const [popup, setPopup] = useState({ show: false, message: "", type: "" });
-const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");  
+  const [deletePasswordInput, setDeletePasswordInput] = useState("");  
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false); 
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 const showPopup = (msg, type = "success") => {
   setPopup({ show: true, message: msg, type });
@@ -245,8 +228,7 @@ useEffect(() => {
       }
 
       setEmail(user.email || "");
-
-      // Load user doc
+ 
       const uRef = doc(db, "users", user.uid);
       const uSnap = await getDoc(uRef);
 
@@ -256,9 +238,8 @@ useEffect(() => {
         setUsername(data.username ?? "");
         setPhone(data.phone ?? "");
         setGender(data.gender ?? "");
-        setUserId(data.userId ?? user.uid); // save unique ID
-
-        // Load shipping location by userId
+        setUserId(data.userId ?? user.uid);
+    
         const q = query(
           collection(db, "shippingLocations"),
           where("userId", "==", data.userId ?? user.uid)
@@ -275,20 +256,17 @@ useEffect(() => {
           setFinalAddress(s.fullAddress ?? "");
           setShipPostal(s.postalCode ?? "");
           setHasShipping(true);
-
-          // Set picker stage
+ 
           if (s.fullAddress) setPickerStage("final");
           else if (s.barangay) setPickerStage("final");
           else if (s.municipality) setPickerStage("barangay");
-        } else {
-          // fallback: use user doc info if no shipping doc exists
+        } else { 
           setShipHouse(data.street ?? "");
           setFinalAddress(data.address ?? "");
           setShipPostal(data.postalCode ?? "");
           if (data.address) setPickerStage("final");
         }
-      } else {
-        // no user doc exists
+      } else { 
         setName(user.displayName ?? "");
       }
     } catch (e) {
@@ -311,8 +289,7 @@ useEffect(() => {
       showPopup("Not logged in.");
       return;
     }
-
-    // validation
+ 
     if (!username.trim() || !email.trim()) {
       showPopup("Please fill username and email.", "warning");
       return;
@@ -324,8 +301,7 @@ useEffect(() => {
 
     setSaving(true);
 
-    try {
-      // Update displayName in Auth
+    try { 
       if (username !== (user.displayName ?? "")) {
         try {
           await user.updateProfile({ displayName: username });
@@ -333,8 +309,7 @@ useEffect(() => {
           console.warn("updateProfile error", err);
         }
       }
-
-      // Update email in Auth
+      
       if (email !== (user.email ?? "")) {
         try {
           await updateEmail(user, email);
@@ -362,8 +337,7 @@ useEffect(() => {
           }
         }
       }
-
-      // Save to Firestore
+ 
       await setDoc(
         doc(db, "users", user.uid),
         {
@@ -391,8 +365,7 @@ useEffect(() => {
       setSelectedCartItems(location.state.selectedCartItems);
     }
   }, [location.state]);
-
-   // --- Shipping logic: municipality -> barangay -> final (matches mobile) ---
+ 
   function handleMunicipalitySelect(mun) {
     if (!mun) {
       setMunicipality("");
@@ -420,14 +393,12 @@ useEffect(() => {
     setPickerStage("final");
   }
 
-const handleSaveShipping = async () => {
-  // ✅ Clean input values
+const handleSaveShipping = async () => { 
   const cleanedName = shipName.trim();
   const cleanedPhone = shipPhone.replace(/\s+/g, '');
   const cleanedHouse = shipHouse.trim();
-  const cleanedPostal = shipPostal.trim();
+  const cleanedPostal = shipPostal.trim(); 
 
-  // ✅ Validation
   if (!cleanedName || !/^[A-Za-z\s.]+$/.test(cleanedName)) {
     return alert('Validation Error: Please enter a valid name (letters only).');
   }
@@ -454,21 +425,16 @@ const handleSaveShipping = async () => {
       return;
     }
 
-    setSaving(true);
-
-   // Get custom userId from users doc
+    setSaving(true); 
     const uSnap = await getDoc(doc(db, "users", user.uid));
     const customUserId = uSnap.exists() ? uSnap.data().userId : user.uid;
 
-    // Query using the custom ID
     const q = query(
       collection(db, "shippingLocations"),
       where("userId", "==", customUserId)
     );
     const querySnapshot = await getDocs(q);
 
-
-    // ✅ Prepare data to save/update
     const saveData = {
       userId: customUserId,
       name: cleanedName,
@@ -478,21 +444,18 @@ const handleSaveShipping = async () => {
       barangay,
       fullAddress: finalAddress,
       postalCode: cleanedPostal,
-      updatedAt: serverTimestamp(), // Always updated
+      updatedAt: serverTimestamp(), 
     };
 
-   if (querySnapshot.empty) {
-    // New doc
+   if (querySnapshot.empty) { 
     saveData.createdAt = new Date();
     saveData.shippingLocationID = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     await addDoc(collection(db, "shippingLocations"), saveData);
     console.log("✅ New shipping location created!");
-  } else {
-    // Update existing
+  } else { 
     const docRef = querySnapshot.docs[0].ref;
     const existingData = querySnapshot.docs[0].data();
-
-    // Preserve createdAt & shippingLocationID
+ 
     saveData.createdAt = existingData.createdAt || new Date();
     saveData.shippingLocationID = existingData.shippingLocationID;
 
@@ -548,8 +511,6 @@ const handleSaveShipping = async () => {
     await updatePassword(user, newPassword);
 
 showPopup("Password changed successfully!", "success");
-
-// Stay on the same page – no logout, no redirect
 setCurrentPassword("");
 setNewPassword("");
 setConfirmNewPassword("");
@@ -582,12 +543,10 @@ async function handleDeleteAccount() {
   }
 
   setDeleting(true);
-  try {
-    // ✅ Reauthenticate user first
+  try { 
     const cred = EmailAuthProvider.credential(user.email || "", deletePasswordInput);
     await reauthenticateWithCredential(user, cred);
-
-    // ✅ Show confirmation modal
+ 
     setShowDeleteConfirm(true);
   } catch (e) {
     console.error("Delete account error", e);
@@ -608,18 +567,15 @@ async function handleDeleteAccount() {
     setDeleting(true);
     try {
       const db = getFirestore();
-
-      // Get user's document
+ 
       const userDocRef = doc(db, "users", user.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (!userDocSnap.exists()) throw new Error("User document not found.");
       const userData = userDocSnap.data();
       const userUniqueId = userData.userId || user.uid;
-
-      // 1️⃣ Delete user profile
+ 
       await deleteDoc(userDocRef);
-
-      // 2️⃣ Collections to anonymize
+ 
       const collectionsToAnonymize = ["chatMessages", "productReviews"];
       for (const collectionName of collectionsToAnonymize) {
         const q = query(collection(db, collectionName), where("userId", "==", userUniqueId));
@@ -631,8 +587,7 @@ async function handleDeleteAccount() {
           });
         }
       }
-
-      // 3️⃣ Collections to delete completely
+ 
       const collectionsToDelete = ["cartItems", "measurements", "notifications", "shippingLocations"];
       for (const collectionName of collectionsToDelete) {
         const q = query(collection(db, collectionName), where("userId", "==", userUniqueId));
@@ -641,8 +596,7 @@ async function handleDeleteAccount() {
           await deleteDoc(docSnap.ref);
         }
       }
-
-      // 4️⃣ Orders: delete pending, anonymize others
+ 
       const ordersRef = collection(db, "orders");
       const ordersQuery = query(ordersRef, where("userId", "==", userUniqueId));
       const ordersSnapshot = await getDocs(ordersQuery);
@@ -658,8 +612,7 @@ async function handleDeleteAccount() {
           });
         }
       }
-
-      // 5️⃣ Update toReceive and toShip
+ 
       const toUpdateCollections = ["toReceive", "toShip"];
       for (const collectionName of toUpdateCollections) {
         const q = query(collection(db, collectionName), where("userId", "==", userUniqueId));
@@ -672,8 +625,7 @@ async function handleDeleteAccount() {
           });
         }
       }
-
-      // 6️⃣ Delete user from Auth
+ 
       await deleteUser(user);
 
       showPopup("Account successfully deleted.", "success");
@@ -686,8 +638,7 @@ async function handleDeleteAccount() {
     }
   }
 
-
-  // --- Helper UI for picker items ---
+ 
   function getPickerItems() {
     if (pickerStage === "municipality") {
       return ["", ...Object.keys(MUNICIPALITIES)];
@@ -733,9 +684,8 @@ async function handleDeleteAccount() {
             className={`content-wrapper ${
               activeOption !== "Edit Profile" ? "single-column" : ""
             }`}
-          >
-            <div className="form-left">
-              {/* EDIT PROFILE */}
+          > 
+            <div className="form-left"> 
               {activeOption === "Edit Profile" && (
                 <>
                   <label>
@@ -757,10 +707,10 @@ async function handleDeleteAccount() {
                     Phone
                     <input
                       type="text"
-                      value={phone} // <-- use profile phone state
+                      value={phone} 
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, ""); // digits only
-                        if (value.length <= 11) setPhone(value); // save to profile state
+                        const value = e.target.value.replace(/\D/g, "");  
+                        if (value.length <= 11) setPhone(value);  
                       }}
                       placeholder="Enter your phone number"
                     />
@@ -785,8 +735,7 @@ async function handleDeleteAccount() {
                   </button>
                 </>
               )}
-
-              {/* SHIPPING LOCATION */}
+ 
               {activeOption === "Shipping Location" && (
                 <>
                   <label>
@@ -807,7 +756,7 @@ async function handleDeleteAccount() {
                     type="text"
                     value={shipPhone}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, ""); // remove non-numeric
+                      const value = e.target.value.replace(/\D/g, ""); 
                       if (value.length <= 11) setShipPhone(value);
                     }}
                     placeholder="Enter your phone number"
@@ -827,8 +776,7 @@ async function handleDeleteAccount() {
 
                   <label>
                     Address (pick municipality → barangay)
-                    <div style={{ marginTop: 6 }}>
-                      {/* Picker */}
+                    <div style={{ marginTop: 6 }}> 
                       {pickerStage === "municipality" && (
                         <select
                           value={municipality}
@@ -891,8 +839,8 @@ async function handleDeleteAccount() {
                     type="text"
                     value={shipPostal}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, ""); // allow digits only
-                      if (value.length <= 4) setShipPostal(value); // limit to 4 digits
+                      const value = e.target.value.replace(/\D/g, "");  
+                      if (value.length <= 4) setShipPostal(value);  
                     }}
                     placeholder="Enter postal code"
                     disabled={!isEditing && hasShipping}
@@ -921,15 +869,13 @@ async function handleDeleteAccount() {
                       <button
                         className="go-back-btn"
                         onClick={() => {
-                          if (fromRecheckout) {
-                            // Go back to Recheckout page with the same items
+                          if (fromRecheckout) { 
                             navigate("/recheckout", {
                               state: {
                                 reorderItems: reorderItems
                               },
                             });
-                          } else {
-                            // Normal Checkout
+                          } else { 
                             navigate("/checkout", {
                               state: {
                                 cartItems: location.state?.cartItems || [],
@@ -961,8 +907,7 @@ async function handleDeleteAccount() {
 
                 </>
               )}
-
-              {/* CHANGE PASSWORD */}
+ 
               {activeOption === "Change Password" && (
                 <>
                   <label>
@@ -994,8 +939,7 @@ async function handleDeleteAccount() {
                   </button>
                 </>
               )}
-
-            {/* DELETE ACCOUNT */}
+ 
             {activeOption === "Delete Account" && (
               <>
                 <p style={{ color: "#B22222", fontWeight: 600 }}>
@@ -1040,8 +984,7 @@ async function handleDeleteAccount() {
                 </div>
               </>
             )}
-
-            {/* ✅ CONFIRM DELETE MODAL */}
+  
             {showDeleteConfirm && (
             <div className="popup warning" style={{ top: "20px", left: "50%", transform: "translateX(-50%)" }}>
               <p>⚠️ Are you sure you want to permanently delete your account?</p>
@@ -1081,9 +1024,8 @@ async function handleDeleteAccount() {
                 </button>
               </div>
             </div>
-          )}
+          )} 
 
-            {/* ✅ GLOBAL POPUP */}
             {popup.show && (
               <div className={`popup ${popup.type}`}>
                 <div className="popup-icon">
@@ -1141,8 +1083,7 @@ async function handleDeleteAccount() {
           box-sizing: border-box;
           flex-wrap: nowrap;
         }
-
-        /* Sidebar */
+ 
         .sidebar {
           flex: 0 0 270px; 
           background: #f3f0ff;
@@ -1187,8 +1128,7 @@ async function handleDeleteAccount() {
           border-left: 4px solid #d220ff;
           width: 94%;
         }
-
-        /* Main content */
+ 
         .profile-content {
           flex: 1;            
           min-width: 0;       
@@ -1284,10 +1224,7 @@ async function handleDeleteAccount() {
         .save-btn:hover {
           background: #5746c6;
         }
-        
-            /* ✅ TryFit Enhanced Popup Styles */
-      /* ✅ Popup Styles (Blue - Yellow - Red) */
-      /* ✅ Popup Styles (Green - Yellow - Red) */
+         
       .popup {
         position: fixed;
         top: 30px;
@@ -1306,15 +1243,12 @@ async function handleDeleteAccount() {
         animation: fadeIn 0.4s ease, fadeOut 0.5s ease 1.8s forwards;
         z-index: 9999;
         min-width: 300px;
-        border-left: 6px solid #4CAF50; /* default (success) border */
-      }
-
-      /* Icon inside popup */
+        border-left: 6px solid #4CAF50;  
+      } 
       .popup-icon {
         font-size: 1.6rem;
       }
-
-      /* Text section */
+ 
       .popup-text {
         flex: 1;
       }
@@ -1330,8 +1264,7 @@ async function handleDeleteAccount() {
         font-size: 0.9rem;
         margin: 0;
       }
-
-      /* Close button */
+ 
       .popup-close {
         background: transparent;
         border: none;
@@ -1344,28 +1277,25 @@ async function handleDeleteAccount() {
         display: flex;
         align-items: center;
         justify-content: center;
-      }
-
-      /* ✅ Color Variants */
+      } 
       .popup.success {
         background: #e9f8ec;
-        border-left: 6px solid #4CAF50; /* Green */
+        border-left: 6px solid #4CAF50; 
         color: #256d32;
       }
 
       .popup.warning {
         background: #fff8e1;
-        border-left: 6px solid #f5b800; /* Yellow */
+        border-left: 6px solid #f5b800;  
         color: #b07e00;
       }
 
       .popup.error {
         background: #fdecea;
-        border-left: 6px solid #f44336; /* Red */
+        border-left: 6px solid #f44336; 
         color: #a30000;
       }
-
-      /* Animation */
+ 
       @keyframes fadeIn {
         from { opacity: 0; transform: translate(-50%, -10px); }
         to { opacity: 1; transform: translate(-50%, 0); }
@@ -1466,9 +1396,7 @@ async function handleDeleteAccount() {
           padding: 8px;
           cursor: pointer;
           font-size: 0.9rem;
-        }
-
-        /* Password eye toggle */
+        } 
         .password-wrapper {
           position: relative;
           width: 100%;
@@ -1548,14 +1476,14 @@ async function handleDeleteAccount() {
           flex: 1;
           background: #fff;
           overflow-y: auto;
-          min-height: 100%; /* Keeps stable height */
+          min-height: 100%; 
           display: flex;
           flex-direction: column;
         }
 
         .section-header {
           margin-bottom: 8px;
-          flex-shrink: 0; /* Prevent from collapsing */
+          flex-shrink: 0; 
         }
 
         .section-header h2 {

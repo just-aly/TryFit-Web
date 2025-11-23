@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { auth, db } from "../firebase";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -63,8 +63,7 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
-
-        // ✅ Show success overlay like SignupPage
+ 
         setShowSuccessOverlay(true);
         setTimeout(() => navigate("/landing"), 2000);
       }
@@ -102,8 +101,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page">
-      {/* Blur the background if login is successful */}
+    <div className="login-page"> 
       <div className={`login-container ${showSuccessOverlay ? "blur-background" : ""}`}>
         <motion.div
           className="left-panel"
@@ -164,24 +162,20 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      {/* Error Popup */}
+ 
       {popup.type && showPopupBox && (
         <div className={`popup-container popup-${popup.type}`}>
           <button className="close-btn" onClick={closePopup}>×</button>
           <h3>{popup.title}</h3>
           <p>{popup.message}</p>
         </div>
-      )}
-
-      {/* Full-screen Success Overlay */}
+      )} 
       {showSuccessOverlay && (
         <div className="success-overlay">
           <div className="success-message">Login Successful!</div>
         </div>
       )}
-
-      {/* Loading Spinner */}
+ 
       {isLoading && !showSuccessOverlay && (
         <div className="loading-overlay">
           <div className="spinner" />
@@ -198,8 +192,7 @@ export default function LoginPage() {
           background: linear-gradient(135deg, #f7f4fc 0%, #e3d9f9 25%, #d3c4fd 50%, #cac0fc 75%, #a997c9 100%);
           overflow: hidden;
         }
-
-        /* Blur effect on background when success popup is visible */
+ 
         .blur-background {
           filter: blur(4px);
           transition: filter 0.3s ease;
@@ -218,8 +211,7 @@ export default function LoginPage() {
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
           position: relative;
         }
-
-        /* Left Panel */
+ 
         .left-panel {
           flex: 1;
           background: linear-gradient(145deg, #7C4DFF 0%, #9C6BFF 50%, #B39DDB 100%);
@@ -251,9 +243,7 @@ export default function LoginPage() {
           margin-top: 15px;
           color: #f5f2ff;
           opacity: 0.9;
-        }
-
-        /* Right Panel */
+        } 
         .right-panel {
           flex: 1;
           display: flex;
@@ -349,8 +339,7 @@ export default function LoginPage() {
         .link:hover {
           text-decoration: underline;
         }
-
-        /* Popup styles */
+ 
         .popup-overlay.top {
           position: fixed;
           top: 20px;
@@ -399,8 +388,7 @@ export default function LoginPage() {
           from { opacity: 0; transform: scale(0.5); }
           to { opacity: 1; transform: scale(1); }
         }
-
-        /* Success message overlay */
+ 
         .success-overlay {
           position: fixed;
           top: 0;
@@ -495,7 +483,7 @@ export default function LoginPage() {
           }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 412x) {
           .left-panel h1 {
             font-size: 1.7rem;
           }
@@ -517,9 +505,9 @@ export default function LoginPage() {
           }
 
           .success-text {
-            font-size: 1rem;
-          }
-        }
+            font-size: 1rem;        
+            }
+      }
       `}</style>
     </div>
   );

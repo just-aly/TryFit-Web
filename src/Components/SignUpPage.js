@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, runTransaction } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, setDoc } from "firebase/firestore";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { auth, db } from "../firebase";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -13,17 +13,13 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [hidePassword, setHidePassword] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [animateExit, setAnimateExit] = useState(false);
-
-  //  Popup state (for errors only)
+  const [animateExit, setAnimateExit] = useState(false); 
   const [popup, setPopup] = useState({ type: "", title: "", message: "" });
   const [showPopupBox, setShowPopupBox] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const showPopup = (type, title, message) => {
     setPopup({ type, title, message });
-    setShowPopupBox(true);
-
-    // Auto hide after 3 seconds with fade out
+    setShowPopupBox(true); 
     setTimeout(() => {
       setShowPopupBox(false);
       setTimeout(() => setPopup({ type: "", title: "", message: "" }), 400);
@@ -34,8 +30,7 @@ export default function SignUpPage() {
     setShowPopupBox(false);
     setTimeout(() => setPopup({ type: "", title: "", message: "" }), 400);
   };
-
-  //  Sign Up Logic
+ 
   const handleSignUp = async (e) => {
     e.preventDefault();
 
@@ -43,8 +38,7 @@ export default function SignUpPage() {
       showPopup("error", "Validation Error", "Please fill all fields before continuing.");
       return;
     }
-
-    //  Password validation: at least 6 chars, 1 number, 1 special char
+ 
     const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{6,}$/;
     if (!passwordRegex.test(password)) {
       showPopup(
@@ -83,8 +77,7 @@ export default function SignUpPage() {
         userId,
         createdAt: serverTimestamp(),
       });
-
-      //  Show success overlay instead of popup
+ 
       setShowSuccessOverlay(true);
       setTimeout(() => navigate("/landing"), 3000);
 
@@ -124,8 +117,7 @@ export default function SignUpPage() {
 
   return (
     <div className="signup-page">
-      <div className="signup-container">
-        {/* Left (White Card) */}
+      <div className="signup-container"> 
         <div className="left-panel">
           <div className="signup-box">
             <h2 className="signup-title">Sign Up</h2>
@@ -181,9 +173,7 @@ export default function SignUpPage() {
               <span className="link" onClick={handleCreateAccountClick}>Login</span>
             </p>
           </div>
-        </div>
-
-        {/* Right (Purple Curved Side) */}
+        </div> 
         <motion.div
           className="right-panel"
           initial={{ x: 0 }}
@@ -196,8 +186,7 @@ export default function SignUpPage() {
           <p>Join our team now!</p>
         </motion.div>
       </div>
-
-      {/* ✅ Error Popup Notification */}
+ 
       {popup.type && (
         <div
           className={`popup-container popup-${popup.type} ${showPopupBox ? "show" : "hide"}`}
@@ -207,8 +196,7 @@ export default function SignUpPage() {
           <p>{popup.message}</p>
         </div>
       )}
-
-      {/* ✅ Full-screen Success Overlay */}
+ 
       {showSuccessOverlay && (
         <div className="success-overlay">
           <div className="success-message">
@@ -374,8 +362,7 @@ export default function SignUpPage() {
         .link:hover {
           text-decoration: underline;
         }
-
-        /*  Error Popup Notification Styles */
+ 
         .popup-container {
           position: fixed;
           top: 20px;
@@ -452,8 +439,7 @@ export default function SignUpPage() {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-
-        /* Responsive adjustments */
+ 
         @media (max-width: 900px) {
           .signup-container {
             flex-direction: column-reverse;

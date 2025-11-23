@@ -1,26 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
-import { useNavigate } from "react-router-dom";
-
 
 export default function Categories() {
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState("T-Shirt");
   const [activeTab, setActiveTab] = useState("Category");
 
-  const [allProducts, setAllProducts] = useState([]); 
+  const [allProducts, setAllProducts] = useState([]);
   const [categoryProducts, setCategoryProducts] = useState([]);
-  const navigate = useNavigate();  
-  
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab);
     }
   }, [location.state]);
-
-
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -31,21 +27,23 @@ export default function Categories() {
     }
   }, [location.search]);
 
-  // Fetch all products once
   const fetchProducts = async () => {
     const snapshot = await getDocs(collection(db, "products"));
-    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const products = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     setAllProducts(products);
   };
 
   useEffect(() => {
     const fetchProductsByTab = async () => {
       try {
-       if (activeTab === "Latest") {
+        if (activeTab === "Latest") {
           try {
-            const querySnapshot = await getDocs(collection(db, 'products'));
+            const querySnapshot = await getDocs(collection(db, "products"));
             const oneMonthAgo = new Date();
-            oneMonthAgo.setDate(oneMonthAgo.getDate() - 31); // 31 days ago
+            oneMonthAgo.setDate(oneMonthAgo.getDate() - 31);
 
             const latestProducts = [];
 
@@ -53,8 +51,9 @@ export default function Categories() {
               const data = docSnap.data();
               if (!data.createdAt) return;
 
-              // Convert Firestore Timestamp to JS Date if needed
-              const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+              const createdAt = data.createdAt.toDate
+                ? data.createdAt.toDate()
+                : new Date(data.createdAt);
 
               if (createdAt >= oneMonthAgo) {
                 latestProducts.push({
@@ -80,21 +79,19 @@ export default function Categories() {
 
             setCategoryProducts(latestProducts);
           } catch (error) {
-            console.error('Error fetching latest products:', error);
+            console.error("Error fetching latest products:", error);
           }
-
-}else if (activeTab === "Popular") {
+        } else if (activeTab === "Popular") {
           const snapshot = await getDocs(collection(db, "products"));
           const popularProducts = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(p => (p.sold ?? 0) >= 1000);
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
+            .filter((p) => (p.sold ?? 0) >= 1000);
           setCategoryProducts(popularProducts);
-
         } else {
-          // Category tab
-          const filtered = allProducts.filter( p => p.categorySub?.toLowerCase() === activeCategory.toLowerCase());
+          const filtered = allProducts.filter(
+            (p) => p.categorySub?.toLowerCase() === activeCategory.toLowerCase()
+          );
           setCategoryProducts(filtered);
-
         }
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -105,7 +102,6 @@ export default function Categories() {
     fetchProductsByTab();
   }, [activeTab, activeCategory, allProducts]);
 
-
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -115,7 +111,6 @@ export default function Categories() {
   return (
     <div className="categories-page">
       <div className="categories-container">
-        {/* Sidebar */}
         <aside className="sidebar">
           <h3 className="sidebar-title">Categories</h3>
 
@@ -156,7 +151,6 @@ export default function Categories() {
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className="categories-content">
           <div className="section-header sticky-header">
             <h2>
@@ -187,14 +181,23 @@ export default function Categories() {
               <div
                 key={item.id}
                 className="product-card"
-                onClick={() => navigate(`/product/${item.id}`, { state: { product: item } })}
+                onClick={() =>
+                  navigate(`/product/${item.id}`, { state: { product: item } })
+                }
                 style={{ cursor: "pointer" }}
               >
                 <div className="image-placeholder">
                   <img
-                    src={item.imageUrl || "https://via.placeholder.com/220x220?text=No+Image"}
+                    src={
+                      item.imageUrl ||
+                      "https://via.placeholder.com/220x220?text=No+Image"
+                    }
                     alt={item.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
                 </div>
                 <div className="product-info">
@@ -208,7 +211,6 @@ export default function Categories() {
                 </div>
               </div>
             ))}
-
           </div>
         </main>
       </div>
@@ -242,8 +244,7 @@ export default function Categories() {
           box-sizing: border-box;
           flex-shrink: 0;
         }
-
-        /* Sidebar */
+ 
        .sidebar {
           flex: 0 0 270px;
           background: #f3f0ff;
@@ -307,8 +308,7 @@ export default function Categories() {
           border-left: 4px solid #d220ff;
           width: 100%;
         }
-
-        /* Main Content */
+ 
         .categories-content {
           flex: 1;
           display: flex;
@@ -316,8 +316,7 @@ export default function Categories() {
           overflow-y: auto;
            max-height: calc(100vh - 1px);
         }
-
-        /* Section Header */
+ 
         .section-header {
           width: 100%;
           padding: 28px 40px 20px;
@@ -358,8 +357,7 @@ export default function Categories() {
         .tab.active {
           text-decoration: underline;
         }
-
-        /* Product Area */
+ 
         .content-wrapper {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
@@ -440,7 +438,7 @@ export default function Categories() {
 @media (max-width: 480px) {
 
   .categories-container {
-    flex-direction: row; /* keep sidebar + content side by side */
+    flex-direction: row;  
     width: 100%;
     border: none;
     box-shadow: none;
@@ -448,7 +446,7 @@ export default function Categories() {
   }
 
   .sidebar {
-    flex: 0 0 110px; /* narrower but still visible */
+    flex: 0 0 110px; 
     padding: 8px;
     background: #f8f6ff;
     border-right: 1px solid #ddd;
@@ -498,8 +496,7 @@ export default function Categories() {
     font-size: 0.7rem;
     padding: 10px 5px;
   }
-
-  /* PRODUCT GRID: keep 2 columns */
+ 
   .content-wrapper {
     padding: 0;
     gap: 13px;
@@ -507,14 +504,14 @@ export default function Categories() {
   }
 
   .product-card {
-    height: 260px; /* smaller than desktop but same layout */
+    height: 260px;  
     display: flex;
     flex-direction: column;
     padding: 6px;
   }
 
   .image-placeholder {
-    height: 60%; /* scale proportionally */
+    height: 60%;  
     width: 100%;
   }
 

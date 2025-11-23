@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  deleteDoc, 
-  addDoc,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-  onSnapshot
-} from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  onSnapshot,
+  query,
+  setDoc,
+  updateDoc,
+  where
+} from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const fetchProductDetails = async (productId) => {
@@ -71,21 +71,18 @@ export default function MyOrders() {
   useEffect(() => {
     if (location.state?.fromCheckout && location.state?.orderId) {
       showPopup(`Your order ${location.state?.orderId} has been placed successfully!`, "success");
-
-      // Clear state to prevent popup from showing again
+ 
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate]);
-
-  // Listen for auth state
+ 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user || null);
     });
     return unsubscribe;
   }, []);
-
-  // Get custom userId
+ 
   useEffect(() => {
     const fetchCustomUserId = async () => {
       if (!firebaseUser) return;
@@ -103,8 +100,7 @@ export default function MyOrders() {
     };
     fetchCustomUserId();
   }, [firebaseUser]);
-
-  // Listen to all collections filtered by userId
+ 
   useEffect(() => {
     if (!customUserId) return;
 
@@ -121,17 +117,16 @@ export default function MyOrders() {
         const filteredOrders = snapshot.docs
           .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
           .filter((order) => order.userId === customUserId);
-
-        // Fetch product details for each order item
+ 
         const enrichedOrders = await Promise.all(
           filteredOrders.map(async (order) => {
             const itemsWithDetails = await Promise.all(
               order.items.map(async (item) => {
                 const productData = await fetchProductDetails(item.productId);
-                return { ...item, ...productData }; // merge product info
+                return { ...item, ...productData }; 
               })
             );
-            return { ...order, items: itemsWithDetails }; // order.id remains
+            return { ...order, items: itemsWithDetails }; 
           })
         );
 
@@ -150,6 +145,7 @@ export default function MyOrders() {
     setConfirmCancelModalOpen(true);
   };
 
+  //Cancelled Button
   const confirmCancelOrder = async () => {
     if (!orderToCancel) return;
     try {
@@ -227,9 +223,9 @@ export default function MyOrders() {
     setConfirmCancelModalOpen(false);
   };
 
+  //Recieve Button
   const handleOrderReceived = async (order) => {
-    try {
-      // ✅ Only the fields you listed + receivedAt
+    try { 
       const completedOrder = {
         toshipID: order.toshipID,         
         toreceiveID: order.toreceiveID,
@@ -258,9 +254,7 @@ export default function MyOrders() {
       };
 
       const completedRef = doc(collection(db, 'completed'));
-      await setDoc(completedRef, completedOrder);
-
-      // 🔹 Update sold count for each product in the order
+      await setDoc(completedRef, completedOrder); 
       for (const item of order.items) {
         const productRef = doc(db, "products", item.productId);
         const productSnap = await getDoc(productRef);
@@ -277,8 +271,7 @@ export default function MyOrders() {
           );
         }
       }
-
-      // Delete the original doc from 'toReceive'
+ 
       const toReceiveRef = doc(db, 'toReceive', order.id);
       await deleteDoc(toReceiveRef);
 
@@ -294,8 +287,7 @@ export default function MyOrders() {
         timestamp: new Date(),
         read: false,
       });
-
-      // Switch to Completed tab
+ 
       setActiveTab('Completed');
 
       showPopup("Order is confirm received", "success");
@@ -306,8 +298,7 @@ export default function MyOrders() {
   };
 
   const handleViewShippingDetails = async (order) => {
-    try {
-      // Fetch expected delivery for each product
+    try { 
       const itemsWithDelivery = await Promise.all(
         order.items.map(async (item) => {
           const productData = await fetchProductDetails(item.productId);
@@ -331,8 +322,7 @@ export default function MyOrders() {
   };
 
   const handleViewCancellationDetails = async (order) => {
-    try {
-      // Use the name already saved in the cancelled order document
+    try { 
       setCancellationDetails({
         ...order,
         name: order.name || 'N/A',
@@ -349,8 +339,7 @@ export default function MyOrders() {
     setRateOrderDetails(order);
     setRateModalOpen(true);
   };
-
-  // ✅ Render orders per tab
+ 
   const renderOrders = () => {
     const orders = ordersWithProducts[activeTab] || [];
 
@@ -480,7 +469,7 @@ export default function MyOrders() {
   return (
     <div className="orders-page">
       <div className="orders-container">
-        {/* Sidebar */}
+        // Sidebar 
         <aside className="sidebar">
           <h3 className="sidebar-title">My Orders</h3>
           <ul className="sidebar-menu">
@@ -496,7 +485,7 @@ export default function MyOrders() {
           </ul>
         </aside>
 
-        {/* Main Content */}
+        // Main Content 
         <main className="orders-content">
           <div className="section-header">
             <h2>{activeTab}</h2>
@@ -505,7 +494,6 @@ export default function MyOrders() {
         </main>
       </div>
 
-            {/* Popup */}
           {popup.visible && (
        <div className={`popup ${popup.type}`}>
           <div className="popup-icon">
@@ -529,7 +517,7 @@ export default function MyOrders() {
         </div>
       )}
 
-      {/* Shipping Modal */}
+      //Shipping
       {shippingModalOpen && shippingDetails && (
         <div className="modal-overlay" onClick={() => setShippingModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -557,7 +545,7 @@ export default function MyOrders() {
         </div>
       )}
 
-    {/* Confirm Cancel Modal */}
+    //Cancel
       {confirmCancelModalOpen && orderToCancel && (
         <div className="modal-overlay" onClick={cancelCancelOrder}>
           <div
@@ -586,7 +574,7 @@ export default function MyOrders() {
         </div>
       )}
 
-      {/* Cancellation Modal */}
+      //Cancel Details
       {cancellationModalOpen && cancellationDetails && (
         <div className="modal-overlay" onClick={() => setCancellationModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -614,6 +602,7 @@ export default function MyOrders() {
         </div>
       )}
 
+      //Rate 
       {rateModalOpen && rateOrderDetails && (
         <div className="modal-overlay" onClick={() => setRateModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -701,8 +690,7 @@ export default function MyOrders() {
                     userName: isAnonymous ? "Anonymous" : rateOrderDetails.name || "Anonymous",
                     createdAt: new Date()
                   });
-
-                  // Fetch all reviews for this productID
+ 
                   const reviewsQuery = query(reviewsCollection, where("productID", "==", item.productID));
                   const reviewSnap = await getDocs(reviewsQuery);
 
@@ -718,8 +706,7 @@ export default function MyOrders() {
                   });
 
                   const avgRating = count > 0 ? Math.round((totalRating / count) * 10) / 10 : 0;
-
-                  // Update the products collection correctly
+ 
                   const productsQuery = query(
                     collection(db, "products"),
                     where("productID", "==", item.productID)
@@ -790,8 +777,8 @@ export default function MyOrders() {
           padding: 20px;
           position: sticky;
           top: 0;
-          height: auto;      /* Full height */
-          overflow-y: auto;   /* Scroll only if needed */
+          height: auto;      
+          overflow-y: auto;    
           min-height: 100%;
         }
 
@@ -1062,9 +1049,7 @@ export default function MyOrders() {
           overflow-y: auto;
           box-shadow: 0 4px 20px rgba(0,0,0,0.2);
           position: relative;
-        }
-
-        /* Confirm Cancel Modal specific styling */
+        } 
         .confirm-cancel-modal {
           width: 320px;       
           max-width: 90%;     
@@ -1073,8 +1058,7 @@ export default function MyOrders() {
           border-radius: 8px;
           margin-bottom: 620px;
         }
-
-        /* ✅ Popup Styles (Top Centered) */
+ 
           .popup {
           position: fixed;
           top: 40px;
@@ -1140,8 +1124,7 @@ export default function MyOrders() {
           border-left: 6px solid #f44336; 
           color: #a30000;
         }
-
-        /* Animation */
+ 
         @keyframes fadeIn {
           from { opacity: 0; transform: translate(-50%, -10px); }
           to { opacity: 1; transform: translate(-50%, 0); }
@@ -1221,8 +1204,7 @@ export default function MyOrders() {
               color: #333;
             }
           }
-
-          /* Sidebar */
+ 
           .sidebar {
             flex: 0 0 120px !important; 
             padding: 8px 6px;
@@ -1246,8 +1228,7 @@ export default function MyOrders() {
             white-space: nowrap;
             border-radius: 4px;
           }
-
-          /* Right panel */
+ 
           .orders-content {
             flex: 1;
             background: #fff;
@@ -1262,8 +1243,7 @@ export default function MyOrders() {
           .section-header h2 {
             font-size: 1rem;
           }
-
-          /* Order Cards */
+ 
           .content-wrapper {
             padding: 10px;
             gap: 10px;
@@ -1316,8 +1296,7 @@ export default function MyOrders() {
             align-items: center;
             gap: 6px;
           }
-
-          /* Buttons */
+ 
           .button-group {
             flex-direction: column;
             gap: 6px;
@@ -1336,8 +1315,7 @@ export default function MyOrders() {
             width: 85%;
             text-align: center;
           }
-
-          /* Modal adjustments */
+ 
           .modal-content {
             width: 90%;
             padding: 12px;

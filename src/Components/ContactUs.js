@@ -1,5 +1,5 @@
 import { FaFacebook, FaInstagram } from "react-icons/fa";
-import { SiGmail } from "react-icons/si"; // Using Gmail icon from react-icons/si
+import { SiGmail } from "react-icons/si";
 
 export default function ContactUs() {
   return (
@@ -54,8 +54,7 @@ export default function ContactUs() {
         </div>
 
       </div>
-
-      {/* STYLES */}
+ 
       <style>{`
         .contact-page {
           width: 100%;
@@ -145,7 +144,7 @@ export default function ContactUs() {
         }
 
         .gmail-icon {
-          color: #D44638; /* Gmail red */
+          color: #D44638;  
         }
 
         .contact-card:hover .contact-icon {

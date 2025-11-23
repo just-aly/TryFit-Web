@@ -1,7 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getFirestore,
+  onSnapshot,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const db = getFirestore();
 const auth = getAuth();
@@ -12,7 +22,6 @@ export default function Cart() {
   const [products, setProducts] = useState([]);
   const [hideCheckout, setHideCheckout] = useState(false);
 
-  // Fetch Cart
   useEffect(() => {
     if (!user) return;
 
@@ -25,7 +34,10 @@ export default function Cart() {
       const { userId } = userSnap.data();
       if (!userId) return;
 
-      const q = query(collection(db, "cartItems"), where("userId", "==", userId));
+      const q = query(
+        collection(db, "cartItems"),
+        where("userId", "==", userId)
+      );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map((doc) => ({
@@ -44,14 +56,12 @@ export default function Cart() {
     return () => unsub && unsub instanceof Function && unsub();
   }, [user]);
 
-  // Toggle select
   const toggleSelect = async (id) => {
     const docRef = doc(db, "cartItems", id);
     const current = products.find((p) => p.id === id);
     await updateDoc(docRef, { selected: !current.selected });
   };
 
-  // Change quantity
   const changeQuantity = async (id, delta) => {
     const current = products.find((p) => p.id === id);
     if (!current) return;
@@ -59,7 +69,6 @@ export default function Cart() {
     await updateDoc(doc(db, "cartItems", id), { quantity: newQty });
   };
 
-  // Delete item
   const deleteProduct = async (id) => {
     await deleteDoc(doc(db, "cartItems", id));
   };
@@ -67,7 +76,6 @@ export default function Cart() {
   const selectedItems = products.filter((p) => p.selected);
   const total = selectedItems.reduce((sum, p) => sum + p.price * p.quantity, 0);
 
-  // Hide checkout when footer appears
   useEffect(() => {
     const footer = document.querySelector("footer");
     if (!footer) return;
@@ -86,10 +94,12 @@ export default function Cart() {
       <div className="cart-items">
         {products.map((p) => (
           <div key={p.id} className="cart-card">
-
-            {/* LEFT SIDE */}
             <div className="cart-left">
-              <input type="checkbox" checked={p.selected} onChange={() => toggleSelect(p.id)} />
+              <input
+                type="checkbox"
+                checked={p.selected}
+                onChange={() => toggleSelect(p.id)}
+              />
 
               <img
                 src={p.imageUrl || "https://via.placeholder.com/80"}
@@ -104,7 +114,6 @@ export default function Cart() {
               </div>
             </div>
 
-            {/* RIGHT SIDE ACTIONS */}
             <div className="quantity-actions">
               <div className="quantity">
                 <button onClick={() => changeQuantity(p.id, -1)}>-</button>
@@ -112,13 +121,14 @@ export default function Cart() {
                 <button onClick={() => changeQuantity(p.id, 1)}>+</button>
               </div>
 
-              <span className="delete-btn" onClick={() => deleteProduct(p.id)}>Delete</span>
+              <span className="delete-btn" onClick={() => deleteProduct(p.id)}>
+                Delete
+              </span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* CHECKOUT BAR */}
       <div className={`checkout ${hideCheckout ? "hidden" : ""}`}>
         <div className="checkout-content">
           <div className="checkout-info">
@@ -141,7 +151,6 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* CSS */}
       <style>{`
         .cart-container {
           min-height: 100vh;
@@ -196,8 +205,7 @@ export default function Cart() {
           color: #6a5acd; 
           font-weight: bold;
         }
-
-        /* RIGHT SIDE ACTIONS */
+ 
         .quantity-actions {
           display: flex;
           flex-direction: column;
@@ -228,8 +236,7 @@ export default function Cart() {
         }
 
         .delete-btn:hover { color: red; }
-
-        /* CHECKOUT BAR */
+ 
         .checkout {
           position: fixed;
           bottom: 0; left: 0; right: 0;

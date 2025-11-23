@@ -1,18 +1,15 @@
-import React, { useEffect, useState, useRef } from "react";
-import { collection, getDocs, getDoc, doc, query, where, Timestamp, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, onSnapshot } from "firebase/firestore";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { db } from "../firebase";
 
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/130x180.png?text=No+Image"; 
 
-export default function LandingPage() {
-  // 🔹 States
+export default function LandingPage() { 
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
-  const [bgColor, setBgColor] = useState("lavender");
-
-  // 🔹 Refs
+  const [bgColor, setBgColor] = useState("lavender"); 
   const newArrivalsRef = useRef(null);
   const popularRef = useRef(null);
   const picksRef = useRef(null);
@@ -32,12 +29,11 @@ export default function LandingPage() {
   const PopularHeader = () => {
     navigate("/categories", {
       state: {
-        activeTab: "Popular", // Set Popular tab active
+        activeTab: "Popular",  
       },
     });
   };
-useEffect(() => {
-  // 🔹 Fetch all products in real-time
+useEffect(() => { 
   const unsubscribeProducts = onSnapshot(
     collection(db, "products"),
     (querySnapshot) => {
@@ -67,8 +63,7 @@ useEffect(() => {
       console.error("Error fetching products:", error);
     }
   );
-
-  // 🔹 Fetch new arrivals in real-time
+ 
   const unsubscribeNewArrivals = onSnapshot(
     collection(db, "products"),
     (querySnapshot) => {
@@ -110,15 +105,13 @@ useEffect(() => {
       console.error("Error fetching new arrivals:", error);
     }
   );
-
-  // 🔹 Cleanup listeners on unmount
+ 
   return () => {
     unsubscribeProducts();
     unsubscribeNewArrivals();
   };
 }, []);
-
-  // Improved auto-scroll interval (smooth & loops)
+ 
   useEffect(() => {
     const interval = setInterval(() => {
       if (!isDragging.current && dragRef.current) {
@@ -133,8 +126,7 @@ useEffect(() => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
-  // 🔹 Background Color Transition
+ 
   useEffect(() => {
     const handleScroll = () => {
       const newArrivalsTop = newArrivalsRef.current?.offsetTop || 0;
@@ -150,8 +142,7 @@ useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // ===== DRAG HANDLERS =====
+ 
   const handleMouseDown = (e) => {
     isDragging.current = true;
     if (dragRef.current) dragRef.current.classList.add("dragging");
@@ -173,11 +164,10 @@ useEffect(() => {
     if (!isDragging.current || !dragRef.current) return;
     e.preventDefault();
     const x = e.pageX - dragRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.2; // scroll speed
+    const walk = (x - startX.current) * 1.2; 
     dragRef.current.scrollLeft = scrollStart.current - walk;
   };
-
-  // ===== MOBILE TOUCH FIX =====
+ 
   const handleTouchStart = (e) => {
     const touch = e.touches[0];
     handleMouseDown({
@@ -199,8 +189,7 @@ useEffect(() => {
   return (
     <div className={`landing-page ${bgColor}`}>
       <div className="bg-overlay"></div>
-
-      {/* ===== NEW ARRIVALS ===== */}
+ 
       <section ref={newArrivalsRef} className="section new-arrivals">
         <h2
           className="section-title"
@@ -247,8 +236,7 @@ useEffect(() => {
           </div>
         </div>
       </section>
-
-      {/* ===== POPULAR ===== */}
+ 
       <section ref={popularRef} className="section popular">
         <h2
           className="section-title"
@@ -284,8 +272,7 @@ useEffect(() => {
           </div>
         </div>
       </section>
-
-      {/* ===== OUR PICKS FOR YOU ===== */}
+ 
       <section ref={picksRef} className="section picks">
         <h2 className="section-title">Our Picks for You</h2>
 
@@ -387,8 +374,7 @@ useEffect(() => {
           justify-content: center;
           color: white;
         }
-   
-        /* New Arrival */
+    
         img {
           -webkit-user-drag: none;
           -moz-user-select: none;
@@ -468,8 +454,7 @@ useEffect(() => {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-
-        /* Hide scrollbars */
+ 
         .arrivals-scroll::-webkit-scrollbar,
         .popular-scroll::-webkit-scrollbar {
           display: none;
@@ -479,8 +464,7 @@ useEffect(() => {
           -ms-overflow-style: none;  
           scrollbar-width: none;     
         }
-
-       /* ===== POPULAR ===== */
+ 
         .popular {
           text-align: left;
         }
@@ -504,8 +488,7 @@ useEffect(() => {
           align-items: center;
           padding: 10px;
         }
-
-        /* Circle Product Card */
+ 
         .popular-card {
           flex: 0 0 auto;
           width: 220px;
@@ -524,8 +507,7 @@ useEffect(() => {
           transform: scale(1.08);
           box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
         }
-
-        /* Product Image inside the circle */
+ 
         .popular-image {
           width: 100%;
           height: 100%;
@@ -537,8 +519,7 @@ useEffect(() => {
         .popular-card:hover .popular-image {
           transform: scale(1.05);
         }
-
-        /* Product Name below the circle */
+ 
         .popular-name {
           font-weight: 600;
           font-size: 1rem;
@@ -591,8 +572,7 @@ useEffect(() => {
           font-size: 0.9rem;
           color: #555;
         }
-        
-     /* ===== Responsive Layout + Smaller Gaps ===== */
+         
       @media (max-width: 1280px) {
         .section {
           margin-bottom: 160px; 

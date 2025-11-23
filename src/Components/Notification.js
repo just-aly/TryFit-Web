@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { getFirestore, collection, query, where, getDocs, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { collection, deleteDoc, doc, getDocs, getFirestore, orderBy, query, updateDoc, where } from "firebase/firestore";
+import { useEffect, useState } from "react";
 
 const db = getFirestore();
 const auth = getAuth();
@@ -12,8 +12,7 @@ export default function Notification() {
 
   const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-  useEffect(() => {
-    // Get the currently logged-in user's custom userId
+  useEffect(() => { 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -38,8 +37,7 @@ export default function Notification() {
 
     return () => unsubscribe();
   }, []);
-
-  // Fetch notifications from Firestore after getting userId
+ 
   useEffect(() => {
     if (!userId) return;
 
@@ -54,9 +52,7 @@ export default function Notification() {
           ...docSnap.data(),
         }));
 
-        setNotifications(notifData);
-
-        // Mark all notifications as read
+        setNotifications(notifData); 
         notifSnap.docs.forEach(async (docSnap) => {
           const notifDocRef = doc(db, "notifications", docSnap.id);
           if (!docSnap.data().read) { 
@@ -73,8 +69,7 @@ export default function Notification() {
 
     fetchNotifications();
   }, [userId]);
-
-  // Clear all notifications
+ 
   const confirmClearAll = async () => {
     try {
       const notifRef = collection(db, "notifications");
@@ -100,8 +95,7 @@ export default function Notification() {
     return <p style={{ textAlign: "center", marginTop: "200px" }}>Loading notifications...</p>;
 
   return (
-    <div className="notif-page">
-      {/* ===== Header Section ===== */}
+    <div className="notif-page"> 
       <div className="notif-header">
         <div className="notif-header-inner">
           <div className="notif-title-row" style={{ justifyContent: "space-between", width: "100%" }}>
@@ -150,9 +144,8 @@ export default function Notification() {
             </div>
           ))
         )}  
-      </div>
-
-      {/* Confirm Modal */}
+      </div> 
+      
       {showConfirmClear && (
         <div className="modal-overlay" onClick={() => setShowConfirmClear(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
@@ -170,9 +163,7 @@ export default function Notification() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Styles */}
+      )} 
       <style>{`
         .notif-page {
           background: linear-gradient(to bottom, #f8f2ffff, #e7d6fcff);

@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { motion, useAnimation } from "framer-motion";
-import { useLocation, useNavigate } from "react-router-dom";
-import { db, auth } from "../firebase";
 import {
-  collection,
   addDoc,
-  getDoc,
+  collection,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   query,
-  where,
-  setDoc,
   serverTimestamp,
-  deleteDoc,
+  setDoc,
+  where,
 } from "firebase/firestore";
+import { motion, useAnimation } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { auth, db } from "../firebase";
 
 export default function Checkout() {
   const location = useLocation();
@@ -26,9 +26,7 @@ export default function Checkout() {
   const [cartItems, setCartItems] = useState([]);
   const [orderInfo, setOrderInfo] = useState(null); 
   const [selectedItems, setSelectedItems] = useState([]);
-  
-
-  // UI states
+ 
   const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
@@ -51,8 +49,7 @@ export default function Checkout() {
     setSelectedItems(location.state.selectedCartItems);
   }
 }, [location.state]);
-
-  // Fetch shipping location
+ 
   useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
@@ -109,14 +106,13 @@ export default function Checkout() {
   }
 }, [location.state]);
 
-
-  // Toast helper
+ 
   const showToast = (message, type = "info", ms = 2500) => {
     setToast({ visible: true, message, type });
     setTimeout(() => setToast({ visible: false, message: "", type: "info" }), ms);
   };
 
-  // When user clicks Place Order, show confirmation modal
+  
   const handlePlaceOrderClick = () => {
     if (!auth.currentUser) {
       showToast("You must be logged in to place an order.", "error");
@@ -132,14 +128,12 @@ export default function Checkout() {
     }
     setShowConfirm(true);
   };
-
-  // Actual place order logic (called after confirm)
+ 
   const placeOrderConfirmed = async () => {
     setShowConfirm(false);
     setIsPlacingOrder(true);
 
-    try {
-      // get custom userId
+    try { 
       const user = auth.currentUser;
       if (!user) {
         showToast("Login required.", "error");
@@ -157,8 +151,7 @@ export default function Checkout() {
       const customUserId = userSnap.data().userId;
 
       const deliveryFee = 58;
-
-      // group items by productId + size
+ 
       const groupedItemsMap = new Map();
       cartItems.forEach((item) => {
         const key = `${item.productId}_${item.size}`;
@@ -214,8 +207,7 @@ export default function Checkout() {
           timestamp: serverTimestamp(),
           read: false,
         });
-
-        // update product stock
+  
         const productRef = doc(db, "products", groupedItem.productId);
         const productSnap = await getDoc(productRef);
         if (productSnap.exists()) {
@@ -236,8 +228,7 @@ export default function Checkout() {
           );
         }
       }
-
-      // remove placed items from cart collection for that user
+ 
       const cartRef = collection(db, "cartItems");
       const q = query(cartRef, where("userId", "==", userSnap.data().userId));
       const cartSnap = await getDocs(q);
@@ -251,8 +242,7 @@ export default function Checkout() {
       });
 
       await Promise.all(deletePromises);
-
-      // show success animation then redirect
+ 
       setShowSuccessAnim(true);
       setTimeout(() => {
         setShowSuccessAnim(false);
@@ -266,8 +256,7 @@ export default function Checkout() {
       setIsPlacingOrder(false);
     }
   };
-
-  // Navigate to add/edit address
+ 
   const handleAddAddress = () => {
     navigate("/profile", {
       state: {
@@ -281,14 +270,13 @@ export default function Checkout() {
 
   return (
     <div className="checkout-page">
-      {/* Top toast */}
+ 
       {toast.visible && (
         <div className={`toast ${toast.type}`}>
           <div className="toast-message">{toast.message}</div>
         </div>
       )}
-
-      {/* Confirm dialog */}
+ 
       {showConfirm && (
         <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
@@ -309,8 +297,7 @@ export default function Checkout() {
           </div>
         </div>
       )}
-
-      {/* Success animation overlay (Option C: stroke-draw check) */}
+ 
       {showSuccessAnim && (
         <div className="success-overlay">
           <div className="success-card" role="status" aria-live="polite">
@@ -640,7 +627,7 @@ export default function Checkout() {
   align-items: center;
   justify-content: center;
   z-index: 9998;
-  background: rgba(0, 0, 0, 0.25); /* slight dark tint */
+  background: rgba(0, 0, 0, 0.25); 
   backdrop-filter: blur(6px);      /
 }
 
@@ -656,8 +643,7 @@ export default function Checkout() {
 .check-svg {
   display: block;
 }
-
-/* SVG Line Animation */
+ 
 .check-path {
   stroke: #6c56ef;
   stroke-dasharray: 120;
@@ -732,8 +718,7 @@ export default function Checkout() {
   flex: 1;
   min-width: 350px;
 }
-
-/* ADDRESS BOX */
+ 
 .address-box {
   background: #f5f3fe;
   padding: 20px;
@@ -743,8 +728,7 @@ export default function Checkout() {
   align-items: center;
   margin-bottom: 25px;
 }
-
-/* PRODUCT CARD */
+ 
 .product-card {
   background: white;
   border-radius: 10px;
@@ -784,8 +768,7 @@ export default function Checkout() {
   font-size: 0.9rem;
   color: #777;
 }
-
-/* SHIPPING BOX */
+ 
 .shipping-box {
   background: white;
   border-radius: 10px;
@@ -816,8 +799,7 @@ export default function Checkout() {
   font-weight: 600;
   color: #333;
 }
-
-/* TOTAL */
+ 
 .total-items {
   margin-top: 20px;
   display: flex;
@@ -829,8 +811,7 @@ export default function Checkout() {
   font-weight: 600;
   color: #8f7aec;
 }
-
-/* PAYMENT + ORDER SUMMARY */
+ 
 .payment-card,
 .order-card {
   background: #f9f9f9;
@@ -1016,8 +997,7 @@ export default function Checkout() {
           font-size: 0.9rem;
         }
       }
-
-      /* Tablets (slightly bigger screens) */
+ 
       @media (min-width: 601px) and (max-width: 850px) {
         .checkout-content {
           flex-direction: column;

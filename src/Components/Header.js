@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import { signOut } from "firebase/auth";
+import { collection, doc, getDoc, onSnapshot, query, where } from "firebase/firestore";
+import Fuse from "fuse.js";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  FaShoppingCart,
-  FaShoppingBag,
-  FaUser,
   FaBell,
-  FaSignOutAlt,
   FaSearch,
+  FaShoppingBag,
+  FaShoppingCart,
+  FaSignOutAlt,
+  FaUser,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import Fuse from "fuse.js";
-import { signOut } from "firebase/auth";
-import { auth, db } from "../firebase"; 
-import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 
 
@@ -29,13 +29,11 @@ export default function Header() {
 
   const headerRef = useRef(null);
   const searchRef = useRef(null);
-
-  //  Static base suggestions
+ 
   const BASE_SUGGESTIONS = ["T-shirt", "Longsleeves", "Pants", "Shorts"];
 
   const [searchSuggestions, setSearchSuggestions] = useState(BASE_SUGGESTIONS);
-
-  //  Fuse for fuzzy search
+ 
   const fuse = useMemo(
     () =>
       new Fuse(searchSuggestions, {
@@ -82,9 +80,7 @@ export default function Header() {
 
     return unsub;
   }, [uniqueUserId]);
-
-
-  //  Placeholder animation
+ 
   useEffect(() => {
     const items = ["T-shirt", "Longsleeve", "Shorts", "Pants"];
     let index = 0;
@@ -101,13 +97,10 @@ export default function Header() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [inputValue]);
-
-  //  Fetch product names from backend (optional)
+  }, [inputValue]); 
   useEffect(() => {
     const fetchProductNames = async () => {
-      try {
-        // Example: fetch from API or Firebase later
+      try { 
         const fetchedNames = ["Joggers", "Hoodie",];
         const merged = Array.from(new Set([...BASE_SUGGESTIONS, ...fetchedNames]));
         setSearchSuggestions(merged);
@@ -117,8 +110,7 @@ export default function Header() {
     };
     fetchProductNames();
   }, []);
-
-  // Search handler
+ 
   const handleSearchChange = (e) => {
     const text = e.target.value;
     setInputValue(text);
@@ -130,15 +122,13 @@ export default function Header() {
       setFilteredSuggestions([]);
     }
   };
-
-  //  Handle suggestion click
+ 
   const handleSuggestionClick = (item) => {
     setInputValue("");
     setFilteredSuggestions([]);
     navigate(`/searchresults?query=${encodeURIComponent(item)}`);
   };
-
-  //  Submit search manually
+ 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (inputValue.trim() !== "") {
@@ -147,8 +137,7 @@ export default function Header() {
       setInputValue("");
     }
   };
-
-  //  Outside click closes dropdowns & suggestions
+ 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -163,8 +152,7 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  //  Logout confirmation handlers
+ 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
     setOpenDropdown(null);
@@ -173,14 +161,12 @@ export default function Header() {
     const confirmLogout = async () => {
       await signOut(auth);
       setShowLogoutModal(false);
-
-      // Prevent back navigation
+ 
       window.history.pushState(null, "", window.location.href);
       window.onpopstate = function () {
         window.history.go(1);
       };
-
-      // Reset navigation like React Native reset()
+ 
       navigate("/login", { replace: true });
     };
 
@@ -196,8 +182,7 @@ export default function Header() {
           TRYFIT
         </div>
 
-        <div className="center-area">
-          {/*  Search bar */}
+        <div className="center-area"> 
           <form className="search-wrapper" ref={searchRef} onSubmit={handleSearchSubmit}>
             <div className="placeholder-wrapper">
               <input
@@ -216,9 +201,7 @@ export default function Header() {
             </div>
             <button type="submit" className="search-icon-btn">
               <FaSearch className="search-icon" />
-            </button>
-
-            {/*  Suggestions dropdown */}
+            </button> 
             {filteredSuggestions.length > 0 && (
               <div className="suggestions-container">
                 {filteredSuggestions.map((item, index) => (
@@ -232,9 +215,7 @@ export default function Header() {
                 ))}
               </div>
             )}
-          </form>
-
-          {/* Navigation */}
+          </form> 
           <div className="nav-items">
             <div className="dropdown" onClick={() => toggleDropdown("tops")}>
               Tops {openDropdown === "tops" ? "▴" : "▾"}
@@ -274,9 +255,8 @@ export default function Header() {
               onClick={() => toggleDropdown("profile")}
               style={{ position: "relative" }}
             >
-              <FaUser className="icon" />
+              <FaUser className="icon" /> 
 
-              {/*  RED DOT ON THE HEADER ICON */}
               {unreadCount > 0 && (
                 <span
                   className="notif-badge-dot"
@@ -306,8 +286,7 @@ export default function Header() {
                     style={{ position: "relative", display: "flex", alignItems: "center" }}
                   >
                     <FaBell className="dropdown-icon" /> Notifications
-
-                    {/*  RED DOT IN DROPDOWN */}
+ 
                     {unreadCount > 0 && (
                       <span
                         className="notif-badge-dot"
@@ -334,8 +313,7 @@ export default function Header() {
           </div>
         </div>
       </header>
-
-      {/* Logout Modal */}
+ 
       {showLogoutModal && (
         <div className="modal-overlay">
           <div className="logout-modal">
@@ -528,8 +506,7 @@ export default function Header() {
           pointer-events: none;
         }
         .icon:hover + .tooltip { visibility: visible; opacity: 1; }
-
-        /*  Logout Modal */
+ 
         .modal-overlay {
           position: fixed;
           font-family: Arial, sans-serif;

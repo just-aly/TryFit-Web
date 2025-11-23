@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { motion, useAnimation } from "framer-motion";
-import { useLocation, useNavigate } from "react-router-dom";
-import { db, auth } from "../firebase";
 import {
-  collection,
   addDoc,
-  getDoc,
+  collection,
   doc,
+  getDoc,
   getDocs,
   query,
-  where,
-  setDoc,
   serverTimestamp,
-  deleteDoc,
+  where
 } from "firebase/firestore";
+import { motion, useAnimation } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { auth, db } from "../firebase";
 
 export default function Recheckout() {
   const location = useLocation();
@@ -25,9 +23,7 @@ export default function Recheckout() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [reorderItems, setReorderItems] = useState([]);
   const { completedID, cancelledID } = location.state || {};
-  const [order, setOrder] = useState(null);
-
-  // UI states
+  const [order, setOrder] = useState(null); 
   const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
@@ -42,8 +38,7 @@ export default function Recheckout() {
       transition: { duration: 0.8, ease: "easeOut" },
     });
   }, [controls]);
-
-  // Toast helper
+ 
   const showToast = (message, type = "info", ms = 2500) => {
     setToast({ visible: true, message, type });
     setTimeout(() => setToast({ visible: false, message: "", type: "info" }), ms);
@@ -53,9 +48,7 @@ export default function Recheckout() {
     if (location.state?.cartItems) {
       setReorderItems(location.state.cartItems);
     }
-  }, [location.state]);
-
-  // Fetch shipping location
+  }, [location.state]); 
   useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
@@ -104,8 +97,7 @@ export default function Recheckout() {
 
     fetchShippingLocation();
   }, []);
-
-  // Fetch previous order items
+ 
   useEffect(() => {
     const fetchOrder = async () => {
       try {
@@ -141,8 +133,6 @@ export default function Recheckout() {
     fetchOrder();
   }, [completedID, cancelledID]);
   
-
-  // Confirmation modal before placing order
   const handlePlaceOrderClick = () => {
     if (!auth.currentUser) {
       showToast("You must be logged in to place an order.", "error");
@@ -205,8 +195,7 @@ export default function Recheckout() {
         timestamp: serverTimestamp(),
         read: false,
       });
-
-      // Show success animation
+ 
       setShowSuccessAnim(true);
       setTimeout(() => {
         setShowSuccessAnim(false);
@@ -232,8 +221,7 @@ export default function Recheckout() {
   };
 
   return (
-    <div className="checkout-page">
-      {/* Top toast */}
+    <div className="checkout-page"> 
       {toast.visible && (
         <div className={`toast ${toast.type}`}>
           <div className="toast-message">{toast.message}</div>
@@ -261,8 +249,6 @@ export default function Recheckout() {
         </div>
       )}
 
-
-      {/* Success animation overlay */}
       {showSuccessAnim && (
         <div className="success-overlay">
           <div className="success-card" role="status" aria-live="polite">
@@ -273,9 +259,8 @@ export default function Recheckout() {
             <div className="success-text">Order successfully placed!</div>
           </div>
         </div>
-      )}
+      )} 
 
-      {/* Page content */}
       <motion.div className="checkout-header" initial={{ opacity: 0, y: -20 }} animate={controls}>
         <div className="checkout-header-inner">
           <div className="checkout-title-row">
@@ -404,8 +389,7 @@ export default function Recheckout() {
           flex-direction: column;
           align-items: center;
         }
-
-        /* ===== Header ===== */
+ 
         .checkout-header {
           width: 100%;
           display: flex;
@@ -551,8 +535,7 @@ export default function Recheckout() {
           font-size: 1.5rem;
           text-align: center;
         }
-
-        /* ===== Main Content ===== */
+ 
         .checkout-content {
           display: flex;
           gap: 30px;
@@ -565,8 +548,7 @@ export default function Recheckout() {
           box-shadow: 0 4px 20px rgba(0,0,0,0.1);
           flex-wrap: wrap;
         }
-
-        /* ===== Left Column ===== */
+ 
         .checkout-left {
           flex: 1;
           min-width: 350px;
@@ -686,9 +668,8 @@ export default function Recheckout() {
         .total-items .total {
           color: #8f7aec;
           font-weight: 600;
-        }
+        } 
 
-        /* ===== Right Column ===== */
         .checkout-right {
           width: 270px;
           display: flex;
@@ -732,8 +713,7 @@ export default function Recheckout() {
           border: none;
           border-top: 1px solid #ddd;
         }
-
-        /* ===== New Order Card ===== */
+ 
         .order-card {
           background: #f9f9f9;
           border: 1px solid #ddd;
@@ -938,8 +918,7 @@ export default function Recheckout() {
           font-size: 0.9rem;
         }
       }
-
-      /* Tablets (slightly bigger screens) */
+ 
       @media (min-width: 601px) and (max-width: 850px) {
         .checkout-content {
           flex-direction: column;
