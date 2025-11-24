@@ -862,9 +862,9 @@ export default function MyOrders() {
           overflow-x: hidden;
           margin: 0 auto;
           width: 100%;
-          height: 100vh; 
-          overflow-y: auto;
           justify-content: center;
+          min-height: 100vh;
+          height: auto;
         }
 
         .orders-container {
@@ -882,6 +882,7 @@ export default function MyOrders() {
           width: 100%;
           height: 100%;
           display: flex;
+          min-width: 900px;
         }
 
         .sidebar {
@@ -941,12 +942,12 @@ export default function MyOrders() {
           display: flex;
           flex-direction: column;
           background: #fff;
-          flex: 1;
           overflow-y: auto; 
           padding: 0px;
           position: relative;
            min-height: 100vh;
            max-height: calc(100vh - 160px);
+           min-width: 600px;
         }
 
         .section-header {
@@ -1167,6 +1168,7 @@ export default function MyOrders() {
           box-shadow: 0 4px 20px rgba(0,0,0,0.2);
           position: relative;
         } 
+          
         .confirm-cancel-modal {
           width: 320px;       
           max-width: 90%;     
@@ -1250,7 +1252,8 @@ export default function MyOrders() {
         @keyframes fadeOut {
           to { opacity: 0; transform: translate(-50%, -20px); }
         }
-
+      
+      
 
         @media (max-width: 480px) {
           .orders-page {
@@ -1267,7 +1270,8 @@ export default function MyOrders() {
             align-items: stretch;
             border: none;
             box-shadow: none;
-            overflow: hidden;
+            overflow: visible; !important;
+            min-width: auto; !important;
           }
 
           .button-group p {
@@ -1276,20 +1280,6 @@ export default function MyOrders() {
             text-align: center;
             margin: 4px 0;
             word-break: break-all;
-          }
-
-          .delivery-box {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: center;
-            text-align: right;
-            width: 100%;
-            background: #f1e9ff;
-            border-radius: 6px;
-            padding: 6px 10px;
-            box-sizing: border-box;
-            margin-top: 6px;
           }
 
             .delivery-box {
@@ -1320,7 +1310,6 @@ export default function MyOrders() {
             .delivery-box p:last-child {
               color: #333;
             }
-          }
  
           .sidebar {
             flex: 0 0 120px !important; 
@@ -1370,7 +1359,7 @@ export default function MyOrders() {
             flex-direction: column;
             align-items: center;
             padding: 10px;
-            width: 100%;
+            width: 50%;
             border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
           }
