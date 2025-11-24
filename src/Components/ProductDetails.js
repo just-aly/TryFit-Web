@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, collection, setDoc, serverTimestamp, addDoc, query, where, getDocs } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  setDoc,
+  serverTimestamp,
+  addDoc,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { getAuth } from "firebase/auth";
 
 const auth = getAuth();
-const PLACEHOLDER_IMAGE = "https://via.placeholder.com/300x400.png?text=No+Image";
+const PLACEHOLDER_IMAGE =
+  "https://via.placeholder.com/300x400.png?text=No+Image";
 
 export default function ProductDetails() {
   const { productId } = useParams();
@@ -50,7 +61,10 @@ export default function ProductDetails() {
           where("productID", "==", product.productID)
         );
         const querySnapshot = await getDocs(q);
-        const fetched = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const fetched = querySnapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((item) => item.comment && item.comment.trim() !== "");
+
         setReviews(fetched);
       } catch (error) {
         console.error("Error fetching reviews:", error);
@@ -64,14 +78,25 @@ export default function ProductDetails() {
     setTimeout(() => setPopup({ visible: false, message: "", type: "" }), 2000);
   };
 
-  if (loading) return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading product...</p>;
-  if (!product) return <p style={{ textAlign: "center", marginTop: "50px" }}>Product not found.</p>;
+  if (loading)
+    return (
+      <p style={{ textAlign: "center", marginTop: "50px" }}>
+        Loading product...
+      </p>
+    );
+  if (!product)
+    return (
+      <p style={{ textAlign: "center", marginTop: "50px" }}>
+        Product not found.
+      </p>
+    );
 
   const safeStock = product.stock || {};
   const getSizeStock = (size) => Number(safeStock[size]) || 0;
 
   const incrementQuantity = () => {
-    if (selectedSize && quantity < getSizeStock(selectedSize)) setQuantity(quantity + 1);
+    if (selectedSize && quantity < getSizeStock(selectedSize))
+      setQuantity(quantity + 1);
   };
 
   const decrementQuantity = () => {
@@ -81,7 +106,8 @@ export default function ProductDetails() {
   const saveCartItem = async () => {
     if (!selectedSize) return showPopup("Please select a size.", "warning");
     const stockAvailable = getSizeStock(selectedSize);
-    if (quantity > stockAvailable) return showPopup(`Only ${stockAvailable} available.`, "warning");
+    if (quantity > stockAvailable)
+      return showPopup(`Only ${stockAvailable} available.`, "warning");
 
     try {
       const user = auth.currentUser;
@@ -89,7 +115,8 @@ export default function ProductDetails() {
 
       const userDocRef = doc(db, "users", user.uid);
       const userDocSnap = await getDoc(userDocRef);
-      if (!userDocSnap.exists()) return showPopup("User data missing.", "error");
+      if (!userDocSnap.exists())
+        return showPopup("User data missing.", "error");
 
       const customUserId = userDocSnap.data().userId;
       const cartItemCode = doc(collection(db, "cartItems")).id;
@@ -131,7 +158,8 @@ export default function ProductDetails() {
   const handleDirectCheckout = () => {
     if (!selectedSize) return showPopup("Please select a size.", "warning");
     const stockAvailable = getSizeStock(selectedSize);
-    if (quantity > stockAvailable) return showPopup(`Only ${stockAvailable} available.`, "warning");
+    if (quantity > stockAvailable)
+      return showPopup(`Only ${stockAvailable} available.`, "warning");
 
     const checkoutItem = {
       productId: product.id,
@@ -151,21 +179,24 @@ export default function ProductDetails() {
     setQuantity(1);
   };
 
-
   const renderStars = (rating) => {
     const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.4 && rating % 1 <= 0.7; 
+    const hasHalfStar = rating % 1 >= 0.4 && rating % 1 <= 0.7;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
     return (
-      <span className="stars"> 
+      <span className="stars">
         {Array.from({ length: fullStars }).map((_, i) => (
-          <span key={"full" + i} className="star full">★</span>
-        ))} 
+          <span key={"full" + i} className="star full">
+            ★
+          </span>
+        ))}
         {hasHalfStar && <span className="star half">★</span>}
- 
+
         {Array.from({ length: emptyStars }).map((_, i) => (
-          <span key={"empty" + i} className="star empty">☆</span>
+          <span key={"empty" + i} className="star empty">
+            ☆
+          </span>
         ))}
       </span>
     );
@@ -201,7 +232,11 @@ export default function ProductDetails() {
 
       <div className="product-layout">
         <div className="product-image-section">
-          <img src={product.imageUrl || PLACEHOLDER_IMAGE} alt={product.productName} className="product-image" />
+          <img
+            src={product.imageUrl || PLACEHOLDER_IMAGE}
+            alt={product.productName}
+            className="product-image"
+          />
         </div>
 
         <div className="product-info-section">
@@ -209,13 +244,19 @@ export default function ProductDetails() {
           <p className="price">₱{Number(product.price).toLocaleString()}</p>
           <div className="rating-stars">
             {renderStars(Number(product.rating || 0))}
-            <span className="rating-number"> {Number(product.rating).toFixed(1)} </span>
+            <span className="rating-number">
+              {" "}
+              {Number(product.rating).toFixed(1)}{" "}
+            </span>
           </div>
 
           <p className="sold">{product.sold || 0} Sold</p>
 
-          <div className="note">Size recommendations and AR experience are available only on the mobile app.</div>
- 
+          <div className="note">
+            Size recommendations and AR experience are available only on the
+            mobile app.
+          </div>
+
           <div className="reviews-section">
             <h3> Reviews</h3>
             {showReviews && (
@@ -229,7 +270,10 @@ export default function ProductDetails() {
                         <p className="review-size">Size: {rev.size}</p>
                         <p className="review-comment">{rev.comment}</p>
                       </div>
-                      <div className="review-stars">{"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}</div>
+                      <div className="review-stars">
+                        {"★".repeat(rev.rating)}
+                        {"☆".repeat(5 - rev.rating)}
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -238,24 +282,32 @@ export default function ProductDetails() {
               </div>
             )}
             {reviews.length > 0 && (
-              <p className="toggle-reviews" onClick={() => setShowReviews(!showReviews)}>
+              <p
+                className="toggle-reviews"
+                onClick={() => setShowReviews(!showReviews)}
+              >
                 {showReviews ? "Hide Reviews" : "Show Reviews"}
               </p>
             )}
           </div>
 
           <div className="button-group">
-            <button className="add-to-cart-btn" onClick={() => setModalVisible(true)}>
+            <button
+              className="add-to-cart-btn"
+              onClick={() => setModalVisible(true)}
+            >
               Add to Cart
             </button>
-            <button className="checkout-btn" onClick={() => setDirectCheckoutModal(true)}>
+            <button
+              className="checkout-btn"
+              onClick={() => setDirectCheckoutModal(true)}
+            >
               Checkout
             </button>
           </div>
         </div>
       </div>
 
-     
       {modalVisible && (
         <div className="modal-overlay" onClick={() => setModalVisible(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -276,8 +328,13 @@ export default function ProductDetails() {
                     <button
                       key={size}
                       disabled={getSizeStock(size) === 0}
-                      className={selectedSize === size ? "size-btn selected" : "size-btn"}
-                      onClick={() => { setSelectedSize(size); setQuantity(1); }}
+                      className={
+                        selectedSize === size ? "size-btn selected" : "size-btn"
+                      }
+                      onClick={() => {
+                        setSelectedSize(size);
+                        setQuantity(1);
+                      }}
                     >
                       {size} ({getSizeStock(size)} pcs)
                     </button>
@@ -286,11 +343,15 @@ export default function ProductDetails() {
 
                 <div className="quantity">
                   <label className="quantity-label">Quantity:</label>
-                  <button onClick={decrementQuantity} disabled={quantity <= 1}>−</button>
+                  <button onClick={decrementQuantity} disabled={quantity <= 1}>
+                    −
+                  </button>
                   <span className="quantity-value">{quantity}</span>
                   <button
                     onClick={incrementQuantity}
-                    disabled={selectedSize && quantity >= getSizeStock(selectedSize)}
+                    disabled={
+                      selectedSize && quantity >= getSizeStock(selectedSize)
+                    }
                   >
                     ＋
                   </button>
@@ -298,16 +359,20 @@ export default function ProductDetails() {
               </div>
             </div>
 
-            <button className="confirm-btn" onClick={saveCartItem}>Add to Cart</button>
+            <button className="confirm-btn" onClick={saveCartItem}>
+              Add to Cart
+            </button>
           </div>
         </div>
       )}
 
       {directCheckoutModal && (
-        <div className="modal-overlay" onClick={() => setDirectCheckoutModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setDirectCheckoutModal(false)}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Checkout Now</h3>
-            
 
             <div className="c_a-container">
               <div className="product-image-section">
@@ -325,8 +390,13 @@ export default function ProductDetails() {
                     <button
                       key={size}
                       disabled={getSizeStock(size) === 0}
-                      className={selectedSize === size ? "size-btn selected" : "size-btn"}
-                      onClick={() => { setSelectedSize(size); setQuantity(1); }}
+                      className={
+                        selectedSize === size ? "size-btn selected" : "size-btn"
+                      }
+                      onClick={() => {
+                        setSelectedSize(size);
+                        setQuantity(1);
+                      }}
                     >
                       {size} ({getSizeStock(size)} pcs)
                     </button>
@@ -335,11 +405,15 @@ export default function ProductDetails() {
 
                 <div className="quantity">
                   <label className="quantity-label">Quantity:</label>
-                  <button onClick={decrementQuantity} disabled={quantity <= 1}>−</button>
+                  <button onClick={decrementQuantity} disabled={quantity <= 1}>
+                    −
+                  </button>
                   <span className="quantity-value">{quantity}</span>
                   <button
                     onClick={incrementQuantity}
-                    disabled={selectedSize && quantity >= getSizeStock(selectedSize)}
+                    disabled={
+                      selectedSize && quantity >= getSizeStock(selectedSize)
+                    }
                   >
                     ＋
                   </button>
@@ -347,38 +421,46 @@ export default function ProductDetails() {
               </div>
             </div>
 
-            <button className="confirm-btn" onClick={handleDirectCheckout}>Proceed to Checkout</button>
+            <button className="confirm-btn" onClick={handleDirectCheckout}>
+              Proceed to Checkout
+            </button>
           </div>
         </div>
       )}
 
-    
-        {cartSuccessModal && (
-          <div className="modal-overlay" onClick={() => setCartSuccessModal(false)}>
-            <div className="modal-content animated" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
-              <div className="checkmark-circle">
-                <span className="checkmark">✔</span>
-              </div>
-              <h3 style={{ marginBottom: "10px" }}>Order added to cart!</h3>
-              <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
-                <button
-                  className="confirm-btn"
-                  style={{ flex: 1, backgroundColor: "#7B5CD6" }}
-                  onClick={() => navigate("/landing")}
-                >
-                  Continue Shopping
-                </button>
-                <button
-                  className="cart-btn"
-                  style={{ flex: 1, border:  "1px solid #7B5CD6" }}
-                  onClick={() => navigate("/cart")}
-                >
-                  Go to Cart
-                </button>
-              </div>
+      {cartSuccessModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setCartSuccessModal(false)}
+        >
+          <div
+            className="modal-content animated"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textAlign: "center" }}
+          >
+            <div className="checkmark-circle">
+              <span className="checkmark">✔</span>
+            </div>
+            <h3 style={{ marginBottom: "10px" }}>Order added to cart!</h3>
+            <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
+              <button
+                className="confirm-btn"
+                style={{ flex: 1, backgroundColor: "#7B5CD6" }}
+                onClick={() => navigate("/landing")}
+              >
+                Continue Shopping
+              </button>
+              <button
+                className="cart-btn"
+                style={{ flex: 1, border: "1px solid #7B5CD6" }}
+                onClick={() => navigate("/cart")}
+              >
+                Go to Cart
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       <style>{` 
         .popup {
