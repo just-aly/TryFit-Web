@@ -428,7 +428,7 @@ export default function LoginPage() {
           to { opacity: 1; }
         }
           
-        @media (max-width: 900px) {
+        @media (max-width: 480px) {
           .login-container {
             flex-direction: column;
             height: auto;
@@ -473,7 +473,7 @@ export default function LoginPage() {
           }
 
           .password-toggle {
-            left: 250px;
+            left: 280px;
           }
 
           .login-btn {

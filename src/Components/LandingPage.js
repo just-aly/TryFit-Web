@@ -3,13 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 
-const PLACEHOLDER_IMAGE = "https://via.placeholder.com/130x180.png?text=No+Image"; 
+const PLACEHOLDER_IMAGE =
+  "https://via.placeholder.com/130x180.png?text=No+Image";
 
-export default function LandingPage() { 
+export default function LandingPage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [cheapProducts, setCheapProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
-  const [bgColor, setBgColor] = useState("lavender"); 
+  const [bgColor, setBgColor] = useState("lavender");
   const newArrivalsRef = useRef(null);
   const popularRef = useRef(null);
   const picksRef = useRef(null);
@@ -21,103 +24,95 @@ export default function LandingPage() {
   const handleNewArrivalClick = () => {
     navigate("/categories", {
       state: {
-        activeTab: "Latest", 
+        activeTab: "Latest",
       },
     });
   };
-  
+
   const PopularHeader = () => {
     navigate("/categories", {
       state: {
-        activeTab: "Popular",  
+        activeTab: "Popular",
       },
     });
   };
-useEffect(() => { 
-  const unsubscribeProducts = onSnapshot(
-    collection(db, "products"),
-    (querySnapshot) => {
-      const fetched = [];
-      querySnapshot.forEach((docSnap) => {
-        const product = docSnap.data();
-        const normalized = {
-          id: docSnap.id,
-          ...product,
-          productName: product.productName || product.name || "",
-          name: product.name || product.productName || "",
-        };
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "products"),
+      (querySnapshot) => {
+        const allProducts = [];
+        const cheapProducts = [];
+        const newArrivals = [];
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setDate(oneMonthAgo.getDate() - 31);
 
-        if (normalized.price) {
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const normalized = {
+            id: docSnap.id,
+            ...data,
+            productName: data.productName || data.name || "",
+            name: data.name || data.productName || "",
+          };
+
+          allProducts.push(normalized);
+
           const numericPrice =
             typeof normalized.price === "string"
               ? parseInt(normalized.price.replace(/[^\d]/g, ""))
               : normalized.price;
           if (numericPrice && numericPrice <= 250) {
-            fetched.push(normalized);
+            cheapProducts.push(normalized);
           }
-        }
-      });
-      setProducts(fetched);
-    },
-    (error) => {
-      console.error("Error fetching products:", error);
-    }
-  );
- 
-  const unsubscribeNewArrivals = onSnapshot(
-    collection(db, "products"),
-    (querySnapshot) => {
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setDate(oneMonthAgo.getDate() - 31);
 
-      const newProducts = [];
+          if (data.createdAt) {
+            const createdAt = data.createdAt.toDate
+              ? data.createdAt.toDate()
+              : new Date(data.createdAt);
+            if (createdAt >= oneMonthAgo) {
+              newArrivals.push({
+                id: docSnap.id,
+                productID: data.productID,
+                productName: data.productName,
+                price: data.price,
+                rating: data.rating,
+                sold: data.sold,
+                delivery: data.delivery,
+                categoryMain: data.categoryMain,
+                categorySub: data.categorySub,
+                sizes: data.sizes,
+                stock: data.stock,
+                colors: data.colors,
+                imageUrl: data.imageUrl,
+                description: data.description,
+                createdAt: data.createdAt,
+                arUrl: data.arUrl || null,
+              });
+            }
+          }
+        });
 
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (!data.createdAt) return;
+        setProducts(cheapProducts);
+        setNewArrivals(newArrivals);
+        setAllProducts(allProducts);
+      },
+      (error) => {
+        console.error("Error fetching products:", error);
+      }
+    );
 
-        const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-        if (createdAt >= oneMonthAgo) {
-          newProducts.push({
-            id: docSnap.id,
-            productID: data.productID,
-            productName: data.productName,
-            price: data.price,
-            rating: data.rating,
-            sold: data.sold,
-            delivery: data.delivery,
-            categoryMain: data.categoryMain,
-            categorySub: data.categorySub,
-            sizes: data.sizes,
-            stock: data.stock,
-            colors: data.colors,
-            imageUrl: data.imageUrl,
-            description: data.description,
-            createdAt: data.createdAt,
-            arUrl: data.arUrl || null,
-          });
-        }
-      });
+    return () => unsubscribe();
+  }, []);
 
-      setNewArrivals(newProducts);
-    },
-    (error) => {
-      console.error("Error fetching new arrivals:", error);
-    }
-  );
- 
-  return () => {
-    unsubscribeProducts();
-    unsubscribeNewArrivals();
-  };
-}, []);
- 
   useEffect(() => {
     const interval = setInterval(() => {
       if (!isDragging.current && dragRef.current) {
         const scrollBox = dragRef.current;
         const scrollAmount = 600;
-        if (scrollBox.scrollLeft + scrollBox.clientWidth >= scrollBox.scrollWidth - 5) {
+        if (
+          scrollBox.scrollLeft + scrollBox.clientWidth >=
+          scrollBox.scrollWidth - 5
+        ) {
           scrollBox.scrollTo({ left: 0, behavior: "smooth" });
         } else {
           scrollBox.scrollBy({ left: scrollAmount, behavior: "smooth" });
@@ -126,7 +121,7 @@ useEffect(() => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
- 
+
   useEffect(() => {
     const handleScroll = () => {
       const newArrivalsTop = newArrivalsRef.current?.offsetTop || 0;
@@ -142,7 +137,7 @@ useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
- 
+
   const handleMouseDown = (e) => {
     isDragging.current = true;
     if (dragRef.current) dragRef.current.classList.add("dragging");
@@ -164,10 +159,10 @@ useEffect(() => {
     if (!isDragging.current || !dragRef.current) return;
     e.preventDefault();
     const x = e.pageX - dragRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.2; 
+    const walk = (x - startX.current) * 1.2;
     dragRef.current.scrollLeft = scrollStart.current - walk;
   };
- 
+
   const handleTouchStart = (e) => {
     const touch = e.touches[0];
     handleMouseDown({
@@ -189,7 +184,7 @@ useEffect(() => {
   return (
     <div className={`landing-page ${bgColor}`}>
       <div className="bg-overlay"></div>
- 
+
       <section ref={newArrivalsRef} className="section new-arrivals">
         <h2
           className="section-title"
@@ -225,7 +220,11 @@ useEffect(() => {
                       className="arrival-img"
                     />
                     <div className="arrival-name-overlay">
-                      <span>{product.productName || product.name || "Unnamed Product"}</span>
+                      <span>
+                        {product.productName ||
+                          product.name ||
+                          "Unnamed Product"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -236,7 +235,7 @@ useEffect(() => {
           </div>
         </div>
       </section>
- 
+
       <section ref={popularRef} className="section popular">
         <h2
           className="section-title"
@@ -248,7 +247,7 @@ useEffect(() => {
 
         <div className="popular-scroll">
           <div className="popular-track">
-            {products
+            {allProducts
               .filter((product) => Number(product.sold || 0) >= 1000)
               .map((product) => (
                 <div
@@ -258,21 +257,20 @@ useEffect(() => {
                 >
                   <img
                     src={product.imageUrl || PLACEHOLDER_IMAGE}
-                    alt={product.name || product.productName || "Popular Product"}
+                    alt={product.name || product.productName}
                     className="popular-image"
                   />
                   <p className="popular-name">
-                    { (product.productName || product.name)?.length > 16
+                    {(product.productName || product.name)?.length > 16
                       ? (product.productName || product.name).slice(0, 14) + "…"
-                      : (product.productName || product.name)
-                    }
+                      : product.productName || product.name}
                   </p>
                 </div>
               ))}
           </div>
         </div>
       </section>
- 
+
       <section ref={picksRef} className="section picks">
         <h2 className="section-title">Our Picks for You</h2>
 
@@ -293,7 +291,7 @@ useEffect(() => {
                   <h4>
                     {(product.productName || product.name)?.length > 22
                       ? (product.productName || product.name).slice(0, 20) + "…"
-                      : (product.productName || product.name)}
+                      : product.productName || product.name}
                   </h4>
                   <p className="price">
                     ₱

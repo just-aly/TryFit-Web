@@ -21,6 +21,7 @@ export default function Cart() {
   const user = auth.currentUser;
   const [products, setProducts] = useState([]);
   const [hideCheckout, setHideCheckout] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -40,12 +41,18 @@ export default function Cart() {
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const items = snapshot.docs.map((doc) => ({
+        let items = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           selected: doc.data().selected || false,
           quantity: doc.data().quantity || 1,
         }));
+
+        items.sort((a, b) => {
+          if (!a.timestamp || !b.timestamp) return 0;
+          return b.timestamp.toMillis() - a.timestamp.toMillis();
+        });
+
         setProducts(items);
       });
 
@@ -53,24 +60,48 @@ export default function Cart() {
     };
 
     const unsub = fetchCart();
-    return () => unsub && unsub instanceof Function && unsub();
+    return () => unsub && typeof unsub === "function" && unsub();
   }, [user]);
 
   const toggleSelect = async (id) => {
-    const docRef = doc(db, "cartItems", id);
-    const current = products.find((p) => p.id === id);
-    await updateDoc(docRef, { selected: !current.selected });
+    try {
+      const docRef = doc(db, "cartItems", id);
+      const snap = await getDoc(docRef);
+
+      if (!snap.exists()) return;
+
+      await updateDoc(docRef, {
+        selected: !snap.data().selected,
+      });
+    } catch (err) {
+      console.error("toggleSelect error:", err);
+    }
   };
 
   const changeQuantity = async (id, delta) => {
-    const current = products.find((p) => p.id === id);
-    if (!current) return;
-    const newQty = Math.max(1, current.quantity + delta);
-    await updateDoc(doc(db, "cartItems", id), { quantity: newQty });
+    try {
+      const docRef = doc(db, "cartItems", id);
+      const snap = await getDoc(docRef);
+
+      if (!snap.exists()) return;
+
+      const current = snap.data();
+      const newQty = Math.max(1, (current.quantity || 1) + delta);
+
+      await updateDoc(docRef, { quantity: newQty });
+    } catch (err) {
+      console.error("changeQuantity error:", err);
+    }
   };
 
   const deleteProduct = async (id) => {
     await deleteDoc(doc(db, "cartItems", id));
+
+    setDeleteMsg("Item removed from cart.");
+
+    setTimeout(() => {
+      setDeleteMsg("");
+    }, 2000);
   };
 
   const selectedItems = products.filter((p) => p.selected);
@@ -93,11 +124,16 @@ export default function Cart() {
     <div className="cart-container">
       <div className="cart-items">
         {products.map((p) => (
-          <div key={p.id} className="cart-card">
+          <div
+            key={p.id}
+            className={`cart-card ${p.selected ? "selected" : ""}`}
+            onClick={() => toggleSelect(p.id)}
+          >
             <div className="cart-left">
               <input
                 type="checkbox"
                 checked={p.selected}
+                onClick={(e) => e.stopPropagation()}
                 onChange={() => toggleSelect(p.id)}
               />
 
@@ -116,9 +152,23 @@ export default function Cart() {
 
             <div className="quantity-actions">
               <div className="quantity">
-                <button onClick={() => changeQuantity(p.id, -1)}>-</button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    changeQuantity(p.id, -1);
+                  }}
+                >
+                  -
+                </button>
                 <span>{p.quantity}</span>
-                <button onClick={() => changeQuantity(p.id, 1)}>+</button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    changeQuantity(p.id, 1);
+                  }}
+                >
+                  +
+                </button>
               </div>
 
               <span className="delete-btn" onClick={() => deleteProduct(p.id)}>
@@ -150,6 +200,7 @@ export default function Cart() {
           </button>
         </div>
       </div>
+      {deleteMsg && <div className="toast">{deleteMsg}</div>}
 
       <style>{`
         .cart-container {
@@ -293,6 +344,27 @@ export default function Cart() {
 
           .delete-btn {
             font-size: 0.8rem;
+          }
+            .toast {
+            position: fixed;
+            bottom: 500px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #6a5acd;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            animation: fadeInOut 2s ease forwards;
+            z-index: 1000;
+          }
+
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(10px); }
           }
         }
       `}</style>

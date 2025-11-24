@@ -1,5 +1,15 @@
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { collection, deleteDoc, doc, getDocs, getFirestore, orderBy, query, updateDoc, where } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  getFirestore,
+  orderBy,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 const db = getFirestore();
@@ -8,11 +18,11 @@ const auth = getAuth();
 export default function Notification() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState(null); 
+  const [userId, setUserId] = useState(null);
 
   const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-  useEffect(() => { 
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -22,9 +32,11 @@ export default function Notification() {
 
           if (!userSnap.empty) {
             const userData = userSnap.docs[0].data();
-            setUserId(userData.userId); 
+            setUserId(userData.userId);
           } else {
-            console.warn("⚠️ No user found in 'users' collection for this account.");
+            console.warn(
+              "⚠️ No user found in 'users' collection for this account."
+            );
           }
         } catch (error) {
           console.error("🔥 Error fetching userId:", error);
@@ -37,14 +49,18 @@ export default function Notification() {
 
     return () => unsubscribe();
   }, []);
- 
+
   useEffect(() => {
     if (!userId) return;
 
     const fetchNotifications = async () => {
       try {
         const notifRef = collection(db, "notifications");
-        const q = query(notifRef, where("userId", "==", userId), orderBy("timestamp", "desc"));
+        const q = query(
+          notifRef,
+          where("userId", "==", userId),
+          orderBy("timestamp", "desc")
+        );
         const notifSnap = await getDocs(q);
 
         const notifData = notifSnap.docs.map((docSnap) => ({
@@ -52,14 +68,13 @@ export default function Notification() {
           ...docSnap.data(),
         }));
 
-        setNotifications(notifData); 
+        setNotifications(notifData);
         notifSnap.docs.forEach(async (docSnap) => {
           const notifDocRef = doc(db, "notifications", docSnap.id);
-          if (!docSnap.data().read) { 
+          if (!docSnap.data().read) {
             await updateDoc(notifDocRef, { read: true });
           }
         });
-
       } catch (error) {
         console.error("🔥 Error fetching notifications:", error);
       } finally {
@@ -69,7 +84,7 @@ export default function Notification() {
 
     fetchNotifications();
   }, [userId]);
- 
+
   const confirmClearAll = async () => {
     try {
       const notifRef = collection(db, "notifications");
@@ -83,7 +98,6 @@ export default function Notification() {
 
       await Promise.all(deletePromises);
       setNotifications([]);
-
     } catch (error) {
       console.error("🔥 Error clearing notifications:", error);
     } finally {
@@ -92,39 +106,54 @@ export default function Notification() {
   };
 
   if (loading)
-    return <p style={{ textAlign: "center", marginTop: "200px" }}>Loading notifications...</p>;
+    return (
+      <p style={{ textAlign: "center", marginTop: "200px" }}>
+        Loading notifications...
+      </p>
+    );
 
   return (
-    <div className="notif-page"> 
+    <div className="notif-page">
       <div className="notif-header">
         <div className="notif-header-inner">
-          <div className="notif-title-row" style={{ justifyContent: "space-between", width: "100%" }}>
+          <div
+            className="notif-title-row"
+            style={{ justifyContent: "space-between", width: "100%" }}
+          >
             <h1>Notifications</h1>
           </div>
           <div className="header-line"></div>
         </div>
       </div>
-  
+
       <div className="notif-box">
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "15px" }}>
-          <button
-          onClick={() => setShowConfirmClear(true)}
+        <div
           style={{
-            padding: "6px 12px",
-            borderRadius: "8px",
-            border: "none",
-            backgroundColor: "#6c56ef",
-            color: "#fff",
-            cursor: "pointer",
-            fontWeight: "bold",
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "15px",
           }}
         >
-          Clear All
-        </button>
+          <button
+            onClick={() => setShowConfirmClear(true)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#6c56ef",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Clear All
+          </button>
         </div>
 
         {notifications.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#666" }}>No notifications yet.</p>
+          <p style={{ textAlign: "center", color: "#666" }}>
+            No notifications yet.
+          </p>
         ) : (
           notifications.map((notif) => (
             <div key={notif.id} className="notif-item">
@@ -143,17 +172,23 @@ export default function Notification() {
               </p>
             </div>
           ))
-        )}  
-      </div> 
-      
+        )}
+      </div>
+
       {showConfirmClear && (
-        <div className="modal-overlay" onClick={() => setShowConfirmClear(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowConfirmClear(false)}
+        >
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Clear All Notifications?</h3>
             <p>This action cannot be undone.</p>
 
             <div className="confirm-actions">
-              <button className="btn cancel" onClick={() => setShowConfirmClear(false)}>
+              <button
+                className="btn cancel"
+                onClick={() => setShowConfirmClear(false)}
+              >
                 Cancel
               </button>
 
@@ -163,7 +198,7 @@ export default function Notification() {
             </div>
           </div>
         </div>
-      )} 
+      )}
       <style>{`
         .notif-page {
           background: linear-gradient(to bottom, #f8f2ffff, #e7d6fcff);

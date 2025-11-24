@@ -301,7 +301,7 @@ export default function SignUpPage() {
         .form-group input {
           width: 85%;
           padding: 13px 45px 13px 15px;
-          border: 1px solid #0d0d0dff;
+          border: 1px solid #939292ff;
           border-radius: 30px;
           font-size: 1rem;
           color: #333;
@@ -489,7 +489,7 @@ export default function SignUpPage() {
           .right-panel h1 { font-size: 1.7rem; }
           .right-panel p { font-size: 0.85rem; }
           .signup-title { font-size: 1.6rem; }
-          .password-toggle { left: 250px; }
+          .password-toggle { left: 280px; }
           .form-group input { font-size: 0.9rem; }
           .login-text { font-size: 0.85rem; }
         }

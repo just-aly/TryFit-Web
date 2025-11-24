@@ -8,7 +8,7 @@ import ChatComponent from "./Components/ChatComponent";
 import ChatSupport from "./ChatSupport";
 import "./App.css";
 import Header from "./Components/Header";
-import MyOrders from "./Components/MyOrdes";
+import MyOrders from "./Components/MyOrders";
 import Profile from "./Components/Profile";
 import Notification from "./Components/Notification";
 import Cart from "./Components/Cart";

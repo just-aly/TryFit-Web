@@ -32,6 +32,11 @@ export default function ProductDetails() {
   const [reviews, setReviews] = useState([]);
   const [showReviews, setShowReviews] = useState(true);
 
+  const [downloadModal, setDownloadModal] = useState(false);
+  const [downloadLink, setDownloadLink] = useState(
+    "https://expo.dev/artifacts/eas/ttCsDsfrtThQZW84AFJyuf.apk"
+  );
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -253,8 +258,11 @@ export default function ProductDetails() {
           <p className="sold">{product.sold || 0} Sold</p>
 
           <div className="note">
-            Size recommendations and AR experience are available only on the
-            mobile app.
+            Size recommendations and AR experience are available only on the{" "}
+            <span className="app-link" onClick={() => setDownloadModal(true)}>
+              mobile app
+            </span>
+            .
           </div>
 
           <div className="reviews-section">
@@ -462,6 +470,49 @@ export default function ProductDetails() {
         </div>
       )}
 
+      {downloadModal && (
+        <div className="modal-overlay" onClick={() => setDownloadModal(false)}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textAlign: "center" }}
+          >
+            <h3>Download Mobile App</h3>
+            <p>Are you sure you want to download the mobile application?</p>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "10px",
+                marginTop: "15px",
+              }}
+            >
+              <button
+                className="confirm-btn"
+                style={{ flex: 1, backgroundColor: "#9747FF" }}
+                onClick={() => {
+                  window.open(downloadLink, "_blank");
+                  setDownloadModal(false);
+                }}
+              >
+                Yes
+              </button>
+              <button
+                className="cart-btn"
+                style={{
+                  flex: 1,
+                  border: "1px solid #9747FF",
+                  background: "transparent",
+                }}
+                onClick={() => setDownloadModal(false)}
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{` 
         .popup {
           position: fixed;
@@ -538,6 +589,16 @@ export default function ProductDetails() {
           to { opacity: 0; transform: translate(-50%, -20px); }
         }
 
+        .app-link {
+          color: #9747FF;
+          font-weight: bold;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+
+        .app-link:hover {
+          color: #6e32b8;
+        }
         .product-details-container {
           display: flex;
           flex-direction: column;
@@ -592,6 +653,7 @@ export default function ProductDetails() {
 
         .note {
           color: #9747FF;
+          font-size: 15px;
         }
         
         .price {
@@ -734,7 +796,7 @@ export default function ProductDetails() {
           position: fixed;
           top: 0;
           left: 0;
-          width: 100%;
+          width: 80%;
           height: 100%;
           background: rgba(0, 0, 0, 0.5);
           display: flex;
@@ -745,9 +807,10 @@ export default function ProductDetails() {
         .modal-content {
           background: #fff;
           padding: 20px;
-          border-radius: 12px;
-          width: 90%;
-          max-width: 400px;
+          border-radius: 10px;
+          width: 80%;
+          max-width: 350px;
+          margin-bottom: 600px;
         }
 
         .sizes {
@@ -971,9 +1034,10 @@ export default function ProductDetails() {
         }
 
         .modal-content {
-          width: 92%;
+          width: 85%;
           max-width: 350px;
           padding: 15px;
+          margin-bottom: 500px;
         }
 
         .sizes {
