@@ -45,8 +45,17 @@ export default function Footer() {
       <p className="footer-desc">
         Discover outfit ideas and find your style. Try in AR & shop—only in our app!
       </p>
+    
+      <a 
+        href="https://expo.dev/artifacts/eas/ttCsDsfrtThQZW84AFJyuf.apk"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="download-btn"
+      >
+        Download
+      </a>
     </div>
-  </div>
+    </div>
 
   <p className="footer-bottom">© 2025 TryFit. All rights reserved.</p>
 
@@ -145,6 +154,25 @@ export default function Footer() {
       font-size: 1rem;
       color: #ddd;
       text-align: center;
+    }
+
+    .download-btn {
+      display: inline-block;      
+      background: transparent;
+      color: #fff;
+      padding: 5px 20px;
+      font-size: 1rem;
+      border-radius: 8px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.3s ease, transform 0.2s ease;
+      border: 2px solid #fff;
+    }
+
+    .download-btn:hover {
+      background: #fff;
+      color: #4b39c2;
+      transform: scale(1.05);
     }
 
     @media (max-width: 480px) {
