@@ -809,8 +809,7 @@ export default function ProductDetails() {
           padding: 20px;
           border-radius: 10px;
           width: 80%;
-          max-width: 350px;
-          margin-bottom: 600px;
+          max-width: 450px;
         }
 
         .sizes {
@@ -1035,9 +1034,8 @@ export default function ProductDetails() {
 
         .modal-content {
           width: 85%;
-          max-width: 350px;
+          max-width: 450px;
           padding: 15px;
-          margin-bottom: 500px;
         }
 
         .sizes {
