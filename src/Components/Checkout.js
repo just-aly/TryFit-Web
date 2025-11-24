@@ -1,3 +1,4 @@
+import { onAuthStateChanged } from "firebase/auth";
 import {
   addDoc,
   collection,
@@ -18,13 +19,10 @@ import { auth, db } from "../firebase";
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [notification, setNotification] = useState("");
   const [shippingLocation, setShippingLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const completedDocId = location.state?.completedDocId || null;
   const [cartItems, setCartItems] = useState([]);
-  const [orderInfo, setOrderInfo] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
   const [toast, setToast] = useState({
@@ -52,12 +50,6 @@ export default function Checkout() {
   }, [controls]);
 
   useEffect(() => {
-    if (location.state?.selectedCartItems) {
-      setSelectedItems(location.state.selectedCartItems);
-    }
-  }, [location.state]);
-
-  useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
         const currentUser = auth.currentUser;
@@ -75,6 +67,7 @@ export default function Checkout() {
         }
 
         const customUserId = userSnap.data().userId;
+        if (!customUserId) return;
 
         const q = query(
           collection(db, "shippingLocations"),
@@ -92,8 +85,17 @@ export default function Checkout() {
             )[0];
 
           setShippingLocation(shippingData);
+          try {
+            localStorage.setItem(
+              "savedShippingLocation",
+              JSON.stringify(shippingData)
+            );
+          } catch (e) {
+            console.warn("Could not save shipping location to localStorage", e);
+          }
         } else {
           setShippingLocation(null);
+          localStorage.removeItem("savedShippingLocation");
         }
       } catch (err) {
         console.error("Error fetching shipping location:", err);
@@ -107,6 +109,18 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("savedShippingLocation");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setShippingLocation(parsed);
+      }
+    } catch (e) {
+      console.warn("Error parsing savedShippingLocation", e);
+    }
+  }, []);
+
+  useEffect(() => {
     if (location.state?.cartItems) {
       setCartItems(location.state.cartItems);
     }
@@ -115,6 +129,87 @@ export default function Checkout() {
       setSelectedItems(location.state.selectedCartItems);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    let unsubAuth = () => {};
+    const fetchShippingLocation = async (firebaseUser) => {
+      try {
+        setLoading(true);
+        if (!firebaseUser) {
+          setLoading(false);
+          return;
+        }
+
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (!userSnap.exists()) {
+          setLoading(false);
+          return;
+        }
+        const customUserId = userSnap.data().userId;
+        if (!customUserId) {
+          setLoading(false);
+          return;
+        }
+
+        const q = query(
+          collection(db, "shippingLocations"),
+          where("userId", "==", customUserId)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const shippingData = querySnapshot.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .sort(
+              (a, b) =>
+                (b.createdAt?.toDate?.().getTime?.() || 0) -
+                (a.createdAt?.toDate?.().getTime?.() || 0)
+            )[0];
+
+          setShippingLocation(shippingData);
+          try {
+            localStorage.setItem(
+              "savedShippingLocation",
+              JSON.stringify(shippingData)
+            );
+          } catch (e) {
+            console.warn("Could not save shipping location to localStorage", e);
+          }
+        } else {
+          setShippingLocation(null);
+          localStorage.removeItem("savedShippingLocation");
+        }
+      } catch (err) {
+        console.error("Error fetching shipping location:", err);
+        showToast("Failed to load shipping info.", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    try {
+      const saved = localStorage.getItem("savedShippingLocation");
+      if (saved) {
+        setShippingLocation(JSON.parse(saved));
+        setLoading(false);
+      }
+    } catch (e) {
+      console.warn("Error parsing savedShippingLocation", e);
+    }
+
+    unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        fetchShippingLocation(firebaseUser);
+      } else {
+        setShippingLocation(null);
+        setLoading(false);
+        localStorage.removeItem("savedShippingLocation");
+      }
+    });
+
+    return () => unsubAuth();
+  }, []);
 
   const showToast = (message, type = "info", ms = 2500) => {
     setToast({ visible: true, message, type });
@@ -347,7 +442,6 @@ export default function Checkout() {
         </div>
       )}
 
-      {/* Page content */}
       <motion.div
         className="checkout-header"
         initial={{ opacity: 0, y: -20 }}
@@ -369,7 +463,6 @@ export default function Checkout() {
         <div className="checkout-left">
           <h1>Checkout</h1>
 
-          {/* Shipping */}
           {loading ? (
             <p>Loading shipping info...</p>
           ) : shippingLocation ? (
@@ -410,7 +503,6 @@ export default function Checkout() {
 
           <p>Total items: {cartItems.length}</p>
 
-          {/* Product list */}
           {cartItems.length === 0 ? (
             <p>No items selected.</p>
           ) : (

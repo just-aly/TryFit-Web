@@ -1,3 +1,4 @@
+import { onAuthStateChanged } from "firebase/auth";
 import {
   addDoc,
   collection,
@@ -6,7 +7,7 @@ import {
   getDocs,
   query,
   serverTimestamp,
-  where
+  where,
 } from "firebase/firestore";
 import { motion, useAnimation } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -23,13 +24,20 @@ export default function Recheckout() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [reorderItems, setReorderItems] = useState([]);
   const { completedID, cancelledID } = location.state || {};
-  const [order, setOrder] = useState(null); 
-  const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
+  const [order, setOrder] = useState(null);
+  const [toast, setToast] = useState({
+    visible: false,
+    message: "",
+    type: "info",
+  });
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
 
   const totalItems = reorderItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = reorderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = reorderItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   useEffect(() => {
     controls.start({
@@ -38,17 +46,20 @@ export default function Recheckout() {
       transition: { duration: 0.8, ease: "easeOut" },
     });
   }, [controls]);
- 
+
   const showToast = (message, type = "info", ms = 2500) => {
     setToast({ visible: true, message, type });
-    setTimeout(() => setToast({ visible: false, message: "", type: "info" }), ms);
+    setTimeout(
+      () => setToast({ visible: false, message: "", type: "info" }),
+      ms
+    );
   };
 
   useEffect(() => {
     if (location.state?.cartItems) {
       setReorderItems(location.state.cartItems);
     }
-  }, [location.state]); 
+  }, [location.state]);
   useEffect(() => {
     const fetchShippingLocation = async () => {
       try {
@@ -84,8 +95,17 @@ export default function Recheckout() {
             )[0];
 
           setShippingLocation(shippingData);
+          try {
+            localStorage.setItem(
+              "savedShippingLocation",
+              JSON.stringify(shippingData)
+            );
+          } catch (e) {
+            console.warn("Could not save shipping location to localStorage", e);
+          }
         } else {
           setShippingLocation(null);
+          localStorage.removeItem("savedShippingLocation");
         }
       } catch (err) {
         console.error("Error fetching shipping location:", err);
@@ -97,7 +117,99 @@ export default function Recheckout() {
 
     fetchShippingLocation();
   }, []);
- 
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("savedShippingLocation");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setShippingLocation(parsed);
+      }
+    } catch (e) {
+      console.warn("Error parsing savedShippingLocation", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    let unsubAuth = () => {};
+    const fetchShippingLocation = async (firebaseUser) => {
+      try {
+        setLoading(true);
+        if (!firebaseUser) {
+          setLoading(false);
+          return;
+        }
+
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (!userSnap.exists()) {
+          setLoading(false);
+          return;
+        }
+        const customUserId = userSnap.data().userId;
+        if (!customUserId) {
+          setLoading(false);
+          return;
+        }
+
+        const q = query(
+          collection(db, "shippingLocations"),
+          where("userId", "==", customUserId)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const shippingData = querySnapshot.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .sort(
+              (a, b) =>
+                (b.createdAt?.toDate?.().getTime?.() || 0) -
+                (a.createdAt?.toDate?.().getTime?.() || 0)
+            )[0];
+
+          setShippingLocation(shippingData);
+          try {
+            localStorage.setItem(
+              "savedShippingLocation",
+              JSON.stringify(shippingData)
+            );
+          } catch (e) {
+            console.warn("Could not save shipping location to localStorage", e);
+          }
+        } else {
+          setShippingLocation(null);
+          localStorage.removeItem("savedShippingLocation");
+        }
+      } catch (err) {
+        console.error("Error fetching shipping location:", err);
+        showToast("Failed to load shipping info.", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    try {
+      const saved = localStorage.getItem("savedShippingLocation");
+      if (saved) {
+        setShippingLocation(JSON.parse(saved));
+        setLoading(false);
+      }
+    } catch (e) {
+      console.warn("Error parsing savedShippingLocation", e);
+    }
+    unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        fetchShippingLocation(firebaseUser);
+      } else {
+        setShippingLocation(null);
+        setLoading(false);
+        localStorage.removeItem("savedShippingLocation");
+      }
+    });
+
+    return () => unsubAuth();
+  }, []);
+
   useEffect(() => {
     const fetchOrder = async () => {
       try {
@@ -132,14 +244,17 @@ export default function Recheckout() {
 
     fetchOrder();
   }, [completedID, cancelledID]);
-  
+
   const handlePlaceOrderClick = () => {
     if (!auth.currentUser) {
       showToast("You must be logged in to place an order.", "error");
       return;
     }
     if (!shippingLocation) {
-      showToast("Please add a shipping address before placing an order.", "warning");
+      showToast(
+        "Please add a shipping address before placing an order.",
+        "warning"
+      );
       return;
     }
     if (!reorderItems || reorderItems.length === 0) {
@@ -158,10 +273,15 @@ export default function Recheckout() {
       if (!userDoc.exists()) throw new Error("User not found");
       const customUserId = userDoc.data().userId;
 
-      const subtotal = reorderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const subtotal = reorderItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
       const total = subtotal + 58;
 
-      const newOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const newOrderId = `ORD-${Date.now()}-${Math.floor(
+        Math.random() * 1000
+      )}`;
 
       const orderData = {
         orderId: newOrderId,
@@ -195,7 +315,7 @@ export default function Recheckout() {
         timestamp: serverTimestamp(),
         read: false,
       });
- 
+
       setShowSuccessAnim(true);
       setTimeout(() => {
         setShowSuccessAnim(false);
@@ -214,14 +334,14 @@ export default function Recheckout() {
       state: {
         openShippingLocations: true,
         fromCheckout: true,
-         cartItems: reorderItems,  
-        selectedCartItems: reorderItems, 
+        cartItems: reorderItems,
+        selectedCartItems: reorderItems,
       },
     });
   };
 
   return (
-    <div className="checkout-page"> 
+    <div className="checkout-page">
       {toast.visible && (
         <div className={`toast ${toast.type}`}>
           <div className="toast-message">{toast.message}</div>
@@ -234,7 +354,10 @@ export default function Recheckout() {
             <h3>Are you sure you want to proceed?</h3>
             <p>This will place the order and charge you accordingly.</p>
             <div className="confirm-actions">
-              <button className="btn cancel" onClick={() => setShowConfirm(false)}>
+              <button
+                className="btn cancel"
+                onClick={() => setShowConfirm(false)}
+              >
                 Cancel
               </button>
               <button
@@ -252,16 +375,41 @@ export default function Recheckout() {
       {showSuccessAnim && (
         <div className="success-overlay">
           <div className="success-card" role="status" aria-live="polite">
-            <svg className="check-svg" viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="60" cy="60" r="54" fill="none" strokeWidth="4" opacity="0.12" />
-              <path className="check-path" d="M34 62 L52 80 L86 40" fill="none" stroke="#6c56ef" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
+            <svg
+              className="check-svg"
+              viewBox="0 0 120 120"
+              width="120"
+              height="120"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="60"
+                cy="60"
+                r="54"
+                fill="none"
+                strokeWidth="4"
+                opacity="0.12"
+              />
+              <path
+                className="check-path"
+                d="M34 62 L52 80 L86 40"
+                fill="none"
+                stroke="#6c56ef"
+                strokeWidth="15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             <div className="success-text">Order successfully placed!</div>
           </div>
         </div>
-      )} 
+      )}
 
-      <motion.div className="checkout-header" initial={{ opacity: 0, y: -20 }} animate={controls}>
+      <motion.div
+        className="checkout-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={controls}
+      >
         <div className="checkout-header-inner">
           <div className="checkout-title-row">
             <h1>Re-Checkout</h1>
@@ -270,7 +418,11 @@ export default function Recheckout() {
         </div>
       </motion.div>
 
-      <motion.section className="checkout-content" initial={{ opacity: 0, y: 30 }} animate={controls}>
+      <motion.section
+        className="checkout-content"
+        initial={{ opacity: 0, y: 30 }}
+        animate={controls}
+      >
         <div className="checkout-left">
           <h1>Re-Checkout</h1>
 
@@ -279,16 +431,35 @@ export default function Recheckout() {
           ) : shippingLocation ? (
             <div className="address-box">
               <div>
-                <p><strong>Name: {shippingLocation.name}</strong></p>
-                <p><strong>House No:</strong> {shippingLocation.house}</p>
-                <p><strong>Full Address:</strong> {shippingLocation.fullAddress}</p>
-                <p><strong>Phone number:</strong> {shippingLocation.phone}</p>
-                <p><strong>Postal:</strong> {shippingLocation.postalCode}</p>
+                <p>
+                  <strong>Name: {shippingLocation.name}</strong>
+                </p>
+                <p>
+                  <strong>House No:</strong> {shippingLocation.house}
+                </p>
+                <p>
+                  <strong>Full Address:</strong> {shippingLocation.fullAddress}
+                </p>
+                <p>
+                  <strong>Phone number:</strong> {shippingLocation.phone}
+                </p>
+                <p>
+                  <strong>Postal:</strong> {shippingLocation.postalCode}
+                </p>
               </div>
-              <button onClick={handleAddAddress} className="edit-btn">Edit</button>
+              <button onClick={handleAddAddress} className="edit-btn">
+                Edit
+              </button>
             </div>
           ) : (
-            <p style={{ color: "red", cursor: "pointer", textDecoration: "underline" }} onClick={handleAddAddress}>
+            <p
+              style={{
+                color: "red",
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+              onClick={handleAddAddress}
+            >
               No shipping address. Click here to add one.
             </p>
           )}
@@ -300,7 +471,11 @@ export default function Recheckout() {
           ) : (
             reorderItems.map((item, index) => (
               <div key={`${item.productId}-${index}`} className="product-card">
-                <img src={item.imageUrl || "https://via.placeholder.com/80"} alt={item.productName} className="product-image" />
+                <img
+                  src={item.imageUrl || "https://via.placeholder.com/80"}
+                  alt={item.productName}
+                  className="product-image"
+                />
                 <div className="product-details">
                   <h4>{item.productName}</h4>
                   <p>Size: {item.size}</p>
@@ -358,13 +533,25 @@ export default function Recheckout() {
 
           <div className="order-card">
             <div className="order-total">
-              <p>Total: <span>₱{(totalPrice + 58).toLocaleString()}</span></p>
+              <p>
+                Total: <span>₱{(totalPrice + 58).toLocaleString()}</span>
+              </p>
               <button
                 onClick={handlePlaceOrderClick}
-                disabled={!shippingLocation || isPlacingOrder || reorderItems.length === 0}
+                disabled={
+                  !shippingLocation ||
+                  isPlacingOrder ||
+                  reorderItems.length === 0
+                }
                 style={{
-                  backgroundColor: !shippingLocation || reorderItems.length === 0 ? "#ccc" : "#6c56ef",
-                  cursor: !shippingLocation || reorderItems.length === 0 ? "not-allowed" : "pointer",
+                  backgroundColor:
+                    !shippingLocation || reorderItems.length === 0
+                      ? "#ccc"
+                      : "#6c56ef",
+                  cursor:
+                    !shippingLocation || reorderItems.length === 0
+                      ? "not-allowed"
+                      : "pointer",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
